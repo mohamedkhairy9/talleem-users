@@ -1,0 +1,111 @@
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useLoginMutation } from '@/features/auth';
+import { useFormWithValidation } from '@/utils';
+import * as yup from 'yup';
+import { FormInput } from '@/globals/components';
+import { ROUTE_PATHS } from '@/config';
+import { useTranslation } from 'react-i18next';
+
+/**
+ * Login Form Schema
+ */
+const loginSchema = yup.object({
+    email: yup
+        .string()
+        .email('Invalid email address')
+        .required('Email is required'),
+    password: yup
+        .string()
+        .min(6, 'Password must be at least 6 characters')
+        .required('Password is required')
+});
+
+interface LoginFormData {
+    email: string;
+    password: string;
+}
+
+/**
+ * Login Form Component
+ */
+const LoginForm: React.FC = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const loginMutation = useLoginMutation();
+    const { t } = useTranslation();
+
+    const {
+        control,
+        handleSubmit,
+        formState: { errors }
+    } = useFormWithValidation<LoginFormData>({
+        schema: loginSchema,
+        defaultValues: {
+            email: '',
+            password: ''
+        }
+    });
+
+    const onSubmit = async (data: LoginFormData) => {
+        loginMutation.mutate(data, {
+            onSuccess: () => {
+                // Redirect to the page user was trying to access, or dashboard
+                const from = (location.state as any)?.from?.pathname || ROUTE_PATHS.DASHBOARD;
+                navigate(from, { replace: true });
+            }
+        });
+    };
+
+    return (
+        <form
+            dir="rtl"
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-6 font-islamic!"
+        >
+            <FormInput
+                name="email"
+                control={control}
+                label={t('auth.email.label', 'Email')}
+                type="email"
+                required
+                error={errors.email?.message}
+            />
+
+            <FormInput
+                name="password"
+                control={control}
+                label={t('auth.password.label', 'Password')}
+                type="password"
+                required
+                error={errors.password?.message}
+            />
+
+            {loginMutation.error && (
+                <div className="text-red-600 text-sm">
+                    {(loginMutation.error as any).message || t('auth.login_failed', 'Login failed. Please try again.')}
+                </div>
+            )}
+
+            <button
+                type="submit"
+                disabled={loginMutation.isPending}
+                className={`w-full py-3 mb-32 rounded-lg font-medium transition-colors duration-200 ${
+                    loginMutation.isPending
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-primary-600 hover:bg-primary-700'
+                } text-white`}
+            >
+                {loginMutation.isPending ? (
+                    <div className="flex items-center gap-4 justify-center">
+                        {t('common.loading', 'Loading...')}
+                    </div>
+                ) : (
+                    t('auth.login', 'Login')
+                )}
+            </button>
+        </form>
+    );
+};
+
+export default LoginForm;

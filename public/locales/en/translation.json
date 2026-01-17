@@ -1,0 +1,42 @@
+{
+    "common": {
+        "welcome": "Welcome",
+        "logout": "Logout",
+        "login": "Login",
+        "dashboard": "Dashboard",
+        "students": "Students",
+        "teachers": "Teachers",
+        "entityManagers": "Entity Managers",
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "view": "View",
+        "search": "Search",
+        "filter": "Filter",
+        "loading": "Loading...",
+        "noData": "No data available",
+        "error": "An error occurred",
+        "success": "Operation successful"
+    },
+    "auth": {
+        "email": {
+            "label": "Email",
+            "placeholder": "Enter your email"
+        },
+        "password": {
+            "label": "Password",
+            "placeholder": "Enter your password"
+        },
+        "login": "Login",
+        "loginTitle": "Login to your account",
+        "login_failed": "Login failed. Please try again.",
+        "invalidCredentials": "Invalid email or password",
+        "start_journey": "Start Your Journey"
+    },
+    "validation": {
+        "required": "This field is required",
+        "email": "Invalid email address",
+        "minLength": "Minimum length is {{min}} characters"
+    }
+}

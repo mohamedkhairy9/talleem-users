@@ -1,0 +1,148 @@
+@import 'tailwindcss';
+
+:root {
+    --border: 180 20% 90%;
+    --input: 180 20% 90%;
+    --ring: 182 100% 15%;
+    --background: 180 20% 98%;
+    --foreground: 210 10% 10%;
+  
+    --primary: 182 100% 15%; /* #004A50 */
+    --primary-foreground: 180 20% 98%; /* White-ish text */
+  
+    --secondary: 180 25% 92%;
+    --secondary-foreground: 210 15% 15%;
+  
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 98%;
+  
+    --muted: 180 15% 92%;
+    --muted-foreground: 180 10% 40%;
+  
+    --accent: 182 50% 40%; /* #007D84 */
+    --accent-foreground: 180 20% 98%;
+}
+
+/* Font Face Declarations */
+@font-face {
+    font-family: 'Hacen';
+    src: url('/src/assets/fonts/Cairo/Cairo-VariableFont_slnt,wght.ttf')
+        format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF,
+        U+FE70-FEFF;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('/src/assets/fonts/Inter/Inter-VariableFont_opsz,wght.ttf')
+        format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Hacen';
+    src: url('/src/assets/fonts/Hacen/alfont_com_Hacen-Maghreb-Bd.ttf')
+        format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+}
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-arabic: 'Hacen', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-islamic: 'Hacen', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+    --color-primary: hsl(var(--primary));
+    --color-primary-foreground: hsl(var(--primary-foreground));
+    --color-accent: hsl(var(--accent));
+
+    --color-primary-50: #E6F4F4;
+    --color-primary-100: #CCE9E9;
+    --color-primary-200: #99D3D3;
+    --color-primary-300: #66BCBC;
+    --color-primary-400: #339FA1;
+    --color-primary-500: #007D84;
+    --color-primary-600: #00666C;
+    --color-primary-700: #004A50; /* main color */
+    --color-primary-800: #00363A;
+    --color-primary-900: #002326;
+}
+
+@layer base {
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        font-feature-settings: 'rlig' 1, 'calt' 1;
+    }
+
+    #root {
+        min-height: 100vh;
+    }
+
+    [dir='rtl'] {
+        font-family: 'Hacen', 'Inter', system-ui, sans-serif;
+        font-feature-settings: 'rlig' 1, 'calt' 1, 'liga' 1;
+    }
+
+    [dir='ltr'] {
+        font-family: 'Inter', system-ui, sans-serif;
+        font-feature-settings: 'rlig' 1, 'calt' 1;
+    }
+
+    /* Ensure Hacen font is used for Arabic text specifically */
+    [lang='ar'] {
+        font-family: 'Hacen', 'Inter', system-ui, sans-serif !important;
+        font-feature-settings: 'rlig' 1, 'calt' 1, 'liga' 1;
+    }
+
+    /* Apply Hacen font to all elements when RTL is selected */
+    [dir='rtl'] * {
+        font-family: 'Hacen', 'Inter', system-ui, sans-serif;
+    }
+}
+
+@layer utilities {
+    /* Arabic-specific font utilities */
+    .font-arabic {
+        font-family: 'Hacen', 'Inter', system-ui, sans-serif;
+        font-feature-settings: 'rlig' 1, 'calt' 1, 'liga' 1;
+    }
+
+    /* Ensure form elements use Hacen in Arabic */
+    [dir='rtl'] input,
+    [dir='rtl'] textarea,
+    [dir='rtl'] select,
+    [dir='rtl'] button {
+        font-family: 'Hacen', 'Inter', system-ui, sans-serif;
+    }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
