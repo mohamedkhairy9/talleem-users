@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores';
 import LoginForm from '@/features/auth/components/LoginForm';
 import { ROUTE_PATHS } from '@/config';
@@ -15,6 +15,7 @@ import bgLayer from '@/assets/images/bg-layer.png';
 const LoginPage: React.FC = () => {
     const { isAuthenticated } = useAuthStore();
     const { t } = useTranslation();
+    const { lang } = useParams<{ lang: string }>();
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
@@ -27,7 +28,8 @@ const LoginPage: React.FC = () => {
 
     // Redirect if already authenticated
     if (isAuthenticated) {
-        return <Navigate to={ROUTE_PATHS.DASHBOARD} replace />;
+        const currentLang = lang || 'en';
+        return <Navigate to={`/${currentLang}`} replace />;
     }
 
     return (

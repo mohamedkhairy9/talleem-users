@@ -2,7 +2,7 @@
  * API Configuration
  */
 export const API_CONFIG = {
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'https://api-tallam.vocus-dev2.com/api',
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'https://api-tallam.vocus-dev2.com/api/front',
     timeout: 30000, // 30 seconds
     headers: {
         'Content-Type': 'application/json',

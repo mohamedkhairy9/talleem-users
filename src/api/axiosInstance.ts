@@ -89,9 +89,13 @@ axiosInstance.interceptors.response.use(
             const authStore = useAuthStore.getState();
             authStore.logout();
             
-            // Redirect to login if not already there
-            if (window.location.pathname !== ROUTE_PATHS.LOGIN) {
-                window.location.href = ROUTE_PATHS.LOGIN;
+            // Redirect to login with current language (or default to en)
+            const currentPath = window.location.pathname;
+            const lang = currentPath.split('/')[1] || 'en';
+            const loginPath = `/${lang}/login`;
+            
+            if (!currentPath.includes('/login')) {
+                window.location.href = loginPath;
             }
         }
 

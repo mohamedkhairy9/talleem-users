@@ -42,7 +42,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles = [], p
     }
 
     if (!isAuthenticated || !cookieService.hasToken()) {
-        return <Navigate to={ROUTE_PATHS.LOGIN} state={{ from: location }} replace />;
+        // Redirect to login with current language
+        const lang = location.pathname.split('/')[1] || 'en';
+        return <Navigate to={`/${lang}/${ROUTE_PATHS.LOGIN}`} state={{ from: location }} replace />;
     }
 
     // Check roles if specified
@@ -51,7 +53,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles = [], p
             user?.roles?.includes(role)
         );
         if (!hasRequiredRole) {
-            return <Navigate to={ROUTE_PATHS.UNAUTHORIZED} replace />;
+            // Redirect to unauthorized with current language
+            const lang = location.pathname.split('/')[1] || 'en';
+            return <Navigate to={`/${lang}/${ROUTE_PATHS.UNAUTHORIZED}`} replace />;
         }
     }
 
@@ -61,7 +65,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles = [], p
             user?.permissions?.includes(permission)
         );
         if (!hasRequiredPermission) {
-            return <Navigate to={ROUTE_PATHS.UNAUTHORIZED} replace />;
+            // Redirect to unauthorized with current language
+            const lang = location.pathname.split('/')[1] || 'en';
+            return <Navigate to={`/${lang}/${ROUTE_PATHS.UNAUTHORIZED}`} replace />;
         }
     }
 

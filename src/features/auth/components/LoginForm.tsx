@@ -6,6 +6,7 @@ import * as yup from 'yup';
 import { FormInput } from '@/globals/components';
 import { ROUTE_PATHS } from '@/config';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 /**
  * Login Form Schema
@@ -51,8 +52,14 @@ const LoginForm: React.FC = () => {
         loginMutation.mutate(data, {
             onSuccess: () => {
                 // Redirect to the page user was trying to access, or dashboard
-                const from = (location.state as any)?.from?.pathname || ROUTE_PATHS.DASHBOARD;
-                navigate(from, { replace: true });
+                const from = (location.state as any)?.from?.pathname;
+                if (from) {
+                    navigate(from, { replace: true });
+                } else {
+                    // Redirect to default language dashboard
+                    const defaultLang = i18n.language || 'en';
+                    navigate(`/${defaultLang}`, { replace: true });
+                }
             }
         });
     };

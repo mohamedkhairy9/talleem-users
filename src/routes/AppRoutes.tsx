@@ -5,45 +5,68 @@ import { routes } from './routes';
 import LoginPage from '@/pages/LoginPage';
 import { Layout } from '@/globals/components';
 import { ROUTE_PATHS } from '@/config';
+import LanguageRouteWrapper from '@/utils/components/LanguageRouteWrapper';
 
 /**
  * Main Routes Component
+ * Routes are organized with language prefix: /:lang/...
  */
 const AppRoutes: React.FC = () => {
     return (
         <Routes>
-            {/* Public Routes */}
-            <Route path={ROUTE_PATHS.LOGIN} element={<LoginPage />} />
+            {/* Default redirect - redirect root to default language */}
+            <Route path="/" element={<Navigate to="/en" replace />} />
             
-            {/* Protected Routes */}
-            <Route
-                path={ROUTE_PATHS.DASHBOARD}
-                element={
-                    <ProtectedRoute>
-                        <Layout />
-                    </ProtectedRoute>
-                }
-            >
-                {routes.map((route, index) => (
-                    <Route
-                        key={route.path || index}
-                        index={route.index}
-                        path={route.path}
-                        element={
-                            route.roles || route.permissions ? (
-                                <ProtectedRoute roles={route.roles} permissions={route.permissions}>
-                                    {route.element}
-                                </ProtectedRoute>
-                            ) : (
-                                route.element
-                            )
-                        }
-                    />
-                ))}
+            {/* Redirect old /login to /en/login for backward compatibility */}
+            <Route path="/login" element={<Navigate to="/en/login" replace />} />
+            
+            {/* Language-based routes */}
+            <Route path="/:lang" element={<LanguageRouteWrapper />}>
+                {/* Public routes (login) */}
+                <Route path={ROUTE_PATHS.LOGIN} element={<LoginPage />} />
+                
+                {/* Protected routes */}
+                <Route
+                    element={
+                        <ProtectedRoute>
+                            <Layout />
+                        </ProtectedRoute>
+                    }
+                >
+                    {/* Dashboard index route */}
+                    {routes
+                        .filter(route => route.index)
+                        .map((route, index) => (
+                            <Route
+                                key={index}
+                                index
+                                element={route.element}
+                            />
+                        ))}
+                    
+                    {/* Other routes */}
+                    {routes
+                        .filter(route => !route.index)
+                        .map((route, index) => (
+                            <Route
+                                key={route.path || index}
+                                path={route.path}
+                                element={
+                                    route.roles || route.permissions ? (
+                                        <ProtectedRoute roles={route.roles} permissions={route.permissions}>
+                                            {route.element}
+                                        </ProtectedRoute>
+                                    ) : (
+                                        route.element
+                                    )
+                                }
+                            />
+                        ))}
+                </Route>
             </Route>
 
-            {/* Catch all - redirect to dashboard */}
-            <Route path="*" element={<Navigate to={ROUTE_PATHS.DASHBOARD} replace />} />
+            {/* Catch all - redirect to default language dashboard */}
+            <Route path="*" element={<Navigate to="/en" replace />} />
         </Routes>
     );
 };

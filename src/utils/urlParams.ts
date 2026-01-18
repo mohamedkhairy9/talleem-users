@@ -2,7 +2,7 @@ import { SetURLSearchParams } from 'react-router-dom';
 
 /**
  * Utility functions for managing URL parameters
- * Used for localization, filtering, and state persistence
+ * Used for filtering and state persistence
  */
 
 /**
@@ -73,26 +73,6 @@ export const setUrlParams = (
         });
         return newParams;
     }, options);
-};
-
-/**
- * Get language from URL or return default
- */
-export const getLanguageFromUrl = (
-    searchParams: URLSearchParams,
-    defaultLang: string = 'en'
-): string => {
-    return getUrlParam(searchParams, 'lang', defaultLang) || defaultLang;
-};
-
-/**
- * Set language in URL
- */
-export const setLanguageInUrl = (
-    setSearchParams: SetURLSearchParams,
-    lang: string
-): void => {
-    setUrlParam(setSearchParams, 'lang', lang);
 };
 
 /**

@@ -1,25 +1,39 @@
 import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useLanguageStore } from '@/stores';
-import { useUrlParams } from './useUrlParams';
+import { useLanguagePath } from './useLanguagePath';
 
 /**
  * Hook for internationalization
- * Combines i18n translation with URL language param sync
+ * Combines i18n translation with path-based language routing
  */
 export const useLocale = () => {
     const { t, i18n } = useTranslation();
-    const { setLanguage: setLanguageInUrl } = useUrlParams();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const params = useParams<{ lang: string }>();
     const { language: storeLanguage, setLanguage: setStoreLanguage } = useLanguageStore();
+    const { getPath } = useLanguagePath();
 
     const changeLanguage = (lng: string) => {
         i18n.changeLanguage(lng);
         setStoreLanguage(lng);
-        setLanguageInUrl(lng);
+        
+        // Update URL path with new language
+        const currentPath = location.pathname;
+        // Extract path without language prefix
+        const pathWithoutLang = currentPath.replace(/^\/(en|ar)/, '') || '';
+        // Build new path with new language
+        const newPath = pathWithoutLang === '/' || pathWithoutLang === '' 
+            ? `/${lng}`
+            : `/${lng}${pathWithoutLang}`;
+        
+        navigate(newPath, { replace: true });
     };
 
     return {
         t,
-        currentLocale: i18n.language,
+        currentLocale: params.lang || i18n.language,
         changeLanguage,
         language: storeLanguage
     };
