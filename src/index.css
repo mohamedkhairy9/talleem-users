@@ -3,11 +3,11 @@
 :root {
     --border: 180 20% 90%;
     --input: 180 20% 90%;
-    --ring: 182 100% 15%;
+    --ring: 184 100% 14%;
     --background: 180 20% 98%;
     --foreground: 210 10% 10%;
   
-    --primary: 182 100% 15%; /* #004A50 */
+    --primary: 184 100% 14%; /* #004247 */
     --primary-foreground: 180 20% 98%; /* White-ish text */
   
     --secondary: 180 25% 92%;
@@ -67,7 +67,7 @@
     --color-primary-400: #339FA1;
     --color-primary-500: #007D84;
     --color-primary-600: #00666C;
-    --color-primary-700: #004A50; /* main color */
+    --color-primary-700: #004247; /* main color */
     --color-primary-800: #00363A;
     --color-primary-900: #002326;
 }
