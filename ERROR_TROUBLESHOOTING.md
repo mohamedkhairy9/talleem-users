@@ -30,7 +30,7 @@ This error occurs when JavaScript expects to receive JavaScript code but instead
    - Missing translation files: `/locales/en/translation.json` or `/locales/ar/translation.json`
    - Incorrect `@/` path alias usage
    - Missing module dependencies (run `npm install`)
-   - Development server not running on port 3000
+   - Development server not running on port 5173
 
 4. **Verify File Structure:**
    - Ensure `public/locales/en/translation.json` exists
@@ -119,7 +119,7 @@ The error mentions `core.js:297`, which is typically from:
    # Ensure dev server is running
    npm run dev
    ```
-   Should show: `VITE ready in XXX ms` and `Local: http://localhost:3000`
+   Should show: `VITE ready in XXX ms` and `Local: http://localhost:5173/`
 
 3. **Check for console errors:**
    - Open DevTools (F12)
@@ -129,7 +129,7 @@ The error mentions `core.js:297`, which is typically from:
 4. **Verify environment:**
    - Ensure Node.js version is 18+
    - Ensure all dependencies are installed (`npm install`)
-   - Check that port 3000 is not in use
+   - Check that port 5173 is not in use
 
 5. **Check file structure:**
    - Verify all required files exist
@@ -145,7 +145,7 @@ The error mentions `core.js:297`, which is typically from:
 - [ ] Browser cache cleared (hard refresh)
 - [ ] Tested in incognito mode (to rule out extensions)
 - [ ] Checked Network tab for failed requests
-- [ ] Verified no port conflicts (port 3000 available)
+- [ ] Verified no port conflicts (port 5173 available)
 
 ---
 

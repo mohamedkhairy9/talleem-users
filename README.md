@@ -64,7 +64,7 @@ VITE_API_BASE_URL=http://localhost:8000/api
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`
+The app will be available at `http://localhost:5173/`
 
 ## Production Build
 
