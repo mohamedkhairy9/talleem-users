@@ -18,7 +18,9 @@
         "noData": "لا توجد بيانات",
         "error": "حدث خطأ",
         "success": "تمت العملية بنجاح",
-        "user": "مستخدم"
+        "user": "مستخدم",
+        "select": "اختر خياراً",
+        "noOptions": "لا توجد خيارات"
     },
     "navbar": {
         "title": "لوحة تحكم مستخدمي تعليم",
@@ -62,5 +64,38 @@
         "required": "هذا الحقل مطلوب",
         "email": "عنوان بريد إلكتروني غير صحيح",
         "minLength": "الحد الأدنى للطول هو {{min}} أحرف"
+    },
+    "halaqa": {
+        "createTitle": "إنشاء حلقة",
+        "createDescription": "املأ النموذج أدناه لإنشاء حلقة جديدة",
+        "create": "إنشاء حلقة",
+        "createError": "خطأ في إنشاء الحلقة. يرجى المحاولة مرة أخرى.",
+        "name": {
+            "en": "الاسم (بالإنجليزية)",
+            "ar": "الاسم (بالعربية)"
+        },
+        "teacher": "المعلم",
+        "selectTeacher": "اختر معلماً",
+        "memorizationProgramEntityType": "نوع كيان برنامج الحفظ",
+        "selectMemorizationProgramEntityType": "اختر نوع كيان برنامج الحفظ",
+        "period": "الفترة",
+        "period.morning": "صباحي",
+        "period.evening": "مسائي",
+        "startDate": "تاريخ البدء",
+        "endDate": "تاريخ الانتهاء",
+        "activities": "الأنشطة",
+        "activity.tasbit": "تثبيت",
+        "activity.hifz": "حفظ",
+        "activity.murajaa": "مراجعة",
+        "students": "الطلاب",
+        "selectStudents": "اختر الطلاب",
+        "sessionTime": "وقت الجلسة",
+        "sessionTimeHelper": "التنسيق: س:د-س:د (مثال: 05:00-07:30)",
+        "platform": "المنصة",
+        "selectPlatform": "اختر منصة",
+        "teachingMethod": "طريقة التدريس",
+        "teachingMethod.inPerson": "حضوري",
+        "teachingMethod.remote": "عن بُعد",
+        "teachingMethod.hybrid": "مختلط"
     }
 }

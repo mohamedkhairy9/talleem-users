@@ -10,3 +10,4 @@ export * from './hooks/useLocale';
 export * from './hooks/useLanguagePath';
 export * from './hooks/useForm';
 export * from './hooks/useFiltering';
+export * from './hooks/useApiFormField';

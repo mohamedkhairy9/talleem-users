@@ -18,7 +18,9 @@
         "noData": "No data available",
         "error": "An error occurred",
         "success": "Operation successful",
-        "user": "User"
+        "user": "User",
+        "select": "Select an option",
+        "noOptions": "No options found"
     },
     "navbar": {
         "title": "Tallem Users Dashboard",
@@ -62,5 +64,38 @@
         "required": "This field is required",
         "email": "Invalid email address",
         "minLength": "Minimum length is {{min}} characters"
+    },
+    "halaqa": {
+        "createTitle": "Create Halaqa",
+        "createDescription": "Fill in the form below to create a new halaqa",
+        "create": "Create Halaqa",
+        "createError": "Error creating halaqa. Please try again.",
+        "name": {
+            "en": "Name (English)",
+            "ar": "Name (Arabic)"
+        },
+        "teacher": "Teacher",
+        "selectTeacher": "Select a teacher",
+        "memorizationProgramEntityType": "Memorization Program Entity Type",
+        "selectMemorizationProgramEntityType": "Select memorization program entity type",
+        "period": "Period",
+        "period.morning": "Morning",
+        "period.evening": "Evening",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "activities": "Activities",
+        "activity.tasbit": "Tasbit",
+        "activity.hifz": "Hifz",
+        "activity.murajaa": "Murajaa",
+        "students": "Students",
+        "selectStudents": "Select students",
+        "sessionTime": "Session Time",
+        "sessionTimeHelper": "Format: HH:MM-HH:MM (e.g., 05:00-07:30)",
+        "platform": "Platform",
+        "selectPlatform": "Select a platform",
+        "teachingMethod": "Teaching Method",
+        "teachingMethod.inPerson": "In Person",
+        "teachingMethod.remote": "Remote",
+        "teachingMethod.hybrid": "Hybrid"
     }
 }
