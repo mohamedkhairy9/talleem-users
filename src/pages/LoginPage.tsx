@@ -33,7 +33,7 @@ const LoginPage: React.FC = () => {
     }
 
     return (
-        <div dir="ltr" className="min-h-screen font-islamic bg-gradient-to-tr from-primary to-primary-900 relative overflow-hidden">
+        <div dir="ltr" className="min-h-screen bg-gradient-to-tr from-primary to-primary-900 relative overflow-hidden">
             {/* Background Pattern */}
             <div
                 className="absolute inset-0 opacity-10"
@@ -96,7 +96,7 @@ const LoginPage: React.FC = () => {
                         </div>
 
                         {/* Text Content */}
-                        <div className="max-w-md font-islamic mx-auto">
+                        <div className="max-w-md mx-auto">
                             <h3 className="text-2xl font-bold mb-4">
                                 خيركم من تعلم القرآن وعلمه
                             </h3>

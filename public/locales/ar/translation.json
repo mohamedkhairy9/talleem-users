@@ -17,7 +17,31 @@
         "loading": "جاري التحميل...",
         "noData": "لا توجد بيانات",
         "error": "حدث خطأ",
-        "success": "تمت العملية بنجاح"
+        "success": "تمت العملية بنجاح",
+        "user": "مستخدم"
+    },
+    "navbar": {
+        "title": "لوحة تحكم مستخدمي تعليم",
+        "logout": "تسجيل الخروج"
+    },
+    "dashboard": {
+        "title": "لوحة التحكم",
+        "welcome": "مرحبا بك في لوحة التحكم"
+    },
+    "menu": {
+        "home": "الصفحة الرئيسية",
+        "studyPlan": "خطتي الدراسية",
+        "absences": "غياباتي",
+        "grades": "درجاتي",
+        "certificates": "شهاداتي",
+        "warnings": "إنذاراتي",
+        "transfers": "تنقلاتي",
+        "evaluations": "تقيماتي",
+        "diary": "مفكرتي",
+        "settings": "الإعدادات",
+        "students": "الطلاب",
+        "teachers": "المعلمون",
+        "entityManagers": "مديرو الكيانات"
     },
     "auth": {
         "email": {

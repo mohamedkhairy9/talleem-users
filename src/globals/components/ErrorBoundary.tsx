@@ -32,7 +32,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
                         </p>
                         <button
                             onClick={() => window.location.reload()}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
                         >
                             Reload Page
                         </button>

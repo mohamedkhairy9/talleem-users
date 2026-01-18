@@ -68,7 +68,7 @@ const LoginForm: React.FC = () => {
         <form
             dir="rtl"
             onSubmit={handleSubmit(onSubmit)}
-            className="space-y-6 font-islamic!"
+            className="space-y-6"
         >
             <FormInput
                 name="email"

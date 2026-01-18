@@ -17,7 +17,31 @@
         "loading": "Loading...",
         "noData": "No data available",
         "error": "An error occurred",
-        "success": "Operation successful"
+        "success": "Operation successful",
+        "user": "User"
+    },
+    "navbar": {
+        "title": "Tallem Users Dashboard",
+        "logout": "Logout"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "welcome": "Welcome to the dashboard"
+    },
+    "menu": {
+        "home": "Home",
+        "studyPlan": "My Study Plan",
+        "absences": "My Absences",
+        "grades": "My Grades",
+        "certificates": "My Certificates",
+        "warnings": "My Warnings",
+        "transfers": "My Transfers",
+        "evaluations": "My Evaluations",
+        "diary": "My Diary",
+        "settings": "Settings",
+        "students": "Students",
+        "teachers": "Teachers",
+        "entityManagers": "Entity Managers"
     },
     "auth": {
         "email": {

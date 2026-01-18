@@ -11,12 +11,31 @@ export const ROUTE_PATHS = {
     STUDENTS: 'students',
     TEACHERS: 'teachers',
     ENTITY_MANAGERS: 'entity-managers',
-    UNAUTHORIZED: 'unauthorized'
+    UNAUTHORIZED: 'unauthorized',
+    // Student/Teacher menu items
+    STUDY_PLAN: 'study-plan',
+    ABSENCES: 'absences',
+    GRADES: 'grades',
+    CERTIFICATES: 'certificates',
+    WARNINGS: 'warnings',
+    TRANSFERS: 'transfers',
+    EVALUATIONS: 'evaluations',
+    DIARY: 'diary',
+    SETTINGS: 'settings'
 } as const;
 
 export const ROUTE_LABELS = {
     DASHBOARD: 'Dashboard',
     STUDENTS: 'Students',
     TEACHERS: 'Teachers',
-    ENTITY_MANAGERS: 'Entity Managers'
+    ENTITY_MANAGERS: 'Entity Managers',
+    STUDY_PLAN: 'My Study Plan',
+    ABSENCES: 'My Absences',
+    GRADES: 'My Grades',
+    CERTIFICATES: 'My Certificates',
+    WARNINGS: 'My Warnings',
+    TRANSFERS: 'My Transfers',
+    EVALUATIONS: 'My Evaluations',
+    DIARY: 'My Diary',
+    SETTINGS: 'Settings'
 } as const;

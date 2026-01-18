@@ -137,8 +137,11 @@ export interface PaginationProps {
 // Layout Components
 export interface MenuItem {
     path: string;
-    label: string;
+    label?: string; // Direct label (deprecated - use labelKey instead)
+    labelKey?: string; // Translation key for i18n
     roles?: string[];
+    permissions?: string[];
+    icon?: string; // Icon name or component identifier
 }
 
 // Other Components
