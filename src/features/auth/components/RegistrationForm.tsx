@@ -38,7 +38,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
     const {
         control,
         handleSubmit,
-        formState: { errors }
+        formState: { errors, isValid }
     } = useFormWithValidation({
         schema,
         defaultValues
@@ -146,9 +146,53 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
         );
     }
 
+    const onSubmitWithError = (data: any) => {
+        console.log('Form submitted successfully:', data);
+        onSubmit(data);
+    };
+
+    const onError = (errors: any) => {
+        console.log('Form validation errors:', errors);
+    };
+
     return (
         <div className="relative min-h-[calc(100vh-200px)] pb-24">
-            <form id="registration-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <form id="registration-form" onSubmit={handleSubmit(onSubmitWithError, onError)} className="space-y-6">
+                {/* Display validation errors summary */}
+                {Object.keys(errors).length > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                        <p className="text-red-800 font-medium mb-2">
+                            {t('auth.validation_errors', 'Please fix the following errors:')}
+                        </p>
+                        <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+                            {Object.entries(errors).map(([key, error]: [string, any]) => {
+                                if (error?.message) {
+                                    return <li key={key}>{key}: {error.message}</li>;
+                                }
+                                // Handle nested errors (groups, objects)
+                                if (typeof error === 'object' && error !== null) {
+                                    const nestedErrors: string[] = [];
+                                    if (error.ar?.message) nestedErrors.push(`Arabic: ${error.ar.message}`);
+                                    if (error.en?.message) nestedErrors.push(`English: ${error.en.message}`);
+                                    if (nestedErrors.length > 0) {
+                                        return <li key={key}>{key}: {nestedErrors.join(', ')}</li>;
+                                    }
+                                    // Handle group errors
+                                    Object.entries(error).forEach(([subKey, subError]: [string, any]) => {
+                                        if (subError?.message) {
+                                            nestedErrors.push(`${subKey}: ${subError.message}`);
+                                        }
+                                    });
+                                    if (nestedErrors.length > 0) {
+                                        return <li key={key}>{key}: {nestedErrors.join(', ')}</li>;
+                                    }
+                                }
+                                return <li key={key}>{key}: {JSON.stringify(error)}</li>;
+                            })}
+                        </ul>
+                    </div>
+                )}
+                
                 <DynamicFormRenderer fields={formData.data.fields} control={control} errors={errors} />
 
                 {submitMutation.error && (

@@ -24,7 +24,7 @@ export const buildDynamicSchema = (fields: JoinRequestFormField[]): yup.AnyObjec
                 break;
 
             case 'date':
-                fieldSchema = yup.string().required();
+                fieldSchema = yup.string();
                 break;
 
             case 'boolean':
