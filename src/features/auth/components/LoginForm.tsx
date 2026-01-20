@@ -97,7 +97,7 @@ const LoginForm: React.FC = () => {
             <button
                 type="submit"
                 disabled={loginMutation.isPending}
-                className={`w-full py-3 mb-32 rounded-lg font-medium transition-colors duration-200 ${
+                className={`w-full py-3 rounded-lg font-medium transition-colors duration-200 ${
                     loginMutation.isPending
                         ? 'bg-gray-400 cursor-not-allowed'
                         : 'bg-primary-600 hover:bg-primary-700'
@@ -111,6 +111,22 @@ const LoginForm: React.FC = () => {
                     t('auth.login', 'Login')
                 )}
             </button>
+
+            <div className="mt-4 text-center">
+                <p className="text-sm text-gray-600 mb-2">
+                    {t('auth.no_account', "Don't have an account?")}
+                </p>
+                <button
+                    type="button"
+                    onClick={() => {
+                        const currentLang = window.location.pathname.split('/')[1] || 'en';
+                        window.location.href = `/${currentLang}/${ROUTE_PATHS.REGISTER}`;
+                    }}
+                    className="text-primary-600 hover:text-primary-700 font-medium text-sm"
+                >
+                    {t('auth.join_now', 'Join Now')}
+                </button>
+            </div>
         </form>
     );
 };

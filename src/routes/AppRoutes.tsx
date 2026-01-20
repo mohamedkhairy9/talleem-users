@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import { routes } from './routes';
 import LoginPage from '@/pages/LoginPage';
+import RegistrationPage from '@/pages/RegistrationPage';
 import { Layout } from '@/globals/components';
 import { ROUTE_PATHS } from '@/config';
 import LanguageRouteWrapper from '@/utils/components/LanguageRouteWrapper';
@@ -22,8 +23,9 @@ const AppRoutes: React.FC = () => {
             
             {/* Language-based routes */}
             <Route path="/:lang" element={<LanguageRouteWrapper />}>
-                {/* Public routes (login) */}
+                {/* Public routes */}
                 <Route path={ROUTE_PATHS.LOGIN} element={<LoginPage />} />
+                <Route path={ROUTE_PATHS.REGISTER} element={<RegistrationPage />} />
                 
                 {/* Protected routes */}
                 <Route

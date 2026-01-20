@@ -17,7 +17,27 @@ export default defineConfig({
     base: '/',
     server: {
         host: true,
-        port: 5173
+        port: 5173,
+        proxy: {
+            '/api': {
+                target: 'https://api-tallam.vocus-dev2.com',
+                changeOrigin: true,
+                secure: true,
+                rewrite: (path) => {
+                    // If path already contains /front, don't rewrite
+                    if (path.startsWith('/api/front')) {
+                        return path;
+                    }
+                    // Otherwise rewrite /api to /api/front
+                    return path.replace(/^\/api/, '/api/front');
+                },
+                configure: (proxy, _options) => {
+                    proxy.on('error', (err, _req, _res) => {
+                        console.log('proxy error', err);
+                    });
+                }
+            }
+        }
     },
     build: {
         sourcemap: false,

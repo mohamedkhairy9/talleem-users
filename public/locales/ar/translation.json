@@ -20,7 +20,8 @@
         "success": "تمت العملية بنجاح",
         "user": "مستخدم",
         "select": "اختر خياراً",
-        "noOptions": "لا توجد خيارات"
+        "noOptions": "لا توجد خيارات",
+        "back": "رجوع"
     },
     "navbar": {
         "title": "لوحة تحكم مستخدمي تعليم",
@@ -58,7 +59,20 @@
         "loginTitle": "تسجيل الدخول إلى حسابك",
         "login_failed": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.",
         "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
-        "start_journey": "ابدأ رحلتك"
+        "start_journey": "ابدأ رحلتك",
+        "register": "التسجيل",
+        "join_now": "انضم الآن",
+        "no_account": "ليس لديك حساب؟",
+        "select_role": "اختر دورك",
+        "select_role_description": "اختر دورك للمتابعة مع التسجيل",
+        "role": {
+            "teacher": "معلم",
+            "student": "طالب",
+            "entityManager": "مدير كيان"
+        },
+        "submit_registration": "إرسال التسجيل",
+        "registration_error": "خطأ في إرسال التسجيل. يرجى المحاولة مرة أخرى.",
+        "form_load_error": "خطأ في تحميل نموذج التسجيل. يرجى المحاولة مرة أخرى."
     },
     "validation": {
         "required": "هذا الحقل مطلوب",

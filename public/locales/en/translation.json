@@ -20,7 +20,8 @@
         "success": "Operation successful",
         "user": "User",
         "select": "Select an option",
-        "noOptions": "No options found"
+        "noOptions": "No options found",
+        "back": "Back"
     },
     "navbar": {
         "title": "Tallem Users Dashboard",
@@ -58,7 +59,20 @@
         "loginTitle": "Login to your account",
         "login_failed": "Login failed. Please try again.",
         "invalidCredentials": "Invalid email or password",
-        "start_journey": "Start Your Journey"
+        "start_journey": "Start Your Journey",
+        "register": "Register",
+        "join_now": "Join Now",
+        "no_account": "Don't have an account?",
+        "select_role": "Select Your Role",
+        "select_role_description": "Choose your role to continue with registration",
+        "role": {
+            "teacher": "Teacher",
+            "student": "Student",
+            "entityManager": "Entity Manager"
+        },
+        "submit_registration": "Submit Registration",
+        "registration_error": "Error submitting registration. Please try again.",
+        "form_load_error": "Error loading registration form. Please try again."
     },
     "validation": {
         "required": "This field is required",

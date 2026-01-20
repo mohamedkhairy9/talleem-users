@@ -7,6 +7,7 @@
 
 export const ROUTE_PATHS = {
     LOGIN: 'login',
+    REGISTER: 'register',
     DASHBOARD: '',
     STUDENTS: 'students',
     TEACHERS: 'teachers',

@@ -41,36 +41,35 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles = [], p
         );
     }
 
-    // TODO: Temporarily commented out until backend login API is fixed
-    // if (!isAuthenticated || !cookieService.hasToken()) {
-    //     // Redirect to login with current language
-    //     const lang = location.pathname.split('/')[1] || 'en';
-    //     return <Navigate to={`/${lang}/${ROUTE_PATHS.LOGIN}`} state={{ from: location }} replace />;
-    // }
+    if (!isAuthenticated || !cookieService.hasToken()) {
+        // Redirect to login with current language
+        const lang = location.pathname.split('/')[1] || 'en';
+        return <Navigate to={`/${lang}/${ROUTE_PATHS.LOGIN}`} state={{ from: location }} replace />;
+    }
 
-    // // Check roles if specified
-    // if (roles.length > 0) {
-    //     const hasRequiredRole = roles.some(role => 
-    //         user?.roles?.includes(role)
-    //     );
-    //     if (!hasRequiredRole) {
-    //         // Redirect to unauthorized with current language
-    //         const lang = location.pathname.split('/')[1] || 'en';
-    //         return <Navigate to={`/${lang}/${ROUTE_PATHS.UNAUTHORIZED}`} replace />;
-    //     }
-    // }
+    // Check roles if specified
+    if (roles.length > 0) {
+        const hasRequiredRole = roles.some(role => 
+            user?.roles?.includes(role)
+        );
+        if (!hasRequiredRole) {
+            // Redirect to unauthorized with current language
+            const lang = location.pathname.split('/')[1] || 'en';
+            return <Navigate to={`/${lang}/${ROUTE_PATHS.UNAUTHORIZED}`} replace />;
+        }
+    }
 
-    // // Check permissions if specified
-    // if (permissions.length > 0) {
-    //     const hasRequiredPermission = permissions.some(permission =>
-    //         user?.permissions?.includes(permission)
-    //     );
-    //     if (!hasRequiredPermission) {
-    //         // Redirect to unauthorized with current language
-    //         const lang = location.pathname.split('/')[1] || 'en';
-    //         return <Navigate to={`/${lang}/${ROUTE_PATHS.UNAUTHORIZED}`} replace />;
-    //     }
-    // }
+    // Check permissions if specified
+    if (permissions.length > 0) {
+        const hasRequiredPermission = permissions.some(permission =>
+            user?.permissions?.includes(permission)
+        );
+        if (!hasRequiredPermission) {
+            // Redirect to unauthorized with current language
+            const lang = location.pathname.split('/')[1] || 'en';
+            return <Navigate to={`/${lang}/${ROUTE_PATHS.UNAUTHORIZED}`} replace />;
+        }
+    }
 
     return <>{children}</>;
 };
