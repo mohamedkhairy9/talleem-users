@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormWithValidation } from '@/utils';
 import { useCheckJoinRequestStatus } from '../hooks/useRegistration';
@@ -6,6 +6,7 @@ import * as yup from 'yup';
 import { FormInput } from '@/globals/components';
 import { Button } from '@/globals/components';
 import { toast } from 'react-toastify';
+import JoinRequestStatusDisplay from './JoinRequestStatusDisplay';
 
 interface JoinRequestStatusFormProps {
     onBack: () => void;
@@ -33,6 +34,7 @@ interface StatusCheckFormData {
 const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack }) => {
     const { t } = useTranslation();
     const statusMutation = useCheckJoinRequestStatus();
+    const [statusData, setStatusData] = useState<any>(null);
 
     const {
         control,
@@ -61,18 +63,50 @@ const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack })
         
         statusMutation.mutate(requestData, {
             onSuccess: (response) => {
-                // Handle success - could show the status data
+                // Store the status data to display
+                setStatusData(response.data || response);
                 toast.success(t('auth.status_check_success', 'Status retrieved successfully'));
-                // Reset form
-                reset();
             },
             onError: (error: any) => {
                 // Handle error
                 const errorMessage = error.message || t('auth.status_check_error', 'Error checking status. Please try again.');
                 toast.error(errorMessage);
+                setStatusData(null);
             }
         });
     };
+
+    const handleCheckAgain = () => {
+        setStatusData(null);
+        reset();
+    };
+
+    // If status data is available, show it
+    if (statusData) {
+        return (
+            <div className="space-y-6">
+                <JoinRequestStatusDisplay data={statusData} />
+                
+                {/* Action buttons */}
+                <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={onBack}
+                    >
+                        {t('common.back', 'Back')}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="primary"
+                        onClick={handleCheckAgain}
+                    >
+                        {t('auth.check_again', 'Check Another Request')}
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
