@@ -1,50 +1,33 @@
 import React from 'react';
-import { useAuthStore } from '@/stores';
-import { useLogoutMutation } from '@/features/auth';
 import { useLocale } from '@/utils';
-import { Button } from '@/globals/components';
-import { MenuIcon } from '@/globals/icons';
+import { MenuIcon, XIcon } from '@/globals/icons';
 import sideLogo from '@/assets/images/tallem-side-logo.svg';
 
 interface NavbarProps {
     onMenuClick: () => void;
+    isSidebarOpen: boolean;
 }
 
 /**
  * Navbar Component
  */
-const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
-    const { user } = useAuthStore();
-    const logout = useLogoutMutation();
-    const { currentLocale, changeLanguage, t } = useLocale();
-
-    const handleLogout = () => {
-        logout.mutate();
-    };
-
-    // Get user display name (handles bilingual name structure)
-    const getUserDisplayName = (): string => {
-        if (!user) return t('common.user', 'User');
-        
-        if (typeof user.name === 'object' && user.name !== null) {
-            // Bilingual name object
-            return currentLocale === 'ar' ? user.name.ar : user.name.en;
-        }
-        
-        // String name or fallback
-        return user.name || user.email || t('common.user', 'User');
-    };
+const Navbar: React.FC<NavbarProps> = ({ onMenuClick, isSidebarOpen }) => {
+    const { currentLocale, changeLanguage } = useLocale();
 
     return (
-        <nav className="bg-white shadow-sm border-b border-gray-200">
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
             <div className="px-6 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={onMenuClick}
-                        className="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                        aria-label="Toggle menu"
+                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                        aria-label={isSidebarOpen ? "Close menu" : "Open menu"}
                     >
-                        <MenuIcon width={24} height={24} />
+                        {isSidebarOpen ? (
+                            <XIcon width={24} height={24} />
+                        ) : (
+                            <MenuIcon width={24} height={24} />
+                        )}
                     </button>
                     <img 
                         src={sideLogo} 
@@ -53,12 +36,12 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                     />
                 </div>
                 
-                <div className="flex items-center gap-4">
-                    {/* Language Switcher */}
-                    <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+                <div className="flex items-center gap-2">
+                    {/* Language Switcher - Smaller */}
+                    <div className="flex items-center gap-0.5 bg-gray-100 p-0.5 rounded-md">
                         <button
                             onClick={() => changeLanguage('en')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                            className={`px-2 py-1 rounded text-xs font-medium transition-all duration-200 ${
                                 currentLocale === 'en' 
                                     ? 'bg-primary-600 text-white shadow-sm' 
                                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -68,7 +51,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                         </button>
                         <button
                             onClick={() => changeLanguage('ar')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                            className={`px-2 py-1 rounded text-xs font-medium transition-all duration-200 ${
                                 currentLocale === 'ar' 
                                     ? 'bg-primary-600 text-white shadow-sm' 
                                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -76,21 +59,6 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                         >
                             AR
                         </button>
-                    </div>
-
-                    {/* User Info */}
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm text-gray-700">
-                            {getUserDisplayName()}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleLogout}
-                            loading={logout.isPending}
-                        >
-                            {t('navbar.logout', 'Logout')}
-                        </Button>
                     </div>
                 </div>
             </div>

@@ -126,6 +126,17 @@
     [dir='rtl'] button {
         font-family: 'Hacen', 'Inter', system-ui, sans-serif;
     }
+
+    /* RTL translate utilities for sidebar */
+    /* In RTL, when sidebar is at start-0 (right), hide by moving right (positive translate) */
+    [dir='rtl'] .sidebar-hidden {
+        transform: translateX(100%);
+    }
+    
+    /* In LTR, when sidebar is at start-0 (left), hide by moving left (negative translate) */
+    [dir='ltr'] .sidebar-hidden {
+        transform: translateX(-100%);
+    }
 }
 
 /* Custom scrollbar */

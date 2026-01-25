@@ -153,7 +153,8 @@ export interface MenuItem {
     labelKey?: string; // Translation key for i18n
     roles?: string[];
     permissions?: string[];
-    icon?: string; // Icon name or component identifier
+    icon?: string; // Icon component name (e.g., 'HomeIcon', 'TeacherIcon')
+    subItems?: MenuItem[]; // Submenu items for expandable menus
 }
 
 // Other Components

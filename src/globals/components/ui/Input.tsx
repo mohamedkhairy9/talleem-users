@@ -34,7 +34,7 @@ const Input: React.FC<InputProps> = ({
             {label && (
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                     {label}
-                    {required && <span className="text-red-500 ml-1">*</span>}
+                    {required && <span className="text-red-500 ms-1">*</span>}
                 </label>
             )}
             <div className="relative">
@@ -43,16 +43,14 @@ const Input: React.FC<InputProps> = ({
                     dir={inputDir}
                     className={`w-full px-4 py-3 border outline-none rounded-lg focus:border-accent transition-colors duration-200 ${
                         error ? 'border-red-300 focus:border-red-500' : 'border-gray-300'
-                    } ${isPassword ? (isRTL ? 'pl-12' : 'pr-12') : ''} ${className}`}
+                    } ${isPassword ? 'pe-12' : ''} ${className}`}
                     {...props}
                 />
                 {isPassword && (
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className={`absolute top-1/2 -translate-y-1/2 ${
-                            isRTL ? 'left-3' : 'right-3'
-                        } text-gray-500 hover:text-gray-700 focus:outline-none transition-colors duration-200`}
+                        className="absolute top-1/2 -translate-y-1/2 end-3 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors duration-200"
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                         {showPassword ? (
