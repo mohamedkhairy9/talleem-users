@@ -67,5 +67,15 @@ export const MENU_ITEMS: MenuItem[] = [
         path: ROUTE_PATHS.ENTITY_MANAGERS,
         labelKey: 'menu.entityManagers',
         roles: ['admin']
+    },
+    {
+        path: ROUTE_PATHS.HALAQAS,
+        labelKey: 'menu.halaqas',
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.CREATE_HALAQA,
+        labelKey: 'menu.createHalaqa',
+        roles: ['entity_manager']
     }
 ];

@@ -12,7 +12,9 @@ export const ROUTE_PATHS = {
     TEACHERS: 'teachers',
     ENTITY_MANAGERS: 'entity-managers',
     UNAUTHORIZED: 'unauthorized',
+    HALAQAS: 'halaqas',
     CREATE_HALAQA: 'create-halaqa',
+    HALAQA_DETAIL: 'halaqas/:id',
     // Teacher menu items
     STUDY_PLAN: 'study-plan',
     ABSENCES: 'absences',

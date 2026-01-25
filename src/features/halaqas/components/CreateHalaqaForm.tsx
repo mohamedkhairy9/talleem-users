@@ -1,9 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useFormWithValidation } from '@/utils';
 import { FormInput, FormSelect, Button } from '@/globals/components';
 import AsyncSelect from '@/globals/components/ui/AsyncSelect';
 import { useCreateHalaqa } from '../hooks/useHalaqas';
+import { toast } from 'react-toastify';
+import { useQueryClient } from '@tanstack/react-query';
 import {
     useTeachersAsyncSelect,
     useStudentsAsyncSelect,
@@ -22,6 +25,9 @@ import { createHalaqaSchema, CreateHalaqaFormData } from '../schemas/halaqa.sche
  */
 const CreateHalaqaForm: React.FC = () => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const { lang } = useParams<{ lang: string }>();
+    const queryClient = useQueryClient();
     const createHalaqaMutation = useCreateHalaqa();
 
     const {
@@ -73,11 +79,12 @@ const CreateHalaqaForm: React.FC = () => {
     const onSubmit = async (data: CreateHalaqaFormData) => {
         createHalaqaMutation.mutate(data, {
             onSuccess: () => {
-                // Success handling - could show toast notification
-                console.log('Halaqa created successfully');
+                toast.success(t('halaqa.createSuccess', 'Halaqa created successfully'));
+                queryClient.invalidateQueries({ queryKey: ['halaqas'] });
+                navigate(`/${lang || 'en'}/halaqas`);
             },
             onError: (error: any) => {
-                console.error('Error creating halaqa:', error);
+                toast.error(error?.message || t('halaqa.createError', 'Error creating halaqa. Please try again.'));
             }
         });
     };

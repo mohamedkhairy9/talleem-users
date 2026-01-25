@@ -10,15 +10,24 @@ interface LoginCredentials {
 }
 
 /**
- * Map user_type to role
+ * Normalize role names from API to match app's expected format
+ * Converts "entity manager" -> "entity_manager", etc.
  */
-const mapUserTypeToRole = (userType: string): string => {
-    const mapping: Record<string, string> = {
-        'entity': 'entity_manager',
-        'teacher': 'teacher',
-        'admin': 'admin'
-    };
-    return mapping[userType] || userType;
+const normalizeRoles = (roles: string[]): string[] => {
+    return roles.map(role => {
+        // Normalize role names: replace spaces with underscores and convert to lowercase
+        const normalized = role.toLowerCase().replace(/\s+/g, '_');
+        
+        // Map common variations
+        const roleMapping: Record<string, string> = {
+            'entity_manager': 'entity_manager',
+            'entitymanager': 'entity_manager',
+            'teacher': 'teacher',
+            'admin': 'admin'
+        };
+        
+        return roleMapping[normalized] || normalized;
+    });
 };
 
 /**
@@ -36,16 +45,14 @@ export const useLoginMutation = () => {
             const token = responseData.front_access_token || responseData.token;
             let user = responseData.user || responseData;
             
-            // If user_type exists, map it to role and add to roles array
-            if (user.user_type) {
-                const mappedRole = mapUserTypeToRole(user.user_type);
-                // Add mapped role to roles array if not already present
-                if (!user.roles) {
-                    user.roles = [];
-                }
-                if (!user.roles.includes(mappedRole)) {
-                    user.roles.push(mappedRole);
-                }
+            // Use roles array directly from API response
+            if (user.roles && Array.isArray(user.roles)) {
+                // Normalize role names to match app's expected format
+                user.roles = normalizeRoles(user.roles);
+            } else {
+                // Fallback: if roles array is missing, initialize empty array
+                // The app should rely on roles from API, not user_type
+                user.roles = [];
             }
             
             setUser(user, token);
@@ -100,16 +107,14 @@ export const useUserQuery = () => {
             const responseData = query.data.data || query.data;
             let user = responseData.user || responseData;
             
-            // If user_type exists, map it to role and add to roles array
-            if (user.user_type) {
-                const mappedRole = mapUserTypeToRole(user.user_type);
-                // Add mapped role to roles array if not already present
-                if (!user.roles) {
-                    user.roles = [];
-                }
-                if (!user.roles.includes(mappedRole)) {
-                    user.roles.push(mappedRole);
-                }
+            // Use roles array directly from API response
+            if (user.roles && Array.isArray(user.roles)) {
+                // Normalize role names to match app's expected format
+                user.roles = normalizeRoles(user.roles);
+            } else {
+                // Fallback: if roles array is missing, initialize empty array
+                // The app should rely on roles from API, not user_type
+                user.roles = [];
             }
             
             setUser(user, token || undefined);

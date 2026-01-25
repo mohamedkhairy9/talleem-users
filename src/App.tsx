@@ -17,9 +17,10 @@ function App() {
     const { initializeAuth } = useAuthStore();
 
     useEffect(() => {
-        // Initialize auth from cookie on app mount
+        // Initialize auth from cookie on app mount (only once)
         initializeAuth();
-    }, [initializeAuth]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
 
     return (
         <ErrorBoundary>

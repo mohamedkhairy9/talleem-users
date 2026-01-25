@@ -21,17 +21,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles = [], p
     const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
-        // Initialize auth from cookie on mount
-        const token = initializeAuth();
-        if (token) {
-            // Token exists, check if user data is loaded
-            if (!user) {
-                // User data not loaded, you might want to fetch it here
-                // or it will be fetched by useUserQuery in the component
-            }
-        }
+        // Initialize auth from cookie on mount (only once)
+        initializeAuth();
         setLoading(false);
-    }, [initializeAuth, user]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
 
     if (loading) {
         return (

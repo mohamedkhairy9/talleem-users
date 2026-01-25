@@ -21,7 +21,9 @@
         "user": "مستخدم",
         "select": "اختر خياراً",
         "noOptions": "لا توجد خيارات",
-        "back": "رجوع"
+        "back": "رجوع",
+        "actions": "الإجراءات",
+        "not_available": "غير متاح"
     },
     "navbar": {
         "title": "لوحة تحكم مستخدمي تعليم",
@@ -44,7 +46,9 @@
         "settings": "الإعدادات",
         "students": "الطلاب",
         "teachers": "المعلمون",
-        "entityManagers": "مديرو الكيانات"
+        "entityManagers": "مديرو الكيانات",
+        "halaqas": "الحلقات",
+        "createHalaqa": "إنشاء حلقة"
     },
     "auth": {
         "email": {
@@ -110,6 +114,26 @@
         "teachingMethod": "طريقة التدريس",
         "teachingMethod.inPerson": "حضوري",
         "teachingMethod.remote": "عن بُعد",
-        "teachingMethod.hybrid": "مختلط"
+        "teachingMethod.hybrid": "مختلط",
+        "listTitle": "الحلقات",
+        "listDescription": "إدارة وعرض جميع الحلقات",
+        "noHalaqas": "لم يتم العثور على حلقات",
+        "loadError": "خطأ في تحميل الحلقات. يرجى المحاولة مرة أخرى.",
+        "createSuccess": "تم إنشاء الحلقة بنجاح",
+        "deleteSuccess": "تم حذف الحلقة بنجاح",
+        "deleteError": "خطأ في حذف الحلقة",
+        "deleteConfirm": "هل أنت متأكد من حذف هذه الحلقة؟",
+        "notFound": "الحلقة غير موجودة",
+        "detailDescription": "عرض تفاصيل الحلقة",
+        "basicInfo": "المعلومات الأساسية",
+        "dates": "التواريخ",
+        "actions": "الإجراءات"
+    },
+    "unauthorized": {
+        "title": "الوصول مرفوض",
+        "message": "ليس لديك إذن للوصول إلى هذا المورد.",
+        "statusCode": "رمز الخطأ: 403 محظور",
+        "goHome": "الذهاب إلى لوحة التحكم",
+        "goBack": "رجوع"
     }
 }

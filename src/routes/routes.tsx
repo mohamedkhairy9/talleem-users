@@ -3,6 +3,8 @@ import { ROUTE_PATHS } from '@/config';
 import DashboardPage from '@/pages/DashboardPage';
 import TeachersPage from '@/pages/TeachersPage';
 import EntityManagersPage from '@/pages/EntityManagersPage';
+import HalaqasListPage from '@/pages/HalaqasListPage';
+import HalaqaDetailPage from '@/pages/HalaqaDetailPage';
 import CreateHalaqaPage from '@/pages/CreateHalaqaPage';
 
 /**
@@ -23,6 +25,16 @@ export const routes: RouteConfig[] = [
         path: ROUTE_PATHS.ENTITY_MANAGERS,
         element: <EntityManagersPage />,
         roles: ['admin']
+    },
+    {
+        path: ROUTE_PATHS.HALAQAS,
+        element: <HalaqasListPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.HALAQA_DETAIL,
+        element: <HalaqaDetailPage />,
+        roles: ['entity_manager']
     },
     {
         path: ROUTE_PATHS.CREATE_HALAQA,

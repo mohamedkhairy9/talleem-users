@@ -100,8 +100,15 @@ axiosInstance.interceptors.response.use(
 
         // Handle 403 Forbidden
         if (error.response?.status === 403) {
-            // Could show a permission denied message
-            console.warn('Access forbidden');
+            // Redirect to unauthorized page with current language
+            const currentPath = window.location.pathname;
+            const lang = currentPath.split('/')[1] || 'en';
+            const unauthorizedPath = `/${lang}/unauthorized`;
+            
+            // Only redirect if not already on unauthorized page
+            if (!currentPath.includes('/unauthorized')) {
+                window.location.href = unauthorizedPath;
+            }
         }
 
         // Handle 500+ Server Errors

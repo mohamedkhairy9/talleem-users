@@ -4,6 +4,7 @@ import ProtectedRoute from './ProtectedRoute';
 import { routes } from './routes';
 import LoginPage from '@/pages/LoginPage';
 import RegistrationPage from '@/pages/RegistrationPage';
+import UnauthorizedPage from '@/pages/UnauthorizedPage';
 import { Layout } from '@/globals/components';
 import { ROUTE_PATHS } from '@/config';
 import LanguageRouteWrapper from '@/utils/components/LanguageRouteWrapper';
@@ -26,6 +27,7 @@ const AppRoutes: React.FC = () => {
                 {/* Public routes */}
                 <Route path={ROUTE_PATHS.LOGIN} element={<LoginPage />} />
                 <Route path={ROUTE_PATHS.REGISTER} element={<RegistrationPage />} />
+                <Route path={ROUTE_PATHS.UNAUTHORIZED} element={<UnauthorizedPage />} />
                 
                 {/* Protected routes */}
                 <Route

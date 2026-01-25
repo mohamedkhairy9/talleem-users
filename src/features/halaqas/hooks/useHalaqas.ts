@@ -32,3 +32,22 @@ export const useHalaqa = (id: number | string) => {
     });
 };
 
+/**
+ * Update halaqa mutation hook
+ */
+export const useUpdateHalaqa = () => {
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number | string; data: Partial<CreateHalaqaPayload> }) =>
+            halaqasService.updateHalaqa(id, data)
+    });
+};
+
+/**
+ * Delete halaqa mutation hook
+ */
+export const useDeleteHalaqa = () => {
+    return useMutation({
+        mutationFn: (id: number | string) => halaqasService.deleteHalaqa(id)
+    });
+};
+

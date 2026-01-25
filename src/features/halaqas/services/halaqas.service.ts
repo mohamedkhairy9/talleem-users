@@ -40,6 +40,20 @@ export const halaqasService = {
      */
     getHalaqa: (id: number | string): Promise<any> => {
         return axiosInstance.get(`/halaqas/${id}`);
+    },
+
+    /**
+     * Update halaqa
+     */
+    updateHalaqa: (id: number | string, data: Partial<CreateHalaqaPayload>): Promise<any> => {
+        return axiosInstance.put(`/halaqas/${id}`, data);
+    },
+
+    /**
+     * Delete halaqa
+     */
+    deleteHalaqa: (id: number | string): Promise<void> => {
+        return axiosInstance.delete(`/halaqas/${id}`);
     }
 };
 

@@ -21,7 +21,9 @@
         "user": "User",
         "select": "Select an option",
         "noOptions": "No options found",
-        "back": "Back"
+        "back": "Back",
+        "actions": "Actions",
+        "not_available": "N/A"
     },
     "navbar": {
         "title": "Tallem Users Dashboard",
@@ -44,7 +46,9 @@
         "settings": "Settings",
         "students": "Students",
         "teachers": "Teachers",
-        "entityManagers": "Entity Managers"
+        "entityManagers": "Entity Managers",
+        "halaqas": "Halaqas",
+        "createHalaqa": "Create Halaqa"
     },
     "auth": {
         "email": {
@@ -110,6 +114,26 @@
         "teachingMethod": "Teaching Method",
         "teachingMethod.inPerson": "In Person",
         "teachingMethod.remote": "Remote",
-        "teachingMethod.hybrid": "Hybrid"
+        "teachingMethod.hybrid": "Hybrid",
+        "listTitle": "Halaqas",
+        "listDescription": "Manage and view all halaqas",
+        "noHalaqas": "No halaqas found",
+        "loadError": "Error loading halaqas. Please try again.",
+        "createSuccess": "Halaqa created successfully",
+        "deleteSuccess": "Halaqa deleted successfully",
+        "deleteError": "Error deleting halaqa",
+        "deleteConfirm": "Are you sure you want to delete this halaqa?",
+        "notFound": "Halaqa not found",
+        "detailDescription": "View halaqa details",
+        "basicInfo": "Basic Information",
+        "dates": "Dates",
+        "actions": "Actions"
+    },
+    "unauthorized": {
+        "title": "Access Denied",
+        "message": "You do not have permission to access this resource.",
+        "statusCode": "Error Code: 403 Forbidden",
+        "goHome": "Go to Dashboard",
+        "goBack": "Go Back"
     }
 }
