@@ -43,6 +43,7 @@ export const formFieldsService = {
 
     /**
      * Get students list (paginated)
+     * Used for selecting students in forms (e.g., halaqas)
      */
     getStudents: (params: { page?: number; per_page?: number; search?: string } = {}): Promise<{
         data: Student[];

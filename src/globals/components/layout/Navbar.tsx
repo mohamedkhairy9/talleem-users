@@ -22,6 +22,19 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
         logout.mutate();
     };
 
+    // Get user display name (handles bilingual name structure)
+    const getUserDisplayName = (): string => {
+        if (!user) return t('common.user', 'User');
+        
+        if (typeof user.name === 'object' && user.name !== null) {
+            // Bilingual name object
+            return currentLocale === 'ar' ? user.name.ar : user.name.en;
+        }
+        
+        // String name or fallback
+        return user.name || user.email || t('common.user', 'User');
+    };
+
     return (
         <nav className="bg-white shadow-sm border-b border-gray-200">
             <div className="px-6 py-4 flex justify-between items-center">
@@ -68,7 +81,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                     {/* User Info */}
                     <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-700">
-                            {user?.name || user?.email || t('common.user', 'User')}
+                            {getUserDisplayName()}
                         </span>
                         <Button
                             variant="outline"

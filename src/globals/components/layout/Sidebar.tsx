@@ -23,7 +23,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const isRTL = lang === 'ar';
 
     // Filter menu items based on user roles and permissions
-    // User can have multiple roles (e.g., teacher and student)
     const visibleMenuItems = MENU_ITEMS.filter(item => {
         // If no restrictions, show to everyone
         if (!item.roles && !item.permissions) return true;

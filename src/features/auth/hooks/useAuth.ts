@@ -9,6 +9,18 @@ interface LoginCredentials {
 }
 
 /**
+ * Map user_type to role
+ */
+const mapUserTypeToRole = (userType: string): string => {
+    const mapping: Record<string, string> = {
+        'entity': 'entity_manager',
+        'teacher': 'teacher',
+        'admin': 'admin'
+    };
+    return mapping[userType] || userType;
+};
+
+/**
  * Login mutation hook
  */
 export const useLoginMutation = () => {
@@ -18,7 +30,23 @@ export const useLoginMutation = () => {
     return useMutation({
         mutationFn: (credentials: LoginCredentials) => authService.login(credentials),
         onSuccess: (response: any) => {
-            const { user, token } = response.data || response;
+            // Handle new API response structure
+            const responseData = response.data || response;
+            const token = responseData.front_access_token || responseData.token;
+            let user = responseData.user || responseData;
+            
+            // If user_type exists, map it to role and add to roles array
+            if (user.user_type) {
+                const mappedRole = mapUserTypeToRole(user.user_type);
+                // Add mapped role to roles array if not already present
+                if (!user.roles) {
+                    user.roles = [];
+                }
+                if (!user.roles.includes(mappedRole)) {
+                    user.roles.push(mappedRole);
+                }
+            }
+            
             setUser(user, token);
             setLoading(false);
         },
@@ -61,7 +89,22 @@ export const useUserQuery = () => {
         queryFn: () => authService.getUser(),
         enabled: !!token, // Only run if token exists
         onSuccess: (response: any) => {
-            const user = response.data || response;
+            // Handle new API response structure
+            const responseData = response.data || response;
+            let user = responseData.user || responseData;
+            
+            // If user_type exists, map it to role and add to roles array
+            if (user.user_type) {
+                const mappedRole = mapUserTypeToRole(user.user_type);
+                // Add mapped role to roles array if not already present
+                if (!user.roles) {
+                    user.roles = [];
+                }
+                if (!user.roles.includes(mappedRole)) {
+                    user.roles.push(mappedRole);
+                }
+            }
+            
             setUser(user, token || undefined);
         },
         retry: false,

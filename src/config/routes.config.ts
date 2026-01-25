@@ -9,12 +9,11 @@ export const ROUTE_PATHS = {
     LOGIN: 'login',
     REGISTER: 'register',
     DASHBOARD: '',
-    STUDENTS: 'students',
     TEACHERS: 'teachers',
     ENTITY_MANAGERS: 'entity-managers',
     UNAUTHORIZED: 'unauthorized',
     CREATE_HALAQA: 'create-halaqa',
-    // Student/Teacher menu items
+    // Teacher menu items
     STUDY_PLAN: 'study-plan',
     ABSENCES: 'absences',
     GRADES: 'grades',
@@ -28,7 +27,6 @@ export const ROUTE_PATHS = {
 
 export const ROUTE_LABELS = {
     DASHBOARD: 'Dashboard',
-    STUDENTS: 'Students',
     TEACHERS: 'Teachers',
     ENTITY_MANAGERS: 'Entity Managers',
     STUDY_PLAN: 'My Study Plan',

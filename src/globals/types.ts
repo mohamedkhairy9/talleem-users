@@ -8,9 +8,21 @@ import React from 'react';
 
 // Shared Application Types
 export interface User {
-    id: string | number;
-    name?: string;
+    id: number;
+    guid?: string | null;
+    name?: string | {
+        en: string;
+        ar: string;
+    };
     email?: string;
+    phone?: string;
+    status?: boolean;
+    locale?: string;
+    current_app_locale?: string;
+    user_type?: string;
+    email_verified_at?: string | null;
+    created_at?: string;
+    updated_at?: string;
     roles?: string[];
     permissions?: string[];
     [key: string]: any;

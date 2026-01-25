@@ -1,6 +1,11 @@
 import Cookies from 'js-cookie';
 
-const TOKEN_KEY = 'auth_token';
+/**
+ * Cookie Keys
+ * Meaningful names specific to tallem-users-dashboard application
+ */
+const TOKEN_KEY = 'tallem_users_dashboard_auth_token';
+
 const TOKEN_OPTIONS = {
     expires: 7, // 7 days
     secure: process.env.NODE_ENV === 'production', // HTTPS only in production

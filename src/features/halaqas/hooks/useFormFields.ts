@@ -40,6 +40,7 @@ export const useTeachersAsyncSelect = () => {
 
 /**
  * Hook to load students as async select options
+ * Used for selecting students in forms (e.g., halaqas)
  */
 export const useStudentsAsyncSelect = () => {
     const { t } = useTranslation();

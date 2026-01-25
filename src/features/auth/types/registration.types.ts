@@ -2,7 +2,7 @@
  * Registration Types
  */
 
-export type UserRoleType = 1 | 2 | 3; // 1 = teacher, 2 = student, 3 = entity manager
+export type UserRoleType = 1 | 3; // 1 = teacher, 3 = entity manager
 
 export interface JoinRequestFormField {
     key: string;
