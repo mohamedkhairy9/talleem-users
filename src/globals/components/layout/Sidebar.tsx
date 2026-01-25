@@ -9,6 +9,7 @@ import { Button } from '@/globals/components';
 import { MenuItem } from '@/globals/types';
 import {
     XIcon,
+    MenuIcon,
     HomeIcon,
     BookIcon,
     CalendarIcon,
@@ -28,16 +29,14 @@ import {
 } from '@/globals/icons';
 
 interface SidebarProps {
-    isOpen: boolean;
-    onClose: () => void;
-    isCollapsed?: boolean;
-    onToggleCollapse?: () => void;
+    isCollapsed: boolean;
+    onToggleCollapse: () => void;
 }
 
 /**
  * Sidebar Component
  */
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
     const { user } = useAuthStore();
     const logout = useLogoutMutation();
     const { currentLocale, t } = useLocale();
@@ -86,9 +85,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed = false,
     const currentPath = getCurrentPathWithoutLang();
 
     const handleLinkClick = () => {
-        // Close sidebar on mobile when a link is clicked
+        // Collapse sidebar on mobile when a link is clicked
         if (window.innerWidth < 1024) {
-            onClose();
+            onToggleCollapse();
         }
     };
 
@@ -145,11 +144,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed = false,
 
     return (
         <>
-            {/* Backdrop overlay for mobile */}
-            {isOpen && (
+            {/* Backdrop overlay for mobile when sidebar is expanded */}
+            {!isCollapsed && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-                    onClick={onClose}
+                    onClick={onToggleCollapse}
                     aria-hidden="true"
                 />
             )}
@@ -158,27 +157,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed = false,
             <aside
                 className={`
                     fixed start-0 top-20 lg:top-20
-                    ${isCollapsed ? 'w-16' : 'w-64'} bg-white shadow-sm h-[calc(100vh-5rem)] lg:h-[calc(100vh-5rem)] z-30
+                    ${isCollapsed ? 'w-16 lg:w-16' : 'w-64 lg:w-64'} bg-white shadow-sm h-[calc(100vh-5rem)] lg:h-[calc(100vh-5rem)] z-30
                     border-e border-gray-200
                     transform transition-all duration-300 ease-in-out
-                    ${isOpen ? 'translate-x-0' : 'sidebar-hidden lg:translate-x-0'}
+                    ${isCollapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
                     flex flex-col
                 `}
             >
-                {/* Close button for mobile / Collapse button for desktop */}
-                <div className="flex justify-end p-2 border-b border-gray-200">
+                {/* Toggle button - Burger when collapsed, Cross when expanded */}
+                <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} p-2 border-b border-gray-200`}>
                     <button
-                        onClick={() => {
-                            if (window.innerWidth >= 1024) {
-                                onToggleCollapse?.();
-                            } else {
-                                onClose();
-                            }
-                        }}
+                        onClick={onToggleCollapse}
                         className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                        aria-label={window.innerWidth >= 1024 ? (isCollapsed ? "Expand menu" : "Collapse menu") : "Close menu"}
+                        aria-label={isCollapsed ? "Expand menu" : "Collapse menu"}
                     >
-                        <XIcon width={20} height={20} />
+                        {isCollapsed ? (
+                            <MenuIcon width={20} height={20} />
+                        ) : (
+                            <XIcon width={20} height={20} />
+                        )}
                     </button>
                 </div>
 
@@ -288,7 +285,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed = false,
                     </div>
                 )}
                 {isCollapsed && (
-                    <div className="p-2 border-t border-gray-200">
+                    <div className="p-2 border-t border-gray-200 lg:block hidden">
                         <button
                             onClick={handleLogout}
                             disabled={logout.isPending}
