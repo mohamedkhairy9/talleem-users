@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { authService } from '../services/auth.service';
 import { useAuthStore } from '@/stores';
 import { cookieService } from '@/utils/cookies';
@@ -84,13 +85,19 @@ export const useUserQuery = () => {
     const setUser = useAuthStore(state => state.setUser);
     const token = cookieService.getToken();
 
-    return useQuery({
+    const query = useQuery({
         queryKey: ['user', 'current'],
         queryFn: () => authService.getUser(),
         enabled: !!token, // Only run if token exists
-        onSuccess: (response: any) => {
+        retry: false,
+        staleTime: Infinity // User data doesn't change often
+    });
+
+    // Handle success with useEffect (React Query v5+ removed onSuccess)
+    useEffect(() => {
+        if (query.isSuccess && query.data) {
             // Handle new API response structure
-            const responseData = response.data || response;
+            const responseData = query.data.data || query.data;
             let user = responseData.user || responseData;
             
             // If user_type exists, map it to role and add to roles array
@@ -106,8 +113,8 @@ export const useUserQuery = () => {
             }
             
             setUser(user, token || undefined);
-        },
-        retry: false,
-        staleTime: Infinity // User data doesn't change often
-    });
+        }
+    }, [query.isSuccess, query.data, setUser, token]);
+
+    return query;
 };

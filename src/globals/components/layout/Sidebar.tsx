@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores';
 import { MENU_ITEMS } from '@/config';
@@ -15,7 +15,6 @@ interface SidebarProps {
  * Sidebar Component
  */
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-    const location = useLocation();
     const { lang } = useParams<{ lang: string }>();
     const { user } = useAuthStore();
     const { t } = useTranslation();
@@ -103,7 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                                                 : 'text-gray-700 hover:bg-gray-100'
                                         }`}
                                     >
-                                        {item.labelKey ? t(item.labelKey, item.label) : item.label}
+                                        {item.labelKey ? t(item.labelKey, item.label || '') : item.label}
                                     </Link>
                                 </li>
                             );

@@ -16,7 +16,7 @@ export const registrationService = {
     /**
      * Submit join request
      */
-    submitJoinRequest: async (userType: UserRoleType, data: FormData): Promise<any> => {
+    submitJoinRequest: async (_userType: UserRoleType, data: FormData): Promise<any> => {
         return axiosInstance.post(`/join-requests`, data, {
             headers: {
                 'Content-Type': 'multipart/form-data'

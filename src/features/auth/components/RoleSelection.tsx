@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
 import { UserRoleType } from '../types/registration.types';
 import { TeacherIcon, BriefcaseIcon } from '@/globals/icons';
 import { Button } from '@/globals/components';
@@ -16,7 +15,6 @@ interface RoleSelectionProps {
  */
 const RoleSelection: React.FC<RoleSelectionProps> = ({ onSelectRole, onCheckStatus }) => {
     const { t } = useTranslation();
-    const { lang } = useParams<{ lang: string }>();
 
     const roles: Array<{ type: UserRoleType; labelKey: string; icon: React.ReactNode }> = [
         { type: 1, labelKey: 'auth.role.teacher', icon: <TeacherIcon width={48} height={48} className="text-gray-700 group-hover:text-primary-600" /> },

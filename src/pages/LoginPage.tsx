@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores';
 import LoginForm from '@/features/auth/components/LoginForm';
-import { ROUTE_PATHS } from '@/config';
 import { useTranslation } from 'react-i18next';
 
 import logo from '@/assets/images/logo.svg';

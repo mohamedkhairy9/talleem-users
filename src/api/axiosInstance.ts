@@ -4,7 +4,6 @@ import { cookieService } from '@/utils/cookies';
 import { useAuthStore } from '@/stores';
 import i18n from '@/i18n';
 import { ApiError } from '@/globals/types';
-import { ROUTE_PATHS } from '@/config';
 
 /**
  * Axios instance with interceptors

@@ -1,5 +1,4 @@
-import React from 'react';
-import { Controller, Control, FieldValues } from 'react-hook-form';
+import { Controller, Control, FieldValues, Path } from 'react-hook-form';
 import ReactSelectComponent from '../ui/ReactSelect';
 import { FormSelectProps } from '@/globals/types';
 
@@ -19,7 +18,7 @@ const FormSelect = <T extends FieldValues = FieldValues>({
 }: FormSelectProps<T>) => {
     return (
         <Controller
-            name={name}
+            name={name as Path<T>}
             control={control as Control<T>}
             render={({ field, fieldState }) => (
                 <div>

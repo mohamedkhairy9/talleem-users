@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useLanguageStore } from '@/stores';
-import { useLanguagePath } from './useLanguagePath';
 
 /**
  * Hook for internationalization
@@ -13,7 +12,6 @@ export const useLocale = () => {
     const location = useLocation();
     const params = useParams<{ lang: string }>();
     const { language: storeLanguage, setLanguage: setStoreLanguage } = useLanguageStore();
-    const { getPath } = useLanguagePath();
 
     const changeLanguage = (lng: string) => {
         i18n.changeLanguage(lng);

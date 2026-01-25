@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { registrationService } from '../services/registration.service';
-import { UserRoleType, RegistrationFormData } from '../types/registration.types';
+import { UserRoleType } from '../types/registration.types';
 
 /**
  * Hook to fetch join request form structure

@@ -45,7 +45,6 @@ interface JoinRequestStatusDisplayProps {
 const JoinRequestStatusDisplay: React.FC<JoinRequestStatusDisplayProps> = ({ data }) => {
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'en';
-    const isRTL = currentLang === 'ar';
 
     const getBilingualText = (obj: { en: string; ar: string }) => {
         return currentLang === 'ar' ? obj.ar : obj.en;

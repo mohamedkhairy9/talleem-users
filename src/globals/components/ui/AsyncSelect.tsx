@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { Controller, Control, FieldValues } from 'react-hook-form';
+import { Controller, Control, FieldValues, Path } from 'react-hook-form';
 import ReactSelect from 'react-select';
 import { useTranslation } from 'react-i18next';
 
@@ -128,7 +128,7 @@ const AsyncSelect = <T extends FieldValues = FieldValues>({
 
     return (
         <Controller
-            name={name}
+            name={name as Path<T>}
             control={control as Control<T>}
             render={({ field }) => {
                 const value = field.value;

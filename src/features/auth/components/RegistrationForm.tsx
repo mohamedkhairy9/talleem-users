@@ -38,7 +38,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
     const {
         control,
         handleSubmit,
-        formState: { errors, isValid }
+        formState: { errors }
     } = useFormWithValidation({
         schema,
         defaultValues

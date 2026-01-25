@@ -1,5 +1,4 @@
-import React from 'react';
-import { Controller, Control, FieldValues } from 'react-hook-form';
+import { Controller, Control, FieldValues, Path } from 'react-hook-form';
 
 interface FormCheckboxProps<T extends FieldValues = FieldValues> {
     name: string;
@@ -22,7 +21,7 @@ const FormCheckbox = <T extends FieldValues = FieldValues>({
 }: FormCheckboxProps<T>) => {
     return (
         <Controller
-            name={name}
+            name={name as Path<T>}
             control={control as Control<T>}
             render={({ field, fieldState }) => (
                 <div>

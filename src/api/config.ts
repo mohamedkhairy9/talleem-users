@@ -19,6 +19,9 @@ export const API_CONFIG = {
 export const API_ENDPOINTS = {
     AUTH: {
         LOGIN: '/customer-login',
+        LOGOUT: '/customer-logout',
+        USER: '/customer',
+        REFRESH: '/customer-refresh-token',
         CHANGE_PASSWORD: '/customer-change-password',
     },
     // Add more endpoints as needed

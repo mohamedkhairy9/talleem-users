@@ -1,5 +1,4 @@
-import React from 'react';
-import { Controller, Control, FieldValues } from 'react-hook-form';
+import { Controller, Control, FieldValues, Path } from 'react-hook-form';
 
 interface FormFileProps<T extends FieldValues = FieldValues> {
     name: string;
@@ -26,7 +25,7 @@ const FormFile = <T extends FieldValues = FieldValues>({
 }: FormFileProps<T>) => {
     return (
         <Controller
-            name={name}
+            name={name as Path<T>}
             control={control as Control<T>}
             render={({ field: { onChange, value, ...field }, fieldState }) => {
                 const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

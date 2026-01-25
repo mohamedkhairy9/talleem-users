@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { formFieldsService } from '../services/form-fields.service';
 import { AsyncSelectOption } from '@/globals/components/ui/AsyncSelect';
 
@@ -7,7 +5,6 @@ import { AsyncSelectOption } from '@/globals/components/ui/AsyncSelect';
  * Hook to load teachers as async select options
  */
 export const useTeachersAsyncSelect = () => {
-    const { t } = useTranslation();
 
     const loadTeachers = async (inputValue: string, page: number): Promise<{ options: AsyncSelectOption[]; hasMore: boolean }> => {
         try {
@@ -17,9 +14,10 @@ export const useTeachersAsyncSelect = () => {
                 search: inputValue
             });
 
-            const data = response.data || response;
-            const teachers = Array.isArray(data) ? data : data.data || [];
-            const meta = Array.isArray(data) ? null : (data.meta || response.meta);
+            const responseData = response as any;
+            const data = responseData.data || responseData;
+            const teachers = Array.isArray(data) ? data : (data?.data || []);
+            const meta = Array.isArray(data) ? null : (data?.meta || responseData?.meta);
 
             const options: AsyncSelectOption[] = teachers.map((teacher: any) => ({
                 value: teacher.id,
@@ -43,7 +41,6 @@ export const useTeachersAsyncSelect = () => {
  * Used for selecting students in forms (e.g., halaqas)
  */
 export const useStudentsAsyncSelect = () => {
-    const { t } = useTranslation();
 
     const loadStudents = async (inputValue: string, page: number): Promise<{ options: AsyncSelectOption[]; hasMore: boolean }> => {
         try {
@@ -53,9 +50,10 @@ export const useStudentsAsyncSelect = () => {
                 search: inputValue
             });
 
-            const data = response.data || response;
-            const students = Array.isArray(data) ? data : data.data || [];
-            const meta = Array.isArray(data) ? null : (data.meta || response.meta);
+            const responseData = response as any;
+            const data = responseData.data || responseData;
+            const students = Array.isArray(data) ? data : (data?.data || []);
+            const meta = Array.isArray(data) ? null : (data?.meta || responseData?.meta);
 
             const options: AsyncSelectOption[] = students.map((student: any) => ({
                 value: student.id,
@@ -78,7 +76,6 @@ export const useStudentsAsyncSelect = () => {
  * Hook to load platforms as async select options
  */
 export const usePlatformsAsyncSelect = () => {
-    const { t } = useTranslation();
 
     const loadPlatforms = async (inputValue: string, page: number): Promise<{ options: AsyncSelectOption[]; hasMore: boolean }> => {
         try {
@@ -88,9 +85,10 @@ export const usePlatformsAsyncSelect = () => {
                 search: inputValue
             });
 
-            const data = response.data || response;
-            const platforms = Array.isArray(data) ? data : data.data || [];
-            const meta = Array.isArray(data) ? null : (data.meta || response.meta);
+            const responseData = response as any;
+            const data = responseData.data || responseData;
+            const platforms = Array.isArray(data) ? data : (data?.data || []);
+            const meta = Array.isArray(data) ? null : (data?.meta || responseData?.meta);
 
             const options: AsyncSelectOption[] = platforms.map((platform: any) => ({
                 value: platform.id,
@@ -113,7 +111,6 @@ export const usePlatformsAsyncSelect = () => {
  * Hook to load memorization program entity types as async select options
  */
 export const useMemorizationProgramEntityTypesAsyncSelect = () => {
-    const { t } = useTranslation();
 
     const loadMemorizationProgramEntityTypes = async (inputValue: string, page: number): Promise<{ options: AsyncSelectOption[]; hasMore: boolean }> => {
         try {
@@ -123,9 +120,10 @@ export const useMemorizationProgramEntityTypesAsyncSelect = () => {
                 search: inputValue
             });
 
-            const data = response.data || response;
-            const types = Array.isArray(data) ? data : data.data || [];
-            const meta = Array.isArray(data) ? null : (data.meta || response.meta);
+            const responseData = response as any;
+            const data = responseData.data || responseData;
+            const types = Array.isArray(data) ? data : (data?.data || []);
+            const meta = Array.isArray(data) ? null : (data?.meta || responseData?.meta);
 
             const options: AsyncSelectOption[] = types.map((type: any) => ({
                 value: type.id,

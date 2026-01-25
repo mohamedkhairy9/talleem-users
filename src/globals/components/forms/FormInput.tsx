@@ -1,5 +1,4 @@
-import React from 'react';
-import { Controller, Control, FieldValues } from 'react-hook-form';
+import { Controller, Control, FieldValues, Path } from 'react-hook-form';
 import Input from '../ui/Input';
 import { FormInputProps } from '@/globals/types';
 
@@ -17,7 +16,7 @@ const FormInput = <T extends FieldValues = FieldValues>({
 }: FormInputProps<T>) => {
     return (
         <Controller
-            name={name}
+            name={name as Path<T>}
             control={control as Control<T>}
             render={({ field, fieldState }) => (
                 <Input

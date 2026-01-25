@@ -1,5 +1,4 @@
-import React from 'react';
-import { Controller, Control, FieldValues } from 'react-hook-form';
+import { Controller, Control, FieldValues, Path } from 'react-hook-form';
 
 interface FormTextareaProps<T extends FieldValues = FieldValues> {
     name: string;
@@ -26,7 +25,7 @@ const FormTextarea = <T extends FieldValues = FieldValues>({
 }: FormTextareaProps<T>) => {
     return (
         <Controller
-            name={name}
+            name={name as Path<T>}
             control={control as Control<T>}
             render={({ field, fieldState }) => (
                 <div>

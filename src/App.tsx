@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -13,7 +13,7 @@ import './i18n';
 /**
  * Main App Component
  */
-function App(): JSX.Element {
+function App() {
     const { initializeAuth } = useAuthStore();
 
     useEffect(() => {
