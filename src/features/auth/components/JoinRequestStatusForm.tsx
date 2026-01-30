@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useFormWithValidation } from '@/utils';
 import { useCheckJoinRequestStatus } from '../hooks/useRegistration';
 import * as yup from 'yup';
@@ -7,6 +8,7 @@ import { FormInput } from '@/globals/components';
 import { Button } from '@/globals/components';
 import { toast } from 'react-toastify';
 import JoinRequestStatusDisplay from './JoinRequestStatusDisplay';
+import { ROUTE_PATHS } from '@/config';
 
 interface JoinRequestStatusFormProps {
     onBack: () => void;
@@ -33,6 +35,9 @@ interface StatusCheckFormData {
  */
 const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack }) => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const { lang } = useParams<{ lang: string }>();
+    const currentLang = lang || 'en';
     const statusMutation = useCheckJoinRequestStatus();
     const [statusData, setStatusData] = useState<any>(null);
 
@@ -88,21 +93,32 @@ const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack })
                 <JoinRequestStatusDisplay data={statusData} />
                 
                 {/* Action buttons */}
-                <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={onBack}
-                    >
-                        {t('common.back', 'Back')}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="primary"
-                        onClick={handleCheckAgain}
-                    >
-                        {t('auth.check_again', 'Check Another Request')}
-                    </Button>
+                <div className="flex flex-col gap-3 pt-4 border-t border-gray-200">
+                    <div className="flex gap-4 justify-end">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={onBack}
+                        >
+                            {t('common.back', 'Back')}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={handleCheckAgain}
+                        >
+                            {t('auth.check_again', 'Check Another Request')}
+                        </Button>
+                    </div>
+                    <div className="text-center">
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/${currentLang}/${ROUTE_PATHS.LOGIN}`)}
+                            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                        >
+                            {t('auth.back_to_login', 'Back to login')}
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -135,25 +151,36 @@ const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack })
                 )}
 
                 {/* Action buttons */}
-                <div className="flex gap-4 justify-end pt-4">
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={onBack}
-                        disabled={statusMutation.isPending}
-                    >
-                        {t('common.back', 'Back')}
-                    </Button>
-                    <Button
-                        type="submit"
-                        variant="primary"
-                        loading={statusMutation.isPending}
-                        disabled={statusMutation.isPending}
-                    >
-                        {statusMutation.isPending
-                            ? t('common.loading', 'Loading...')
-                            : t('auth.check_status', 'Check Status')}
-                    </Button>
+                <div className="flex flex-col gap-3 pt-4">
+                    <div className="flex gap-4 justify-end">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={onBack}
+                            disabled={statusMutation.isPending}
+                        >
+                            {t('common.back', 'Back')}
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            loading={statusMutation.isPending}
+                            disabled={statusMutation.isPending}
+                        >
+                            {statusMutation.isPending
+                                ? t('common.loading', 'Loading...')
+                                : t('auth.check_status', 'Check Status')}
+                        </Button>
+                    </div>
+                    <div className="text-center">
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/${currentLang}/${ROUTE_PATHS.LOGIN}`)}
+                            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                        >
+                            {t('auth.back_to_login', 'Back to login')}
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

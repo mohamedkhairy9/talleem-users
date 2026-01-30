@@ -1,8 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams } from 'react-router-dom';
 import { UserRoleType } from '../types/registration.types';
 import { TeacherIcon, BriefcaseIcon } from '@/globals/icons';
 import { Button } from '@/globals/components';
+import { ROUTE_PATHS } from '@/config';
 
 interface RoleSelectionProps {
     onSelectRole: (role: UserRoleType) => void;
@@ -15,6 +17,9 @@ interface RoleSelectionProps {
  */
 const RoleSelection: React.FC<RoleSelectionProps> = ({ onSelectRole, onCheckStatus }) => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const { lang } = useParams<{ lang: string }>();
+    const currentLang = lang || 'en';
 
     const roles: Array<{ type: UserRoleType; labelKey: string; icon: React.ReactNode }> = [
         { type: 1, labelKey: 'auth.role.teacher', icon: <TeacherIcon width={48} height={48} className="text-gray-700 group-hover:text-primary-600" /> },
@@ -48,15 +53,24 @@ const RoleSelection: React.FC<RoleSelectionProps> = ({ onSelectRole, onCheckStat
                 ))}
             </div>
 
-            <div className="mt-8 text-center">
+            <div className="mt-8 text-center space-y-3">
                 <Button
                     type="button"
                     variant="secondary"
                     onClick={onCheckStatus}
                     className="w-full md:w-auto"
                 >
-                    {t('auth.check_join_request_status', 'متابعة حالة طلب الانضمام')}
+                    {t('auth.check_join_request_status', 'Check join request status')}
                 </Button>
+                <div>
+                    <button
+                        type="button"
+                        onClick={() => navigate(`/${currentLang}/${ROUTE_PATHS.LOGIN}`)}
+                        className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                        {t('auth.back_to_login', 'Back to login')}
+                    </button>
+                </div>
             </div>
         </div>
     );

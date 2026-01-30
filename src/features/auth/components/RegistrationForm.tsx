@@ -7,7 +7,8 @@ import { buildDefaultValues } from '../utils/buildDefaultValues';
 import DynamicFormRenderer from './DynamicFormRenderer';
 import { Button } from '@/globals/components';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ROUTE_PATHS } from '@/config';
 
 interface RegistrationFormProps {
     userType: UserRoleType;
@@ -21,6 +22,8 @@ interface RegistrationFormProps {
 const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack }) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { lang } = useParams<{ lang: string }>();
+    const currentLang = lang || 'en';
     const { data: formData, isLoading: isLoadingForm, error: formError } = useJoinRequestForm(userType);
     const submitMutation = useSubmitJoinRequest();
 
@@ -204,19 +207,30 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
 
             {/* Sticky submit buttons */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-4 z-10 shadow-lg">
-                <div className="max-w-5xl mx-auto flex gap-4 justify-end">
-                    <Button type="button" variant="secondary" onClick={onBack} disabled={submitMutation.isPending}>
-                        {t('common.back', 'Back')}
-                    </Button>
-                    <Button 
-                        type="submit" 
-                        variant="primary" 
-                        loading={submitMutation.isPending} 
-                        disabled={submitMutation.isPending}
-                        form="registration-form"
-                    >
-                        {submitMutation.isPending ? t('common.loading', 'Loading...') : t('auth.submit_registration', 'Submit Registration')}
-                    </Button>
+                <div className="max-w-5xl mx-auto flex flex-col gap-3">
+                    <div className="flex gap-4 justify-end">
+                        <Button type="button" variant="secondary" onClick={onBack} disabled={submitMutation.isPending}>
+                            {t('common.back', 'Back')}
+                        </Button>
+                        <Button 
+                            type="submit" 
+                            variant="primary" 
+                            loading={submitMutation.isPending} 
+                            disabled={submitMutation.isPending}
+                            form="registration-form"
+                        >
+                            {submitMutation.isPending ? t('common.loading', 'Loading...') : t('auth.submit_registration', 'Submit Registration')}
+                        </Button>
+                    </div>
+                    <div className="text-center">
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/${currentLang}/${ROUTE_PATHS.LOGIN}`)}
+                            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                        >
+                            {t('auth.back_to_login', 'Back to login')}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

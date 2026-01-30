@@ -76,7 +76,11 @@
         },
         "submit_registration": "إرسال التسجيل",
         "registration_error": "خطأ في إرسال التسجيل. يرجى المحاولة مرة أخرى.",
-        "form_load_error": "خطأ في تحميل نموذج التسجيل. يرجى المحاولة مرة أخرى."
+        "form_load_error": "خطأ في تحميل نموذج التسجيل. يرجى المحاولة مرة أخرى.",
+        "check_join_request_status": "متابعة حالة طلب الانضمام",
+        "back_to_login": "العودة لتسجيل الدخول",
+        "check_join_status_hint": "تريد متابعة حالة طلب الانضمام؟",
+        "check_join_status_click_here": "انقر هنا"
     },
     "validation": {
         "required": "هذا الحقل مطلوب",

@@ -35,6 +35,7 @@ const LoginForm: React.FC = () => {
     const location = useLocation();
     const loginMutation = useLoginMutation();
     const { t } = useTranslation();
+    const isRtl = i18n.language === 'ar';
 
     const {
         control,
@@ -66,7 +67,7 @@ const LoginForm: React.FC = () => {
 
     return (
         <form
-            dir="rtl"
+            dir={isRtl ? 'rtl' : 'ltr'}
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-6"
         >
@@ -112,20 +113,33 @@ const LoginForm: React.FC = () => {
                 )}
             </button>
 
-            <div className="mt-4 text-center">
-                <p className="text-sm text-gray-600 mb-2">
-                    {t('auth.no_account', "Don't have an account?")}
+            <div className="mt-4 text-center space-y-2">
+                <p className="text-sm text-gray-600">
+                    {t('auth.no_account', "Don't have an account?")}{' '}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const currentLang = window.location.pathname.split('/')[1] || 'en';
+                            window.location.href = `/${currentLang}/${ROUTE_PATHS.REGISTER}`;
+                        }}
+                        className="text-primary-600 hover:text-primary-700 font-medium cursor-pointer"
+                    >
+                        {t('auth.join_now', 'Join Now')}
+                    </button>
                 </p>
-                <button
-                    type="button"
-                    onClick={() => {
-                        const currentLang = window.location.pathname.split('/')[1] || 'en';
-                        window.location.href = `/${currentLang}/${ROUTE_PATHS.REGISTER}`;
-                    }}
-                    className="text-primary-600 hover:text-primary-700 font-medium text-sm"
-                >
-                    {t('auth.join_now', 'Join Now')}
-                </button>
+                <p className="text-sm text-gray-600">
+                    {t('auth.check_join_status_hint', 'Need to check your join request status?')}{' '}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const currentLang = window.location.pathname.split('/')[1] || 'en';
+                            window.location.href = `/${currentLang}/${ROUTE_PATHS.REGISTER}?checkStatus=1`;
+                        }}
+                        className="text-primary-600 hover:text-primary-700 font-medium cursor-pointer"
+                    >
+                        {t('auth.check_join_status_click_here', 'Click here')}
+                    </button>
+                </p>
             </div>
         </form>
     );

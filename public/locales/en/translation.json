@@ -76,7 +76,11 @@
         },
         "submit_registration": "Submit Registration",
         "registration_error": "Error submitting registration. Please try again.",
-        "form_load_error": "Error loading registration form. Please try again."
+        "form_load_error": "Error loading registration form. Please try again.",
+        "check_join_request_status": "Check join request status",
+        "back_to_login": "Back to login",
+        "check_join_status_hint": "Need to check your join request status?",
+        "check_join_status_click_here": "Click here"
     },
     "validation": {
         "required": "This field is required",

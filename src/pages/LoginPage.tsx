@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import logo from '@/assets/images/logo.svg';
 import bgLayer from '@/assets/images/bg-layer.png';
+import AuthLanguageSwitcher from '@/features/auth/components/AuthLanguageSwitcher';
 
 /**
  * Login Page
@@ -43,6 +44,10 @@ const LoginPage: React.FC = () => {
             />
 
             <div className="relative z-10 min-h-screen flex">
+                {/* Language Switcher - Top Right */}
+                <div className="absolute top-4 right-4">
+                    <AuthLanguageSwitcher />
+                </div>
                 {/* Left Section - Login Form */}
                 <div className="flex-1 flex items-center lg:items-end justify-center px-8 py-8 lg:py-0">
                     <div

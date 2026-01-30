@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
 import RoleSelection from '@/features/auth/components/RoleSelection';
@@ -9,17 +9,22 @@ import { UserRoleType } from '@/features/auth/types/registration.types';
 
 import logo from '@/assets/images/logo.svg';
 import bgLayer from '@/assets/images/bg-layer.png';
+import AuthLanguageSwitcher from '@/features/auth/components/AuthLanguageSwitcher';
 
 /**
  * Registration Page
  * Uses same layout as LoginPage with role selection and dynamic form
  */
+const CHECK_STATUS_PARAM = 'checkStatus';
+
 const RegistrationPage: React.FC = () => {
     const { isAuthenticated } = useAuthStore();
     const { t } = useTranslation();
     const { lang } = useParams<{ lang: string }>();
+    const [searchParams] = useSearchParams();
+    const openCheckStatus = searchParams.get(CHECK_STATUS_PARAM) === '1' || searchParams.get(CHECK_STATUS_PARAM) === 'true';
     const [selectedRole, setSelectedRole] = useState<UserRoleType | null>(null);
-    const [showStatusCheck, setShowStatusCheck] = useState(false);
+    const [showStatusCheck, setShowStatusCheck] = useState(openCheckStatus);
     const [isVisible, setIsVisible] = useState(false);
 
     React.useEffect(() => {
@@ -73,6 +78,10 @@ const RegistrationPage: React.FC = () => {
             />
 
             <div className="relative z-10 min-h-screen flex">
+                {/* Language Switcher - Top Right */}
+                <div className="absolute top-4 right-4">
+                    <AuthLanguageSwitcher />
+                </div>
                 {/* Left Section - Registration Form */}
                 <div className="flex-1 flex items-center lg:items-end justify-center px-8 py-8 lg:py-0">
                     <div
