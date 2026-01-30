@@ -1,28 +1,34 @@
 import { axiosInstance } from '@/api/axiosInstance';
 
+/** API items may have name as bilingual object */
+export interface BilingualName {
+    en?: string;
+    ar?: string;
+}
+
 export interface Teacher {
     id: number;
-    name?: string;
+    name?: string | BilingualName;
     email?: string;
     [key: string]: any;
 }
 
 export interface Student {
     id: number;
-    name?: string;
+    name?: string | BilingualName;
     email?: string;
     [key: string]: any;
 }
 
 export interface Platform {
     id: number;
-    name?: string;
+    name?: string | BilingualName;
     [key: string]: any;
 }
 
 export interface MemorizationProgramEntityType {
     id: number;
-    name?: string;
+    name?: string | BilingualName;
     [key: string]: any;
 }
 
@@ -53,13 +59,23 @@ export const formFieldsService = {
     },
 
     /**
-     * Get platforms list (paginated)
+     * Get platforms list (paginated) - generic platforms endpoint
      */
     getPlatforms: (params: { page?: number; per_page?: number; search?: string } = {}): Promise<{
         data: Platform[];
         meta?: { current_page?: number; last_page?: number; total?: number };
     }> => {
         return axiosInstance.get('/platforms', { params });
+    },
+
+    /**
+     * Get remotely-attendance platforms list (for create halaqa form)
+     */
+    getRemotelyAttendancePlatforms: (params: { page?: number; per_page?: number; search?: string } = {}): Promise<{
+        data: Platform[];
+        meta?: { current_page?: number; last_page?: number; total?: number };
+    }> => {
+        return axiosInstance.get('/remotely-attendance-platforms', { params });
     },
 
     /**

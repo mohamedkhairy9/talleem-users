@@ -3,16 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useFormWithValidation } from '@/utils';
 import { FormInput, FormSelect, Button } from '@/globals/components';
-import AsyncSelect from '@/globals/components/ui/AsyncSelect';
+import SelectRFH from '@/globals/components/ui/SelectRFH';
 import { useCreateHalaqa } from '../hooks/useHalaqas';
+import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-    useTeachersAsyncSelect,
-    useStudentsAsyncSelect,
-    usePlatformsAsyncSelect,
-    useMemorizationProgramEntityTypesAsyncSelect
-} from '../hooks/useFormFields';
 import {
     HALAQA_PERIODS,
     HALAQA_ACTIVITIES,
@@ -53,10 +48,16 @@ const CreateHalaqaForm: React.FC = () => {
         }
     });
 
-    const { loadTeachers } = useTeachersAsyncSelect();
-    const { loadStudents } = useStudentsAsyncSelect();
-    const { loadPlatforms } = usePlatformsAsyncSelect();
-    const { loadMemorizationProgramEntityTypes } = useMemorizationProgramEntityTypesAsyncSelect();
+    const {
+        teachersOptions,
+        studentsOptions,
+        platformsOptions,
+        memorizationTypesOptions,
+        isLoadingTeachers,
+        isLoadingStudents,
+        isLoadingPlatforms,
+        isLoadingMemorizationTypes,
+    } = useCreateHalaqaFormQueries();
 
     // Get localized options for static fields
     const periodOptions = HALAQA_PERIODS.map(period => ({
@@ -110,23 +111,25 @@ const CreateHalaqaForm: React.FC = () => {
             </div>
 
             {/* Teacher */}
-            <AsyncSelect
+            <SelectRFH
                 name="teacher_id"
                 control={control}
                 label={t('halaqa.teacher', 'Teacher')}
                 required
-                loadOptions={loadTeachers}
+                options={teachersOptions}
+                loading={isLoadingTeachers}
                 error={errors.teacher_id?.message}
                 placeholder={t('halaqa.selectTeacher', 'Select a teacher')}
             />
 
             {/* Memorization Program Entity Type */}
-            <AsyncSelect
+            <SelectRFH
                 name="memorization_program_entity_type_id"
                 control={control}
                 label={t('halaqa.memorizationProgramEntityType', 'Memorization Program Entity Type')}
                 required
-                loadOptions={loadMemorizationProgramEntityTypes}
+                options={memorizationTypesOptions}
+                loading={isLoadingMemorizationTypes}
                 error={errors.memorization_program_entity_type_id?.message}
                 placeholder={t('halaqa.selectMemorizationProgramEntityType', 'Select memorization program entity type')}
             />
@@ -193,13 +196,14 @@ const CreateHalaqaForm: React.FC = () => {
             </div>
 
             {/* Students (Multi-select) */}
-            <AsyncSelect
+            <SelectRFH
                 name="student_ids"
                 control={control}
                 label={t('halaqa.students', 'Students')}
                 required
                 isMulti
-                loadOptions={loadStudents}
+                options={studentsOptions}
+                loading={isLoadingStudents}
                 error={errors.student_ids?.message}
                 placeholder={t('halaqa.selectStudents', 'Select students')}
             />
@@ -216,12 +220,13 @@ const CreateHalaqaForm: React.FC = () => {
             />
 
             {/* Platform */}
-            <AsyncSelect
+            <SelectRFH
                 name="platform_id"
                 control={control}
                 label={t('halaqa.platform', 'Platform')}
                 required
-                loadOptions={loadPlatforms}
+                options={platformsOptions}
+                loading={isLoadingPlatforms}
                 error={errors.platform_id?.message}
                 placeholder={t('halaqa.selectPlatform', 'Select a platform')}
             />
