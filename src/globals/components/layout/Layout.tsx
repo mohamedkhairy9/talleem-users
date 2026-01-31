@@ -21,7 +21,7 @@ const Layout: React.FC = () => {
         <div dir={direction} className="min-h-screen bg-gray-50">
             {/* Fixed Navbar - aligned with sidebar edge, no gap; supports LTR and RTL */}
             <Navbar
-                isSidebarCollapsed={isSidebarCollapsed}
+                isSidebarOpen={!isSidebarCollapsed}
                 onToggleSidebar={toggleSidebarCollapse}
                 direction={direction}
             />
@@ -35,7 +35,7 @@ const Layout: React.FC = () => {
                     direction={direction}
                 />
                 
-                {/* Main Content - takes remaining width, scrolls; bg so content never shows black */}
+                {/* Main Content - on lg+ inset by sidebar; on small screens full width */}
                 <main className={`flex flex-1 flex-col min-h-[calc(100vh-5rem)] pt-20 overflow-y-auto overflow-x-hidden relative z-10 bg-gray-50 transition-all duration-300 ${
                     isSidebarCollapsed ? 'lg:ms-16' : 'lg:ms-64'
                 }`}>

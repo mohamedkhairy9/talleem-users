@@ -9,7 +9,6 @@ import { Button } from '@/globals/components';
 import { MenuItem } from '@/globals/types';
 import {
     XIcon,
-    MenuIcon,
     HomeIcon,
     BookIcon,
     CalendarIcon,
@@ -54,8 +53,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direct
         if (!user) return t('common.user', 'User');
         
         if (typeof user.name === 'object' && user.name !== null) {
-            // Bilingual name object
-            return currentLocale === 'ar' ? user.name.ar : user.name.en;
+            // Bilingual name object – ar/en may be undefined
+            const name = currentLocale === 'ar' ? user.name.ar : user.name.en;
+            return name ?? user.name.en ?? user.name.ar ?? t('common.user', 'User');
         }
         
         // String name or fallback
@@ -89,7 +89,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direct
     const currentPath = rawCurrentPath.replace(/^\/+|\/+$/g, '') || '';
 
     const handleLinkClick = () => {
-        // Collapse sidebar on mobile when a link is clicked
         if (window.innerWidth < 1024) {
             onToggleCollapse();
         }
@@ -163,20 +162,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direct
 
     return (
         <>
-            {/* Light backdrop on mobile when sidebar is open - click to close; sidebar draws above (z-[46]) */}
+            {/* Backdrop when sidebar overlay is open – small screens only */}
+            {/* Backdrop: below navbar only, so navbar stays visible when overlay is open */}
             {!isCollapsed && (
                 <div
-                    className="fixed inset-0 z-[45] bg-black/20 lg:hidden"
+                    className="fixed top-20 left-0 right-0 bottom-0 z-[45] bg-black/20 lg:hidden"
                     onClick={onToggleCollapse}
                     aria-hidden="true"
                 />
             )}
 
-            {/* Sidebar: overlay on mobile above backdrop (z-[46]), fixed beside content on lg+ */}
+            {/* Sidebar: starts below navbar (top-20); overlay on small, persistent on lg+ */}
             <aside
                 className={`
-                    fixed start-0 top-0 z-[46]
-                    ${isCollapsed ? 'w-16 lg:w-16' : 'w-64 lg:w-64'} bg-white shadow-xl h-screen
+                    fixed start-0 top-20 bottom-0 z-[46]
+                    ${isCollapsed ? 'w-16 lg:w-16' : 'w-64 lg:w-64'} bg-white shadow-xl
                     border-e border-gray-200
                     transform transition-all duration-300 ease-in-out
                     ${isCollapsed
@@ -187,20 +187,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direct
                     flex flex-col
                 `}
             >
-                {/* Floating toggle button on the sidebar */}
-                <button
-                    onClick={onToggleCollapse}
-                    className="absolute top-3 end-3 z-10 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors shadow-sm bg-white border border-gray-200"
-                    aria-label={isCollapsed ? "Expand menu" : "Collapse menu"}
-                >
-                    {isCollapsed ? (
-                        <MenuIcon width={20} height={20} />
-                    ) : (
-                        <XIcon width={20} height={20} />
-                    )}
-                </button>
-
-                <nav className={`${isCollapsed ? 'p-2 pt-14' : 'p-4 pt-14'} flex-1 overflow-y-auto`}>
+                {/* Toggle moved to navbar on all screens */}
+                <nav className={`${isCollapsed ? 'p-2' : 'p-4'} flex-1 overflow-y-auto`}>
                     <ul className="space-y-1 lg:space-y-0.5">
                         {visibleMenuItems.map(item => {
                             const itemPath = getPath(item.path);
@@ -285,7 +273,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direct
                     </ul>
                 </nav>
 
-                {/* User Info and Logout Button at Bottom */}
+                {/* User Info and Logout – full when expanded; icon-only when collapsed on lg */}
                 {!isCollapsed && (
                     <div className="p-4 border-t border-gray-200 space-y-3">
                         <div className="px-4 py-2">
@@ -314,9 +302,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direct
                             title={t('navbar.logout', 'Logout')}
                         >
                             {logout.isPending ? (
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600" />
                             ) : (
-                                <XIcon width={20} height={20} />
+                                <XIcon width={20} height={20} /> 
                             )}
                         </button>
                     </div>

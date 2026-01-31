@@ -1,54 +1,48 @@
 import React from 'react';
 import { useLocale } from '@/utils';
 import sideLogo from '@/assets/images/tallem-side-logo.svg';
-import { MenuIcon } from '@/globals/icons';
+import { MenuIcon, XIcon } from '@/globals/icons';
+
+/** Navbar height – used so sidebar starts below it (match pt-20 / 5rem in Layout) */
+export const NAVBAR_HEIGHT_CLASS = 'h-20'; // 5rem
 
 interface NavbarProps {
-    /** When true, sidebar is collapsed (narrow); navbar aligns with sidebar with no gap */
-    isSidebarCollapsed?: boolean;
-    /** Called when user taps the menu button on small screens to open/close sidebar */
+    /** When true, sidebar overlay is open / sidebar is collapsed (for button icon) */
+    isSidebarOpen?: boolean;
+    /** Toggle sidebar */
     onToggleSidebar?: () => void;
-    /** Layout direction for LTR/RTL; navbar inset matches sidebar side */
+    /** Layout direction for LTR/RTL */
     direction?: 'ltr' | 'rtl';
 }
 
 /**
  * Navbar Component
- * Full width on small screens with a menu button (lg:hidden) to open the sidebar overlay.
+ * Full width; menu button opens/closes sidebar (overlay on small, expand/collapse on lg).
  */
 const Navbar: React.FC<NavbarProps> = ({
-    isSidebarCollapsed = false,
+    isSidebarOpen = false,
     onToggleSidebar,
     direction = 'ltr'
 }) => {
     const { currentLocale, changeLanguage } = useLocale();
-    // Full width on small screens (left-0 right-0); on lg+ inset by sidebar
-    const insetClasses =
-        direction === 'rtl'
-            ? 'left-0 right-0 lg:left-0'
-            : 'left-0 right-0 lg:right-0';
-    const sidebarOffset =
-        direction === 'rtl'
-            ? isSidebarCollapsed
-                ? 'lg:right-16'
-                : 'lg:right-64'
-            : isSidebarCollapsed
-                ? 'lg:left-16'
-                : 'lg:left-64';
 
     return (
-        <nav className={`fixed top-0 z-50 bg-white shadow-sm border-b border-gray-200 transition-all duration-300 ${insetClasses} ${sidebarOffset}`}>
+        <nav className={`fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200 ${NAVBAR_HEIGHT_CLASS}`}>
             <div className="px-4 sm:px-6 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-3 sm:gap-4">
-                    {/* Menu button: visible only on small screens to open sidebar overlay */}
+                    {/* Menu button: open/close sidebar – same place and styling on all screens */}
                     {onToggleSidebar && (
                         <button
                             type="button"
                             onClick={onToggleSidebar}
-                            className="lg:hidden p-2 -m-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-                            aria-label="Open menu"
+                            className="p-2 -m-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                            aria-label={isSidebarOpen ? 'Close menu' : 'Open menu'}
                         >
-                            <MenuIcon width={24} height={24} />
+                            {isSidebarOpen ? (
+                                <XIcon width={24} height={24} />
+                            ) : (
+                                <MenuIcon width={24} height={24} />
+                            )}
                         </button>
                     )}
                     <img 
