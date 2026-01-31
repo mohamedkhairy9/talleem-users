@@ -1,5 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { halaqasService, CreateHalaqaPayload } from '../services/halaqas.service';
+import type {
+    HalaqasListParams,
+    HalaqasListResponse,
+    HalaqaListItem,
+    HalaqasListMeta
+} from '../types/list.types';
 
 /**
  * Create halaqa mutation hook
@@ -11,14 +17,27 @@ export const useCreateHalaqa = () => {
 };
 
 /**
- * Get halaqas query hook
+ * Get halaqas list (paginated, with filters).
+ * API response: { data: HalaqaListItem[], meta: { current_page, per_page, total, last_page } }.
+ * Pagination is driven by meta; list is the current page only (no appending).
  */
-export const useHalaqas = (filters: Record<string, any> = {}) => {
-    return useQuery({
-        queryKey: ['halaqas', filters],
-        queryFn: () => halaqasService.getHalaqas(filters),
-        staleTime: 5 * 60 * 1000 // 5 minutes
+export const useHalaqas = (params: HalaqasListParams = {}) => {
+    const query = useQuery({
+        queryKey: ['halaqas', params],
+        queryFn: () => halaqasService.getHalaqas(params),
+        staleTime: 2 * 60 * 1000
     });
+
+    // Axios interceptor returns response.data (API body), so query.data = { data: [], meta: {} }
+    const responseBody = query.data as HalaqasListResponse | undefined;
+    const list: HalaqaListItem[] = Array.isArray(responseBody?.data) ? responseBody.data : [];
+    const meta: HalaqasListMeta | undefined = responseBody?.meta;
+
+    return {
+        ...query,
+        list,
+        meta
+    };
 };
 
 /**

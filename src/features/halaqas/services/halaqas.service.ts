@@ -1,4 +1,17 @@
 import { axiosInstance } from '@/api/axiosInstance';
+import { HALAQAS_LIST_PATH } from '../constants/list.constants';
+import type { HalaqasListParams, HalaqasListResponse } from '../types/list.types';
+
+/** Build query params object (strip undefined, keep only defined filters) */
+function buildListQueryParams(params: HalaqasListParams): Record<string, string | number> {
+    const result: Record<string, string | number> = {};
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== '' && value !== null) {
+            result[key] = value as string | number;
+        }
+    });
+    return result;
+}
 
 export interface CreateHalaqaPayload {
     name: {
@@ -30,10 +43,12 @@ export const halaqasService = {
     },
 
     /**
-     * Get halaqas list
+     * Get halaqas list (paginated, with optional filters)
+     * GET {baseURL}/halaqas → e.g. http://localhost:5173/api/front/halaqas
      */
-    getHalaqas: (filters: Record<string, any> = {}): Promise<any> => {
-        return axiosInstance.get('/halaqas', { params: filters });
+    getHalaqas: (params: HalaqasListParams = {}): Promise<{ data: HalaqasListResponse }> => {
+        const queryParams = buildListQueryParams(params);
+        return axiosInstance.get(HALAQAS_LIST_PATH, { params: queryParams });
     },
 
     /**

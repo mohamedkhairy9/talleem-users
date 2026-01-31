@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/globals/components';
 import HalaqaList from '@/features/halaqas/components/HalaqaList';
+import SeedHalaqasButton from '@/features/halaqas/components/SeedHalaqasButton';
 
 /**
  * Halaqas List Page
@@ -28,13 +29,16 @@ const HalaqasListPage: React.FC = () => {
                         {t('halaqa.listDescription', 'Manage and view all halaqas')}
                     </p>
                 </div>
-                <Button
-                    type="button"
-                    variant="primary"
-                    onClick={handleCreate}
-                >
-                    {t('halaqa.create', 'Create Halaqa')}
-                </Button>
+                <div className="flex gap-2">
+                    {/* <SeedHalaqasButton /> */}
+                    <Button
+                        type="button"
+                        variant="primary"
+                        onClick={handleCreate}
+                    >
+                        {t('halaqa.create', 'Create Halaqa')}
+                    </Button>
+                </div>
             </div>
             <div className="bg-white rounded-lg shadow-sm p-6">
                 <HalaqaList />

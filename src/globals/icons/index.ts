@@ -18,6 +18,7 @@ export { default as AlertTriangleIcon } from './AlertTriangleIcon';
 export { default as ArrowRightLeftIcon } from './ArrowRightLeftIcon';
 export { default as ClipboardCheckIcon } from './ClipboardCheckIcon';
 export { default as BookOpenIcon } from './BookOpenIcon';
+export { default as SearchIcon } from './SearchIcon';
 export { default as SettingsIcon } from './SettingsIcon';
 export { default as UsersIcon } from './UsersIcon';
 export { default as CircleIcon } from './CircleIcon';

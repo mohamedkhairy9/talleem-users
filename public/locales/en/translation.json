@@ -23,7 +23,12 @@
         "noOptions": "No options found",
         "back": "Back",
         "actions": "Actions",
-        "not_available": "N/A"
+        "not_available": "N/A",
+        "filters": "Filters",
+        "active": "Active",
+        "searchPlaceholder": "Search halaqas...",
+        "all": "All",
+        "resetFilters": "Reset filters"
     },
     "navbar": {
         "title": "Tallem Users Dashboard",

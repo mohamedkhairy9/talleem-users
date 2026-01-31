@@ -23,7 +23,12 @@
         "noOptions": "لا توجد خيارات",
         "back": "رجوع",
         "actions": "الإجراءات",
-        "not_available": "غير متاح"
+        "not_available": "غير متاح",
+        "filters": "الفلاتر",
+        "active": "نشط",
+        "searchPlaceholder": "البحث في الحلقات...",
+        "all": "الكل",
+        "resetFilters": "إعادة تعيين الفلاتر"
     },
     "navbar": {
         "title": "لوحة تحكم مستخدمي تعليم",

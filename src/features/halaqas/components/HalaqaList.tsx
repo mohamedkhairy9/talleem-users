@@ -1,71 +1,66 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { useParams } from 'react-router-dom';
-import { Table } from '@/globals/components';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Table, Pagination } from '@/globals/components';
 import { TableColumn } from '@/globals/types';
-import { EyeIcon, EditIcon, TrashIcon } from '@/globals/icons';
-import { useHalaqas } from '../hooks/useHalaqas';
-import { useDeleteHalaqa } from '../hooks/useHalaqas';
+import {
+    EyeIcon,
+    EditIcon,
+    TrashIcon,
+    SearchIcon,
+    SettingsIcon,
+    XIcon
+} from '@/globals/icons';
+import ReactSelectComponent from '@/globals/components/ui/ReactSelect';
+import { useHalaqas, useDeleteHalaqa } from '../hooks/useHalaqas';
+import { useHalaqasListState } from '../hooks/useHalaqasListState';
+import type { HalaqaListItem, BilingualName } from '../types/list.types';
+import { HALAQA_PERIODS, HALAQA_TEACHING_METHODS } from '@/config/halaqa.config';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 
-/** Bilingual name from API */
-interface BilingualName {
-    en?: string;
-    ar?: string;
-}
-
-interface Halaqa {
-    id: number;
-    name?: BilingualName;
-    memorization_program_entity_type?: {
-        id: number;
-        name?: BilingualName;
-        code?: number;
-    };
-    period?: string;
-    teacher?: {
-        id: number;
-        name?: BilingualName;
-    };
-    start_date?: string;
-    end_date?: string;
-    duration_in_days?: number;
-    teaching_method?: string;
-    platform?: {
-        id: number;
-        name?: BilingualName;
-    };
-    max_students?: number;
-    current_students_count?: number;
-    activities?: string[];
-    session_time?: string;
-    session_from?: string;
-    session_to?: string;
-    students?: Array<{ id: number; name?: BilingualName; joined_at?: string }>;
-    [key: string]: any;
-}
-
-interface HalaqaListProps {
-    filters?: Record<string, any>;
-}
-
 /**
  * Halaqa List Component
- * Displays halaqas in a table format
+ * Pagination and filters are synced with URL search params (?page=2&search=...&period=...).
  */
-const HalaqaList: React.FC<HalaqaListProps> = ({ filters = {} }) => {
+const HalaqaList: React.FC = () => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { lang } = useParams<{ lang: string }>();
     const queryClient = useQueryClient();
     const currentLang = i18n.language || lang || 'en';
-    
-    const { data, isLoading, error } = useHalaqas(filters);
+
+    const listState = useHalaqasListState();
+    const { params, page, perPage, search, period, teachingMethod, setPage, setSearch, setPeriod, setTeachingMethod, resetFilters } = listState;
+
+    const { list, meta, isLoading, error } = useHalaqas(params);
     const deleteMutation = useDeleteHalaqa();
 
-    const halaqas: Halaqa[] = data?.data?.data || data?.data || data || [];
+    // Pagination from API meta (current_page, per_page, total, last_page)
+    const total = meta?.total ?? 0;
+    const totalPages = meta?.last_page ?? 1;
+    const currentPage = meta?.current_page ?? page;
+    const hasActiveFilters = !!(search.trim() || period || teachingMethod);
+
+    const [localSearch, setLocalSearch] = useState(search);
+    useEffect(() => {
+        setLocalSearch(search);
+    }, [search]);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setSearch(localSearch);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [localSearch]);
+
+    const periodOptions = [
+        { value: '' as const, label: t('common.all', 'All') },
+        ...HALAQA_PERIODS.map((p) => ({ value: p.value, label: t(p.labelKey, p.value) }))
+    ];
+    const teachingMethodOptions = [
+        { value: '' as const, label: t('common.all', 'All') },
+        ...HALAQA_TEACHING_METHODS.map((m) => ({ value: m.value, label: t(m.labelKey, m.value) }))
+    ];
 
     const getLocalizedText = (obj: BilingualName | string | null | undefined): string => {
         if (typeof obj === 'string') return obj;
@@ -102,7 +97,7 @@ const HalaqaList: React.FC<HalaqaListProps> = ({ filters = {} }) => {
         }
     };
 
-    const columns: TableColumn<Halaqa>[] = [
+    const columns: TableColumn<HalaqaListItem>[] = [
         {
             header: t('halaqa.name', 'Name'),
             accessor: (row) => getLocalizedText(row.name)
@@ -199,12 +194,100 @@ const HalaqaList: React.FC<HalaqaListProps> = ({ filters = {} }) => {
     }
 
     return (
-        <Table
-            columns={columns}
-            data={halaqas}
-            loading={isLoading}
-            emptyMessage={t('halaqa.noHalaqas', 'No halaqas found')}
-        />
+        <div className="space-y-4">
+            {/* Filters bar */}
+            <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 shadow-sm">
+                <div className="mb-3 flex items-center gap-2">
+                    <SettingsIcon width={18} height={18} className="text-gray-500" />
+                    <span className="text-sm font-semibold text-gray-700">
+                        {t('common.filters', 'Filters')}
+                    </span>
+                    {hasActiveFilters && (
+                        <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">
+                            {t('common.active', 'Active')}
+                        </span>
+                    )}
+                </div>
+                {/* Shared filter control: min-h-[48px], bg-white, border-gray-300, rounded-lg */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
+                    {/* Search (debounced 400ms) */}
+                    <div className="sm:col-span-2 lg:col-span-1">
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                            {t('common.search', 'Search')}
+                        </label>
+                        <div className="relative min-h-[48px]">
+                            <span className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3 text-gray-400">
+                                <SearchIcon width={18} height={18} />
+                            </span>
+                            <input
+                                type="text"
+                                placeholder={t('common.searchPlaceholder', 'Search halaqas...')}
+                                value={localSearch}
+                                onChange={(e) => setLocalSearch(e.target.value)}
+                                className="h-[48px] w-full rounded-lg border border-gray-300 bg-white ps-10 pe-3 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                            />
+                        </div>
+                    </div>
+                    {/* Period */}
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                            {t('halaqa.period', 'Period')}
+                        </label>
+                        <ReactSelectComponent
+                            value={period}
+                            onChange={(v) => setPeriod(v !== null && v !== undefined ? String(v) : '')}
+                            options={periodOptions}
+                            placeholder={t('common.all', 'All')}
+                            className="[&_.react-select__control]:min-h-[48px] [&_.react-select__control]:h-[48px]"
+                        />
+                    </div>
+                    {/* Teaching method */}
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                            {t('halaqa.teachingMethod', 'Teaching Method')}
+                        </label>
+                        <ReactSelectComponent
+                            value={teachingMethod}
+                            onChange={(v) =>
+                                setTeachingMethod(v !== null && v !== undefined ? String(v) : '')
+                            }
+                            options={teachingMethodOptions}
+                            placeholder={t('common.all', 'All')}
+                            className="[&_.react-select__control]:min-h-[48px] [&_.react-select__control]:h-[48px]"
+                        />
+                    </div>
+                    {/* Reset */}
+                    <div className="flex items-end sm:col-span-2 lg:col-span-1">
+                        <button
+                            type="button"
+                            onClick={resetFilters}
+                            disabled={!hasActiveFilters}
+                            className="h-[48px] w-full inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
+                        >
+                            <XIcon width={16} height={16} />
+                            {t('common.resetFilters', 'Reset filters')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <Table
+                columns={columns}
+                data={list}
+                loading={isLoading}
+                emptyMessage={t('halaqa.noHalaqas', 'No halaqas found')}
+            />
+
+            {totalPages > 1 && (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    perPage={meta?.per_page ?? perPage}
+                    total={total}
+                    onPageChange={setPage}
+                />
+            )}
+        </div>
     );
 };
 
