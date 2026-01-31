@@ -1,6 +1,18 @@
 import { create } from 'zustand';
 import { cookieService } from '@/utils/cookies';
 import { AuthState, User } from '@/globals/types';
+import type { CompactEntity } from '@/utils/cookies';
+
+function compactEntityToEntity(compact: CompactEntity | undefined): User['entity'] {
+    if (!compact) return undefined;
+    return {
+        id: compact.id ?? 0,
+        ...(compact.memorization_program_entity_type_id != null && {
+            memorization_program_entity_type: { id: compact.memorization_program_entity_type_id }
+        }),
+        ...(compact.session_mode_id != null && { session_mode: { id: compact.session_mode_id } })
+    };
+}
 
 export const useAuthStore = create<AuthState>((set, get) => {
     // Initialize from cookies on store creation
@@ -9,11 +21,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const userData = cookieService.getUserData();
         
         if (token && userData) {
-            // Reconstruct minimal user object from cookie data
             const user: User = {
                 id: userData.id || 0,
                 roles: userData.roles || [],
-                permissions: userData.permissions || []
+                permissions: userData.permissions || [],
+                entity: compactEntityToEntity(userData.entity)
             };
             return { user, isAuthenticated: true };
         }
@@ -34,13 +46,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
                 cookieService.setToken(token);
             }
             
-            // Store user data in cookie (compact format)
+            // Store user data in cookie (compact: id, roles, permissions, entity ids)
             if (user) {
-                cookieService.setUserData({
-                    id: user.id,
-                    roles: user.roles || [],
-                    permissions: user.permissions || []
-                });
+                cookieService.setUserData(user);
             } else {
                 cookieService.setUserData(null);
             }
@@ -70,12 +78,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             const updatedUser = { ...user, ...updatedFields };
             set({ user: updatedUser });
             
-            // Update cookie with new user data
-            cookieService.setUserData({
-                id: updatedUser.id,
-                roles: updatedUser.roles || [],
-                permissions: updatedUser.permissions || []
-            });
+            cookieService.setUserData(updatedUser);
         }
     },
 
@@ -118,17 +121,13 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const userData = cookieService.getUserData();
         
         if (token && userData) {
-            // Reconstruct user object from cookie data
             const user: User = {
                 id: userData.id || 0,
                 roles: userData.roles || [],
-                permissions: userData.permissions || []
+                permissions: userData.permissions || [],
+                entity: compactEntityToEntity(userData.entity)
             };
-            
-            set({
-                user,
-                isAuthenticated: true
-            });
+            set({ user, isAuthenticated: true });
             return token;
         }
         

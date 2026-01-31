@@ -14,16 +14,14 @@ interface LoginResponse {
         user: {
             id: number;
             guid: string | null;
-            name: {
-                en: string;
-                ar: string;
-            };
+            name: { en: string; ar: string };
             email: string;
             phone: string;
             status: boolean;
             locale: string;
             current_app_locale: string;
             user_type: string;
+            entity?: import('@/globals/types').Entity;
             email_verified_at: string | null;
             created_at: string;
             updated_at: string;

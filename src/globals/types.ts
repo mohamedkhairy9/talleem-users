@@ -6,14 +6,25 @@ import React from 'react';
  * Includes both component types and shared application types
  */
 
-// Shared Application Types
+/** Bilingual name from API */
+export interface BilingualName {
+    en?: string;
+    ar?: string;
+}
+
+/** Entity data from login (related entity); used app-wide and for halaqa payloads */
+export interface Entity {
+    id: number;
+    name?: BilingualName;
+    memorization_program_entity_type?: { id: number; name?: BilingualName };
+    session_mode?: { id: number; name?: BilingualName };
+    [key: string]: any;
+}
+
 export interface User {
     id: number;
     guid?: string | null;
-    name?: string | {
-        en: string;
-        ar: string;
-    };
+    name?: string | BilingualName;
     email?: string;
     phone?: string;
     status?: boolean;
@@ -25,6 +36,7 @@ export interface User {
     updated_at?: string;
     roles?: string[];
     permissions?: string[];
+    entity?: Entity;
     [key: string]: any;
 }
 

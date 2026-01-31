@@ -5,17 +5,27 @@ import sideLogo from '@/assets/images/tallem-side-logo.svg';
 interface NavbarProps {
     /** When true, sidebar is collapsed (narrow); navbar aligns with sidebar with no gap */
     isSidebarCollapsed?: boolean;
+    /** Layout direction for LTR/RTL; navbar inset matches sidebar side */
+    direction?: 'ltr' | 'rtl';
 }
 
 /**
  * Navbar Component
+ * In LTR: navbar starts after sidebar (left-16/64). In RTL: navbar ends before sidebar (right-16/64).
  */
-const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed = false }) => {
+const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed = false, direction = 'ltr' }) => {
     const { currentLocale, changeLanguage } = useLocale();
-    const contentLeft = isSidebarCollapsed ? 'lg:left-16' : 'lg:left-64';
+    const insetClasses =
+        direction === 'rtl'
+            ? isSidebarCollapsed
+                ? 'left-0 lg:right-16'
+                : 'left-0 lg:right-64'
+            : isSidebarCollapsed
+                ? 'right-0 lg:left-16'
+                : 'right-0 lg:left-64';
 
     return (
-        <nav className={`fixed top-0 left-0 right-0 ${contentLeft} z-50 bg-white shadow-sm border-b border-gray-200 transition-[left] duration-300`}>
+        <nav className={`fixed top-0 z-50 bg-white shadow-sm border-b border-gray-200 transition-all duration-300 ${insetClasses}`}>
             <div className="px-6 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-4">
                     <img 

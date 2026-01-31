@@ -4,30 +4,46 @@ import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { Table } from '@/globals/components';
 import { TableColumn } from '@/globals/types';
-import { Button } from '@/globals/components';
+import { EyeIcon, EditIcon, TrashIcon } from '@/globals/icons';
 import { useHalaqas } from '../hooks/useHalaqas';
 import { useDeleteHalaqa } from '../hooks/useHalaqas';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 
+/** Bilingual name from API */
+interface BilingualName {
+    en?: string;
+    ar?: string;
+}
+
 interface Halaqa {
     id: number;
-    name?: {
-        en?: string;
-        ar?: string;
-    };
-    teacher?: {
+    name?: BilingualName;
+    memorization_program_entity_type?: {
         id: number;
-        name?: string;
-        email?: string;
+        name?: BilingualName;
+        code?: number;
     };
     period?: string;
+    teacher?: {
+        id: number;
+        name?: BilingualName;
+    };
     start_date?: string;
     end_date?: string;
-    activities?: string[];
-    students_count?: number;
-    session_time?: string;
+    duration_in_days?: number;
     teaching_method?: string;
+    platform?: {
+        id: number;
+        name?: BilingualName;
+    };
+    max_students?: number;
+    current_students_count?: number;
+    activities?: string[];
+    session_time?: string;
+    session_from?: string;
+    session_to?: string;
+    students?: Array<{ id: number; name?: BilingualName; joined_at?: string }>;
     [key: string]: any;
 }
 
@@ -51,11 +67,17 @@ const HalaqaList: React.FC<HalaqaListProps> = ({ filters = {} }) => {
 
     const halaqas: Halaqa[] = data?.data?.data || data?.data || data || [];
 
-    const getLocalizedText = (obj: { en?: string; ar?: string } | string | null | undefined): string => {
+    const getLocalizedText = (obj: BilingualName | string | null | undefined): string => {
         if (typeof obj === 'string') return obj;
-        if (obj && currentLang === 'ar' && obj.ar) return obj.ar;
-        if (obj && obj.en) return obj.en;
+        if (!obj) return t('common.not_available', 'N/A');
+        if (currentLang === 'ar' && obj.ar) return obj.ar;
+        if (obj.en) return obj.en;
         return t('common.not_available', 'N/A');
+    };
+
+    const formatActivities = (activities: string[] | undefined): string => {
+        if (!activities?.length) return '-';
+        return activities.map((a) => t(`halaqa.activity.${a}`, a)).join(', ');
     };
 
     const handleView = (id: number) => {
@@ -87,53 +109,82 @@ const HalaqaList: React.FC<HalaqaListProps> = ({ filters = {} }) => {
         },
         {
             header: t('halaqa.teacher', 'Teacher'),
-            accessor: (row) => row.teacher?.name || row.teacher?.email || t('common.not_available', 'N/A')
+            accessor: (row) => getLocalizedText(row.teacher?.name)
         },
         {
             header: t('halaqa.period', 'Period'),
-            accessor: (row) => row.period ? t(`halaqa.period.${row.period}`, row.period) : '-'
+            accessor: (row) => (row.period ? t(`halaqa.period.${row.period}`, row.period) : '-')
         },
         {
             header: t('halaqa.startDate', 'Start Date'),
-            accessor: (row) => row.start_date ? new Date(row.start_date).toLocaleDateString() : '-'
+            accessor: (row) => (row.start_date ? new Date(row.start_date).toLocaleDateString() : '-')
         },
         {
             header: t('halaqa.endDate', 'End Date'),
-            accessor: (row) => row.end_date ? new Date(row.end_date).toLocaleDateString() : '-'
+            accessor: (row) => (row.end_date ? new Date(row.end_date).toLocaleDateString() : '-')
+        },
+        {
+            header: t('halaqa.sessionTime', 'Session Time'),
+            accessor: (row) => row.session_time || '-'
+        },
+        {
+            header: t('halaqa.activities', 'Activities'),
+            accessor: (row) => formatActivities(row.activities)
+        },
+        {
+            header: t('halaqa.platform', 'Platform'),
+            accessor: (row) => getLocalizedText(row.platform?.name)
+        },
+        {
+            header: t('halaqa.teachingMethod', 'Teaching Method'),
+            accessor: (row) => {
+                if (!row.teaching_method) return '-';
+                const keyMap: Record<string, string> = {
+                    in_person: 'inPerson',
+                    remote: 'remote',
+                    hybrid: 'hybrid'
+                };
+                const labelKey = keyMap[row.teaching_method] ?? row.teaching_method;
+                return t(`halaqa.teachingMethod.${labelKey}`, row.teaching_method);
+            }
         },
         {
             header: t('halaqa.students', 'Students'),
-            accessor: (row) => row.students_count || row.students?.length || 0
+            accessor: (row) =>
+                row.current_students_count ?? row.students?.length ?? row.max_students ?? '-'
         },
         {
             header: t('common.actions', 'Actions'),
             cell: (row) => (
-                <div className="flex gap-2">
-                    <Button
+                <div className="flex items-center gap-1">
+                    <button
                         type="button"
-                        variant="secondary"
-                        size="sm"
                         onClick={() => handleView(row.id)}
+                        className="p-2 rounded-lg text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                        aria-label={t('common.view', 'View')}
+                        title={t('common.view', 'View')}
                     >
-                        {t('common.view', 'View')}
-                    </Button>
-                    <Button
+                        <EyeIcon width={18} height={18} />
+                    </button>
+                    <button
                         type="button"
-                        variant="primary"
-                        size="sm"
                         onClick={() => handleEdit(row.id)}
+                        className="p-2 rounded-lg text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                        aria-label={t('common.edit', 'Edit')}
+                        title={t('common.edit', 'Edit')}
                     >
-                        {t('common.edit', 'Edit')}
-                    </Button>
-                    <Button
+                        <EditIcon width={18} height={18} />
+                    </button>
+                    <button
                         type="button"
-                        variant="danger"
-                        size="sm"
                         onClick={() => handleDelete(row.id)}
                         disabled={deleteMutation.isPending}
+                        className="p-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label={t('common.delete', 'Delete')}
+                        title={t('common.delete', 'Delete')}
                     >
-                        {t('common.delete', 'Delete')}
-                    </Button>
+                        <TrashIcon width={18} height={18} />
+                    </button>
                 </div>
             )
         }

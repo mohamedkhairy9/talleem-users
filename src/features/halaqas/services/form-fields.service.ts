@@ -39,8 +39,9 @@ export interface MemorizationProgramEntityType {
 export const formFieldsService = {
     /**
      * Get teachers list (paginated)
+     * entity_id: filter by entity (from logged-in user's entity)
      */
-    getTeachers: (params: { page?: number; per_page?: number; search?: string } = {}): Promise<{
+    getTeachers: (params: { page?: number; per_page?: number; search?: string; entity_id?: number } = {}): Promise<{
         data: Teacher[];
         meta?: { current_page?: number; last_page?: number; total?: number };
     }> => {
@@ -49,9 +50,9 @@ export const formFieldsService = {
 
     /**
      * Get students list (paginated)
-     * Used for selecting students in forms (e.g., halaqas)
+     * entity_id: filter by entity (from logged-in user's entity)
      */
-    getStudents: (params: { page?: number; per_page?: number; search?: string } = {}): Promise<{
+    getStudents: (params: { page?: number; per_page?: number; search?: string; entity_id?: number } = {}): Promise<{
         data: Student[];
         meta?: { current_page?: number; last_page?: number; total?: number };
     }> => {

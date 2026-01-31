@@ -92,7 +92,10 @@
         "createDescription": "Fill in the form below to create a new halaqa",
         "create": "Create Halaqa",
         "createError": "Error creating halaqa. Please try again.",
-        "name": {
+        "name": "Name",
+        "nameEn": "Name (English)",
+        "nameAr": "Name (Arabic)",
+        "nameFields": {
             "en": "Name (English)",
             "ar": "Name (Arabic)"
         },

@@ -31,12 +31,14 @@ import {
 interface SidebarProps {
     isCollapsed: boolean;
     onToggleCollapse: () => void;
+    /** Layout direction for LTR/RTL; affects hide transform on mobile */
+    direction?: 'ltr' | 'rtl';
 }
 
 /**
  * Sidebar Component
  */
-const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direction = 'ltr' }) => {
     const { user } = useAuthStore();
     const logout = useLogoutMutation();
     const { currentLocale, t } = useLocale();
@@ -170,14 +172,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
                 />
             )}
 
-            {/* Sidebar */}
+            {/* Sidebar: start-0 = left in LTR, right in RTL; hide off-screen on mobile when collapsed */}
             <aside
                 className={`
                     fixed start-0 top-0
                     ${isCollapsed ? 'w-16 lg:w-16' : 'w-64 lg:w-64'} bg-white shadow-sm h-screen z-30
                     border-e border-gray-200
                     transform transition-all duration-300 ease-in-out
-                    ${isCollapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
+                    ${isCollapsed
+                        ? direction === 'rtl'
+                            ? 'translate-x-full lg:translate-x-0'
+                            : '-translate-x-full lg:translate-x-0'
+                        : 'translate-x-0'}
                     flex flex-col
                 `}
             >

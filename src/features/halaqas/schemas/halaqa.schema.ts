@@ -9,7 +9,6 @@ export const createHalaqaSchema = yup.object({
         en: yup.string().required('English name is required')
     }).required('Name is required'),
     teacher_id: yup.number().required('Teacher is required').positive(),
-    memorization_program_entity_type_id: yup.number().required('Memorization program entity type is required').positive(),
     period: yup.string().oneOf(['morning', 'evening'], 'Period must be morning or evening').required('Period is required'),
     start_date: yup.string().required('Start date is required'),
     end_date: yup.string().required('End date is required').test(
@@ -37,7 +36,6 @@ export interface CreateHalaqaFormData {
         en: string;
     };
     teacher_id: number;
-    memorization_program_entity_type_id: number;
     period: 'morning' | 'evening';
     start_date: string;
     end_date: string;

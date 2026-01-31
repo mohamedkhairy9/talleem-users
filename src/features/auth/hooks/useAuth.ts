@@ -40,21 +40,20 @@ export const useLoginMutation = () => {
     return useMutation({
         mutationFn: (credentials: LoginCredentials) => authService.login(credentials),
         onSuccess: (response: any) => {
-            // Handle new API response structure
-            const responseData = response.data || response;
-            const token = responseData.front_access_token || responseData.token;
-            let user = responseData.user || responseData;
-            
-            // Use roles array directly from API response
+            // API: { message, data: { front_access_token, token_type, user } }; axios puts body in response.data
+            const body = response?.data ?? response;
+            const inner = body?.data ?? body;
+            const token = inner.front_access_token ?? inner.token ?? body.front_access_token ?? body.token;
+            let user = inner.user ?? body.user ?? inner;
+            if (typeof user !== 'object' || user === null) user = { id: 0, roles: [], permissions: [] };
+
             if (user.roles && Array.isArray(user.roles)) {
-                // Normalize role names to match app's expected format
                 user.roles = normalizeRoles(user.roles);
             } else {
-                // Fallback: if roles array is missing, initialize empty array
-                // The app should rely on roles from API, not user_type
-                user.roles = [];
+                user.roles = user.roles ?? [];
             }
-            
+            if (!Array.isArray(user.permissions)) user.permissions = user.permissions ?? [];
+
             setUser(user, token);
             setLoading(false);
         },

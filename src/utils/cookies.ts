@@ -14,10 +14,18 @@ const COOKIE_OPTIONS = {
     path: '/'
 };
 
-interface CompactUserData {
+/** Compact entity for cookie (ids only for payloads after refresh) */
+export interface CompactEntity {
+    id?: number;
+    memorization_program_entity_type_id?: number;
+    session_mode_id?: number;
+}
+
+export interface CompactUserData {
     id?: number;
     roles?: string[];
     permissions?: string[];
+    entity?: CompactEntity;
 }
 
 /**
@@ -44,19 +52,27 @@ export const cookieService = {
 
     /**
      * Store user data in cookie (compact format to respect 4KB limit)
-     * Only stores essential data: id, roles, permissions
+     * Stores id, roles, permissions, and entity ids (for halaqa payloads)
      */
-    setUserData: (userData: CompactUserData | null): void => {
+    setUserData: (userData: CompactUserData | { id?: number; roles?: string[]; permissions?: string[]; entity?: { id?: number; memorization_program_entity_type?: { id: number }; session_mode?: { id: number } } } | null): void => {
         if (!userData) {
             Cookies.remove(USER_DATA_KEY, { path: '/' });
             return;
         }
 
-        // Create compact user data object (only essential fields)
+        const entity = userData.entity as { id?: number; memorization_program_entity_type?: { id: number }; session_mode?: { id: number } } | undefined;
         const compactData: CompactUserData = {
             id: userData.id,
             roles: userData.roles || [],
-            permissions: userData.permissions || []
+            permissions: userData.permissions || [],
+            entity:
+                entity && (entity.id != null || entity.memorization_program_entity_type?.id != null || entity.session_mode?.id != null)
+                    ? {
+                          id: entity.id,
+                          memorization_program_entity_type_id: entity.memorization_program_entity_type?.id,
+                          session_mode_id: entity.session_mode?.id
+                      }
+                    : undefined
         };
 
         // Convert to JSON string

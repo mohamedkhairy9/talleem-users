@@ -1,9 +1,11 @@
 import React from 'react';
+import { Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useFormWithValidation } from '@/utils';
 import { FormInput, FormSelect, Button } from '@/globals/components';
 import SelectRFH from '@/globals/components/ui/SelectRFH';
+import { useAuthStore } from '@/stores';
 import { useCreateHalaqa } from '../hooks/useHalaqas';
 import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
 import { toast } from 'react-toastify';
@@ -28,15 +30,12 @@ const CreateHalaqaForm: React.FC = () => {
     const {
         control,
         handleSubmit,
-        formState: { errors },
-        setValue,
-        watch
+        formState: { errors }
     } = useFormWithValidation<CreateHalaqaFormData>({
         schema: createHalaqaSchema,
         defaultValues: {
             name: { ar: '', en: '' },
             teacher_id: 0,
-            memorization_program_entity_type_id: 0,
             period: 'morning',
             start_date: '',
             end_date: '',
@@ -48,15 +47,14 @@ const CreateHalaqaForm: React.FC = () => {
         }
     });
 
+    const entity = useAuthStore((s) => s.user?.entity);
     const {
         teachersOptions,
         studentsOptions,
         platformsOptions,
-        memorizationTypesOptions,
         isLoadingTeachers,
         isLoadingStudents,
         isLoadingPlatforms,
-        isLoadingMemorizationTypes,
     } = useCreateHalaqaFormQueries();
 
     // Get localized options for static fields
@@ -75,10 +73,15 @@ const CreateHalaqaForm: React.FC = () => {
         label: t(method.labelKey, method.value)
     }));
 
-    const selectedActivities = watch('activities') || [];
-
     const onSubmit = async (data: CreateHalaqaFormData) => {
-        createHalaqaMutation.mutate(data, {
+        const memorization_program_entity_type_id = entity?.memorization_program_entity_type?.id ?? 0;
+        const session_mode_id = entity?.session_mode?.id;
+        const payload = {
+            ...data,
+            memorization_program_entity_type_id,
+            ...(session_mode_id != null && { session_mode_id })
+        };
+        createHalaqaMutation.mutate(payload, {
             onSuccess: () => {
                 toast.success(t('halaqa.createSuccess', 'Halaqa created successfully'));
                 queryClient.invalidateQueries({ queryKey: ['halaqas'] });
@@ -97,14 +100,14 @@ const CreateHalaqaForm: React.FC = () => {
                 <FormInput
                     name="name.en"
                     control={control}
-                    label={t('halaqa.name.en', 'Name (English)')}
+                    label={t('halaqa.nameEn', 'Name (English)')}
                     required
                     error={errors.name?.en?.message}
                 />
                 <FormInput
                     name="name.ar"
                     control={control}
-                    label={t('halaqa.name.ar', 'Name (Arabic)')}
+                    label={t('halaqa.nameAr', 'Name (Arabic)')}
                     required
                     error={errors.name?.ar?.message}
                 />
@@ -120,18 +123,6 @@ const CreateHalaqaForm: React.FC = () => {
                 loading={isLoadingTeachers}
                 error={errors.teacher_id?.message}
                 placeholder={t('halaqa.selectTeacher', 'Select a teacher')}
-            />
-
-            {/* Memorization Program Entity Type */}
-            <SelectRFH
-                name="memorization_program_entity_type_id"
-                control={control}
-                label={t('halaqa.memorizationProgramEntityType', 'Memorization Program Entity Type')}
-                required
-                options={memorizationTypesOptions}
-                loading={isLoadingMemorizationTypes}
-                error={errors.memorization_program_entity_type_id?.message}
-                placeholder={t('halaqa.selectMemorizationProgramEntityType', 'Select memorization program entity type')}
             />
 
             {/* Period */}
@@ -165,35 +156,16 @@ const CreateHalaqaForm: React.FC = () => {
             </div>
 
             {/* Activities (Multi-select) */}
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('halaqa.activities', 'Activities')}
-                    <span className="text-red-500 ml-1">*</span>
-                </label>
-                <div className="space-y-2">
-                    {activityOptions.map(activity => (
-                        <label key={activity.value} className="flex items-center">
-                            <input
-                                type="checkbox"
-                                checked={selectedActivities.includes(activity.value as any)}
-                                onChange={(e) => {
-                                    const currentActivities = selectedActivities;
-                                    if (e.target.checked) {
-                                        setValue('activities', [...currentActivities, activity.value as any]);
-                                    } else {
-                                        setValue('activities', currentActivities.filter(a => a !== activity.value));
-                                    }
-                                }}
-                                className="mr-2"
-                            />
-                            <span>{activity.label}</span>
-                        </label>
-                    ))}
-                </div>
-                {errors.activities && (
-                    <p className="mt-1 text-xs text-red-600">{errors.activities.message}</p>
-                )}
-            </div>
+            <SelectRFH
+                name="activities"
+                control={control}
+                label={t('halaqa.activities', 'Activities')}
+                required
+                isMulti
+                options={activityOptions}
+                error={errors.activities?.message}
+                placeholder={t('halaqa.selectActivities', 'Select activities')}
+            />
 
             {/* Students (Multi-select) */}
             <SelectRFH
@@ -208,16 +180,68 @@ const CreateHalaqaForm: React.FC = () => {
                 placeholder={t('halaqa.selectStudents', 'Select students')}
             />
 
-            {/* Session Time */}
-            <FormInput
-                name="session_time"
-                control={control}
-                label={t('halaqa.sessionTime', 'Session Time')}
-                required
-                placeholder="05:00-07:30"
-                helperText={t('halaqa.sessionTimeHelper', 'Format: HH:MM-HH:MM (e.g., 05:00-07:30)')}
-                error={errors.session_time?.message}
-            />
+            {/* Session Time (time range picker) */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('halaqa.sessionTime', 'Session Time')}
+                    <span className="text-red-500 ms-1">*</span>
+                </label>
+                <Controller
+                    name="session_time"
+                    control={control}
+                    render={({ field, fieldState }) => {
+                        const match = (field.value || '').match(/^(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+                        const startTime = match ? match[1] : '';
+                        const endTime = match ? match[2] : '';
+                        return (
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="flex-1 min-w-[120px]">
+                                    <input
+                                        type="time"
+                                        value={startTime}
+                                        onChange={(e) => {
+                                            const start = e.target.value;
+                                            const end = endTime || start;
+                                            field.onChange(start ? `${start}-${end}` : '');
+                                        }}
+                                        onBlur={field.onBlur}
+                                        className={`w-full px-4 py-3 border outline-none rounded-lg focus:border-primary-600 transition-colors duration-200 ${
+                                            fieldState.error ? 'border-red-300 focus:border-red-500' : 'border-gray-300'
+                                        }`}
+                                        aria-label={t('halaqa.sessionStartTime', 'Start time')}
+                                    />
+                                    <span className="block text-xs text-gray-500 mt-0.5">
+                                        {t('halaqa.sessionStartTime', 'Start time')}
+                                    </span>
+                                </div>
+                                <span className="text-gray-400 font-medium pt-5">–</span>
+                                <div className="flex-1 min-w-[120px]">
+                                    <input
+                                        type="time"
+                                        value={endTime}
+                                        onChange={(e) => {
+                                            const end = e.target.value;
+                                            const start = startTime || end;
+                                            field.onChange(end ? `${start}-${end}` : '');
+                                        }}
+                                        onBlur={field.onBlur}
+                                        className={`w-full px-4 py-3 border outline-none rounded-lg focus:border-primary-600 transition-colors duration-200 ${
+                                            fieldState.error ? 'border-red-300 focus:border-red-500' : 'border-gray-300'
+                                        }`}
+                                        aria-label={t('halaqa.sessionEndTime', 'End time')}
+                                    />
+                                    <span className="block text-xs text-gray-500 mt-0.5">
+                                        {t('halaqa.sessionEndTime', 'End time')}
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    }}
+                />
+                {errors.session_time?.message && (
+                    <p className="mt-1 text-xs text-red-600">{errors.session_time.message}</p>
+                )}
+            </div>
 
             {/* Platform */}
             <SelectRFH

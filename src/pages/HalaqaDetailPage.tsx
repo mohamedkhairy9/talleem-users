@@ -16,7 +16,9 @@ const HalaqaDetailPage: React.FC = () => {
 
     const { data, isLoading, error } = useHalaqa(id || '');
 
-    const halaqa = data?.data?.data || data?.data || data;
+    // API returns { data: { id, name, ... } }; axios puts body in response.data
+    const raw = data?.data;
+    const halaqa = raw && typeof raw === 'object' && 'data' in raw ? (raw as { data: any }).data : raw;
 
     const getLocalizedText = (obj: { en?: string; ar?: string } | string | null | undefined): string => {
         if (typeof obj === 'string') return obj;
@@ -92,20 +94,40 @@ const HalaqaDetailPage: React.FC = () => {
                         </div>
                         <div>
                             <p className="text-sm font-medium text-gray-500">{t('halaqa.teacher', 'Teacher')}</p>
+                            <p className="text-base text-gray-800">{getLocalizedText(halaqa.teacher?.name)}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500">{t('halaqa.memorizationProgramEntityType', 'Entity Type')}</p>
                             <p className="text-base text-gray-800">
-                                {halaqa.teacher?.name || halaqa.teacher?.email || t('common.not_available', 'N/A')}
+                                {getLocalizedText(halaqa.memorization_program_entity_type?.name)}
                             </p>
                         </div>
                         <div>
                             <p className="text-sm font-medium text-gray-500">{t('halaqa.period', 'Period')}</p>
                             <p className="text-base text-gray-800">
-                                {halaqa.period ? String(t(`halaqa.period.${halaqa.period}`, halaqa.period)) : '-'}
+                                {halaqa.period ? t(`halaqa.period.${halaqa.period}`, halaqa.period) : '-'}
                             </p>
                         </div>
                         <div>
                             <p className="text-sm font-medium text-gray-500">{t('halaqa.teachingMethod', 'Teaching Method')}</p>
                             <p className="text-base text-gray-800">
-                                {halaqa.teaching_method ? String(t(`halaqa.teachingMethod.${halaqa.teaching_method}`, halaqa.teaching_method)) : '-'}
+                                {halaqa.teaching_method
+                                    ? t(
+                                          `halaqa.teachingMethod.${halaqa.teaching_method === 'in_person' ? 'inPerson' : halaqa.teaching_method}`,
+                                          halaqa.teaching_method
+                                      )
+                                    : '-'}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500">{t('halaqa.platform', 'Platform')}</p>
+                            <p className="text-base text-gray-800">{getLocalizedText(halaqa.platform?.name)}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500">{t('halaqa.students', 'Students')}</p>
+                            <p className="text-base text-gray-800">
+                                {[halaqa.current_students_count, halaqa.students?.length].find((n) => n != null) ?? '-'}
+                                {halaqa.max_students != null ? ` / ${halaqa.max_students}` : ''}
                             </p>
                         </div>
                     </div>
@@ -162,13 +184,15 @@ const HalaqaDetailPage: React.FC = () => {
                             {t('halaqa.students', 'Students')} ({halaqa.students.length})
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {halaqa.students.map((student: any, index: number) => (
+                            {halaqa.students.map((student: { id: number; name?: { en?: string; ar?: string }; joined_at?: string }, index: number) => (
                                 <div key={student.id || index} className="p-3 bg-gray-50 rounded-lg">
                                     <p className="text-sm font-medium text-gray-800">
-                                        {student.name || student.email || `Student #${student.id}`}
+                                        {getLocalizedText(student.name) || `Student #${student.id}`}
                                     </p>
-                                    {student.email && (
-                                        <p className="text-xs text-gray-500">{student.email}</p>
+                                    {student.joined_at && (
+                                        <p className="text-xs text-gray-500">
+                                            {t('halaqa.joinedAt', 'Joined')}: {new Date(student.joined_at).toLocaleDateString()}
+                                        </p>
                                     )}
                                 </div>
                             ))}
@@ -176,15 +200,36 @@ const HalaqaDetailPage: React.FC = () => {
                     </div>
                 )}
 
-                {/* Platform */}
-                {halaqa.platform && (
+                {/* Duration / extra info */}
+                {(halaqa.duration_in_days != null || halaqa.weekly_holiday || halaqa.evaluation_system) && (
                     <div>
-                        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                            {t('halaqa.platform', 'Platform')}
-                        </h2>
-                        <p className="text-base text-gray-800">
-                            {halaqa.platform.name || halaqa.platform_id || t('common.not_available', 'N/A')}
-                        </p>
+                        <h2 className="text-lg font-semibold text-gray-800 mb-4">{t('halaqa.extraInfo', 'Additional Info')}</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {halaqa.duration_in_days != null && (
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">{t('halaqa.durationInDays', 'Duration (days)')}</p>
+                                    <p className="text-base text-gray-800">{halaqa.duration_in_days}</p>
+                                </div>
+                            )}
+                            {halaqa.weekly_holiday && (
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">{t('halaqa.weeklyHoliday', 'Weekly holiday')}</p>
+                                    <p className="text-base text-gray-800">{halaqa.weekly_holiday}</p>
+                                </div>
+                            )}
+                            {halaqa.evaluation_system && (
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">{t('halaqa.evaluationSystem', 'Evaluation system')}</p>
+                                    <p className="text-base text-gray-800">{halaqa.evaluation_system}</p>
+                                </div>
+                            )}
+                            {halaqa.total_mark != null && (
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">{t('halaqa.totalMark', 'Total mark')}</p>
+                                    <p className="text-base text-gray-800">{halaqa.total_mark}</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

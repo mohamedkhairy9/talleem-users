@@ -6,7 +6,8 @@ export interface CreateHalaqaPayload {
         en: string;
     };
     teacher_id: number;
-    memorization_program_entity_type_id: number;
+    memorization_program_entity_type_id: number; // Set from entity (auth store)
+    session_mode_id?: number; // Set from entity (auth store) if API expects it
     period: 'morning' | 'evening';
     start_date: string;
     end_date: string;

@@ -24,4 +24,6 @@ export { default as CircleIcon } from './CircleIcon';
 export { default as PlusIcon } from './PlusIcon';
 export { default as ChevronDownIcon } from './ChevronDownIcon';
 export { default as ChevronRightIcon } from './ChevronRightIcon';
+export { default as EditIcon } from './EditIcon';
+export { default as TrashIcon } from './TrashIcon';
 export { default as IconBase } from './IconBase';
