@@ -82,7 +82,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
         return true;
     });
 
-    const currentPath = getCurrentPathWithoutLang();
+    const rawCurrentPath = getCurrentPathWithoutLang();
+    /** Normalize for comparison: no leading/trailing slashes (e.g. "/halaqas" → "halaqas") */
+    const currentPath = rawCurrentPath.replace(/^\/+|\/+$/g, '') || '';
 
     const handleLinkClick = () => {
         // Collapse sidebar on mobile when a link is clicked
@@ -114,7 +116,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
         if (!iconName) return null;
         const IconComponent = iconMap[iconName];
         if (!IconComponent) return null;
-        return <IconComponent width={isCollapsed ? 24 : 20} height={isCollapsed ? 24 : 20} className="flex-shrink-0" />;
+        return <IconComponent width={isCollapsed ? 24 : 20} height={isCollapsed ? 24 : 20} className="shrink-0" />;
     };
 
     // Toggle expandable menu item
@@ -130,17 +132,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
         });
     };
 
+    /** Normalize menu path for comparison (strip slashes, treat empty as '') */
+    const normalizeMenuPath = (path: string): string => (path ?? '').replace(/^\/+|\/+$/g, '') || '';
+
     // Check if a path matches current path (including subitems)
     const isPathActive = (itemPath: string, subItems?: MenuItem[]): boolean => {
-        if (currentPath === itemPath) return true;
+        const normalizedItem = normalizeMenuPath(itemPath);
+        if (currentPath === normalizedItem) return true;
         if (subItems) {
-            return subItems.some(subItem => {
-                const normalizedSubPath = subItem.path === '' ? '' : subItem.path;
-                return currentPath === normalizedSubPath;
-            });
+            return subItems.some(subItem => currentPath === normalizeMenuPath(subItem.path));
         }
         return false;
     };
+
+    // Auto-expand parent when current page is a sub-item (so active sub-link is visible)
+    React.useEffect(() => {
+        visibleMenuItems.forEach(item => {
+            if (item.subItems?.length && !expandedItems.has(item.path)) {
+                const hasActiveChild = item.subItems.some(sub =>
+                    currentPath === normalizeMenuPath(sub.path)
+                );
+                if (hasActiveChild) {
+                    setExpandedItems(prev => new Set(prev).add(item.path));
+                }
+            }
+        });
+    }, [currentPath]);
 
     return (
         <>
@@ -156,30 +173,28 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
             {/* Sidebar */}
             <aside
                 className={`
-                    fixed start-0 top-20 lg:top-20
-                    ${isCollapsed ? 'w-16 lg:w-16' : 'w-64 lg:w-64'} bg-white shadow-sm h-[calc(100vh-5rem)] lg:h-[calc(100vh-5rem)] z-30
+                    fixed start-0 top-0
+                    ${isCollapsed ? 'w-16 lg:w-16' : 'w-64 lg:w-64'} bg-white shadow-sm h-screen z-30
                     border-e border-gray-200
                     transform transition-all duration-300 ease-in-out
                     ${isCollapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
                     flex flex-col
                 `}
             >
-                {/* Toggle button - Burger when collapsed, Cross when expanded */}
-                <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} p-2 border-b border-gray-200`}>
-                    <button
-                        onClick={onToggleCollapse}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                        aria-label={isCollapsed ? "Expand menu" : "Collapse menu"}
-                    >
-                        {isCollapsed ? (
-                            <MenuIcon width={20} height={20} />
-                        ) : (
-                            <XIcon width={20} height={20} />
-                        )}
-                    </button>
-                </div>
+                {/* Floating toggle button on the sidebar */}
+                <button
+                    onClick={onToggleCollapse}
+                    className="absolute top-3 end-3 z-10 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors shadow-sm bg-white border border-gray-200"
+                    aria-label={isCollapsed ? "Expand menu" : "Collapse menu"}
+                >
+                    {isCollapsed ? (
+                        <MenuIcon width={20} height={20} />
+                    ) : (
+                        <XIcon width={20} height={20} />
+                    )}
+                </button>
 
-                <nav className={`${isCollapsed ? 'p-2' : 'p-4'} flex-1 overflow-y-auto`}>
+                <nav className={`${isCollapsed ? 'p-2 pt-14' : 'p-4 pt-14'} flex-1 overflow-y-auto`}>
                     <ul className="space-y-1 lg:space-y-0.5">
                         {visibleMenuItems.map(item => {
                             const itemPath = getPath(item.path);
@@ -215,8 +230,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
                                             <ul className="ms-4 mt-1 space-y-1">
                                                 {item.subItems.map(subItem => {
                                                     const subItemPath = getPath(subItem.path);
-                                                    const normalizedSubPath = subItem.path === '' ? '' : subItem.path;
-                                                    const isSubActive = currentPath === normalizedSubPath;
+                                                    const isSubActive =
+                                                        currentPath === normalizeMenuPath(subItem.path);
                                                     
                                                     return (
                                                         <li key={subItem.path}>

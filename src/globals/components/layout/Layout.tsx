@@ -19,8 +19,8 @@ const Layout: React.FC = () => {
 
     return (
         <div dir={direction} className="min-h-screen bg-gray-50">
-            {/* Fixed Navbar */}
-            <Navbar />
+            {/* Fixed Navbar - aligned with sidebar edge, no gap */}
+            <Navbar isSidebarCollapsed={isSidebarCollapsed} />
             
             {/* Content area with fixed sidebar */}
             <div className="flex flex-row relative">
@@ -30,8 +30,8 @@ const Layout: React.FC = () => {
                     onToggleCollapse={toggleSidebarCollapse}
                 />
                 
-                {/* Scrollable Main Content */}
-                <main className={`flex-1 pt-20 lg:pt-20 min-h-screen overflow-y-auto relative z-10 transition-all duration-300 ${
+                {/* Scrollable Main Content - no gap; margin matches sidebar width */}
+                <main className={`flex-1 pt-20 min-h-screen overflow-y-auto relative z-10 transition-all duration-300 ${
                     isSidebarCollapsed ? 'ms-0 lg:ms-16' : 'ms-0 lg:ms-64'
                 }`}>
                     <div className="p-6">

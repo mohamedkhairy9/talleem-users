@@ -2,14 +2,20 @@ import React from 'react';
 import { useLocale } from '@/utils';
 import sideLogo from '@/assets/images/tallem-side-logo.svg';
 
+interface NavbarProps {
+    /** When true, sidebar is collapsed (narrow); navbar aligns with sidebar with no gap */
+    isSidebarCollapsed?: boolean;
+}
+
 /**
  * Navbar Component
  */
-const Navbar: React.FC = () => {
+const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed = false }) => {
     const { currentLocale, changeLanguage } = useLocale();
+    const contentLeft = isSidebarCollapsed ? 'lg:left-16' : 'lg:left-64';
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
+        <nav className={`fixed top-0 left-0 right-0 ${contentLeft} z-50 bg-white shadow-sm border-b border-gray-200 transition-[left] duration-300`}>
             <div className="px-6 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-4">
                     <img 
