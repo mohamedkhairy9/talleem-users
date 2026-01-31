@@ -146,6 +146,8 @@ export interface TableProps<T = any> {
     loading?: boolean;
     emptyMessage?: string;
     className?: string;
+    /** When true, table body scrolls with sticky header (use inside flex container with min-h-0) */
+    scrollable?: boolean;
 }
 
 export interface PaginationProps {

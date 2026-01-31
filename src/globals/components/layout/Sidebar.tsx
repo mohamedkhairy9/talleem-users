@@ -163,20 +163,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direct
 
     return (
         <>
-            {/* Backdrop overlay for mobile when sidebar is expanded */}
+            {/* Light backdrop on mobile when sidebar is open - click to close; sidebar draws above (z-[46]) */}
             {!isCollapsed && (
                 <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+                    className="fixed inset-0 z-[45] bg-black/20 lg:hidden"
                     onClick={onToggleCollapse}
                     aria-hidden="true"
                 />
             )}
 
-            {/* Sidebar: start-0 = left in LTR, right in RTL; hide off-screen on mobile when collapsed */}
+            {/* Sidebar: overlay on mobile above backdrop (z-[46]), fixed beside content on lg+ */}
             <aside
                 className={`
-                    fixed start-0 top-0
-                    ${isCollapsed ? 'w-16 lg:w-16' : 'w-64 lg:w-64'} bg-white shadow-sm h-screen z-30
+                    fixed start-0 top-0 z-[46]
+                    ${isCollapsed ? 'w-16 lg:w-16' : 'w-64 lg:w-64'} bg-white shadow-xl h-screen
                     border-e border-gray-200
                     transform transition-all duration-300 ease-in-out
                     ${isCollapsed

@@ -22,11 +22,12 @@ const Layout: React.FC = () => {
             {/* Fixed Navbar - aligned with sidebar edge, no gap; supports LTR and RTL */}
             <Navbar
                 isSidebarCollapsed={isSidebarCollapsed}
+                onToggleSidebar={toggleSidebarCollapse}
                 direction={direction}
             />
             
-            {/* Content area with fixed sidebar */}
-            <div className="flex flex-row relative">
+            {/* Content area: row has min-height so main content gets a defined height */}
+            <div className="flex min-h-[calc(100vh-5rem)] flex-row relative">
                 {/* Fixed Sidebar - start-0 so LTR=left, RTL=right */}
                 <Sidebar
                     isCollapsed={isSidebarCollapsed}
@@ -34,11 +35,11 @@ const Layout: React.FC = () => {
                     direction={direction}
                 />
                 
-                {/* Scrollable Main Content - margin-inline-start matches sidebar (LTR: left, RTL: right) */}
-                <main className={`flex-1 pt-20 min-h-screen overflow-y-auto relative z-10 transition-all duration-300 ${
+                {/* Main Content - takes remaining width, scrolls; bg so content never shows black */}
+                <main className={`flex flex-1 flex-col min-h-[calc(100vh-5rem)] pt-20 overflow-y-auto overflow-x-hidden relative z-10 bg-gray-50 transition-all duration-300 ${
                     isSidebarCollapsed ? 'lg:ms-16' : 'lg:ms-64'
                 }`}>
-                    <div className="p-6">
+                    <div className="flex min-h-full flex-col p-6">
                         <Outlet />
                     </div>
                 </main>

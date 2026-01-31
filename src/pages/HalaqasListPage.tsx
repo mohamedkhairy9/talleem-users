@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/globals/components';
 import HalaqaList from '@/features/halaqas/components/HalaqaList';
-import SeedHalaqasButton from '@/features/halaqas/components/SeedHalaqasButton';
 
 /**
  * Halaqas List Page
@@ -19,8 +18,8 @@ const HalaqasListPage: React.FC = () => {
     };
 
     return (
-        <div className="p-6">
-            <div className="mb-6 flex justify-between items-center">
+        <div className="flex min-h-full flex-col">
+            <div className="shrink-0 mb-6 flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
                         {t('halaqa.listTitle', 'Halaqas')}
@@ -30,7 +29,6 @@ const HalaqasListPage: React.FC = () => {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    {/* <SeedHalaqasButton /> */}
                     <Button
                         type="button"
                         variant="primary"
@@ -40,7 +38,8 @@ const HalaqasListPage: React.FC = () => {
                     </Button>
                 </div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            {/* List area: takes remaining height so table/cards can scroll inside */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-white shadow-sm p-6">
                 <HalaqaList />
             </div>
         </div>

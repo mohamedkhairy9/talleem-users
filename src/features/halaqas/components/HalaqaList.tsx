@@ -14,6 +14,7 @@ import {
 import ReactSelectComponent from '@/globals/components/ui/ReactSelect';
 import { useHalaqas, useDeleteHalaqa } from '../hooks/useHalaqas';
 import { useHalaqasListState } from '../hooks/useHalaqasListState';
+import { HalaqaListMobile } from './HalaqaListMobile';
 import type { HalaqaListItem, BilingualName } from '../types/list.types';
 import { HALAQA_PERIODS, HALAQA_TEACHING_METHODS } from '@/config/halaqa.config';
 import { toast } from 'react-toastify';
@@ -194,9 +195,9 @@ const HalaqaList: React.FC = () => {
     }
 
     return (
-        <div className="space-y-4">
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             {/* Filters bar */}
-            <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 shadow-sm">
+            <div className="flex-shrink-0 rounded-xl border border-gray-200 bg-gray-50/80 p-4 shadow-sm mb-4">
                 <div className="mb-3 flex items-center gap-2">
                     <SettingsIcon width={18} height={18} className="text-gray-500" />
                     <span className="text-sm font-semibold text-gray-700">
@@ -271,22 +272,59 @@ const HalaqaList: React.FC = () => {
                 </div>
             </div>
 
-            <Table
-                columns={columns}
-                data={list}
-                loading={isLoading}
-                emptyMessage={t('halaqa.noHalaqas', 'No halaqas found')}
-            />
+            {/* Mobile: cards - min-h-[280px] keeps area visible on small screens */}
+            <div className="flex flex-1 flex-col overflow-hidden md:hidden min-h-[280px] bg-white rounded-lg">
+                <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+                    <HalaqaListMobile
+                        list={list}
+                        isLoading={isLoading}
+                        hasError={!!error}
+                        errorMessage={error ? t('halaqa.loadError', 'Error loading halaqas.') : undefined}
+                        emptyMessage={t('halaqa.noHalaqas', 'No halaqas found')}
+                        getLocalizedText={getLocalizedText}
+                        formatActivities={formatActivities}
+                        onView={handleView}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        isDeleting={deleteMutation.isPending}
+                    />
+                </div>
+                {totalPages > 1 && (
+                    <div className="flex-shrink-0 pt-3">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            perPage={meta?.per_page ?? perPage}
+                            total={total}
+                            onPageChange={setPage}
+                        />
+                    </div>
+                )}
+            </div>
 
-            {totalPages > 1 && (
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    perPage={meta?.per_page ?? perPage}
-                    total={total}
-                    onPageChange={setPage}
-                />
-            )}
+            {/* Desktop: table with scroll */}
+            <div className="hidden md:flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-hidden">
+                    <Table
+                        columns={columns}
+                        data={list}
+                        loading={isLoading}
+                        emptyMessage={t('halaqa.noHalaqas', 'No halaqas found')}
+                        scrollable
+                    />
+                </div>
+                {totalPages > 1 && (
+                    <div className="flex-shrink-0 pt-3">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            perPage={meta?.per_page ?? perPage}
+                            total={total}
+                            onPageChange={setPage}
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
