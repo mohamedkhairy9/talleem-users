@@ -75,7 +75,11 @@ const Table = <T = any>({
             <div
                 className={`flex flex-col min-h-0 rounded-lg bg-white overflow-hidden ${className}`}
             >
-                <div className="flex-1 min-h-0 overflow-auto overflow-x-auto relative">
+                {/* 
+                    Max height calculation: 100vh - navbar (5rem) - main padding top (5rem) - page header (~6rem) 
+                    - page padding (3rem: 1.5rem top + 1.5rem bottom) - filters (~8rem) - margin (1rem) - pagination (~3.5rem)
+                */}
+                <div className="table-scrollbar flex-1 min-h-0 overflow-auto overflow-x-auto relative max-h-[calc(100vh-5rem-5rem-6rem-3rem-8rem-1rem-3.5rem)]">
                     {loading && data.length > 0 && (
                         <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-20 rounded-lg pointer-events-none">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />

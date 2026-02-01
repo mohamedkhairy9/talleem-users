@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useHalaqa } from '@/features/halaqas/hooks/useHalaqas';
 import { Button } from '@/globals/components';
+import { formatDate } from '@/utils';
 
 /**
  * Halaqa Detail Page
@@ -142,13 +143,13 @@ const HalaqaDetailPage: React.FC = () => {
                         <div>
                             <p className="text-sm font-medium text-gray-500">{t('halaqa.startDate', 'Start Date')}</p>
                             <p className="text-base text-gray-800">
-                                {halaqa.start_date ? new Date(halaqa.start_date).toLocaleDateString() : '-'}
+                                {formatDate(halaqa.start_date)}
                             </p>
                         </div>
                         <div>
                             <p className="text-sm font-medium text-gray-500">{t('halaqa.endDate', 'End Date')}</p>
                             <p className="text-base text-gray-800">
-                                {halaqa.end_date ? new Date(halaqa.end_date).toLocaleDateString() : '-'}
+                                {formatDate(halaqa.end_date)}
                             </p>
                         </div>
                         <div>
@@ -191,7 +192,7 @@ const HalaqaDetailPage: React.FC = () => {
                                     </p>
                                     {student.joined_at && (
                                         <p className="text-xs text-gray-500">
-                                            {t('halaqa.joinedAt', 'Joined')}: {new Date(student.joined_at).toLocaleDateString()}
+                                            {t('halaqa.joinedAt', 'Joined')}: {formatDate(student.joined_at)}
                                         </p>
                                     )}
                                 </div>

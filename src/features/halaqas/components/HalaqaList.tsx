@@ -19,6 +19,7 @@ import type { HalaqaListItem, BilingualName } from '../types/list.types';
 import { HALAQA_PERIODS, HALAQA_TEACHING_METHODS } from '@/config/halaqa.config';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
+import { formatDate } from '@/utils';
 
 /**
  * Halaqa List Component
@@ -113,11 +114,11 @@ const HalaqaList: React.FC = () => {
         },
         {
             header: t('halaqa.startDate', 'Start Date'),
-            accessor: (row) => (row.start_date ? new Date(row.start_date).toLocaleDateString() : '-')
+            accessor: (row) => formatDate(row.start_date)
         },
         {
             header: t('halaqa.endDate', 'End Date'),
-            accessor: (row) => (row.end_date ? new Date(row.end_date).toLocaleDateString() : '-')
+            accessor: (row) => formatDate(row.end_date)
         },
         {
             header: t('halaqa.sessionTime', 'Session Time'),

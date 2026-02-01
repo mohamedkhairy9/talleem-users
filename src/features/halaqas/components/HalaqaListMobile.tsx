@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { EyeIcon, EditIcon, TrashIcon } from '@/globals/icons';
 import type { HalaqaListItem, BilingualName } from '../types/list.types';
+import { formatDate } from '@/utils';
 
 interface HalaqaListMobileProps {
     list: HalaqaListItem[];
@@ -101,9 +102,7 @@ export const HalaqaListMobile: React.FC<HalaqaListMobileProps> = ({
                                     {t('halaqa.startDate', 'Start Date')}
                                 </span>
                                 <span className="text-gray-900 text-end">
-                                    {row.start_date
-                                        ? new Date(row.start_date).toLocaleDateString()
-                                        : '-'}
+                                    {formatDate(row.start_date)}
                                 </span>
                             </div>
                             <div className="flex justify-between gap-2">
