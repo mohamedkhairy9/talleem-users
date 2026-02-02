@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { JoinRequestFormField } from '../types/registration.types';
 import { FormInput, FormSelect, FormTextarea, FormFile, FormCheckbox } from '@/globals/components';
 import { useRegistrationFormOptions, useNeighborhoodsOptions } from '../hooks/useRegistrationFormOptions';
+import { extractLabel } from '../utils/extractLabel';
 
 interface DynamicFormRendererProps<T extends FieldValues = FieldValues> {
     fields: JoinRequestFormField[];
@@ -107,7 +108,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                             key={field.key}
                             name={fieldName}
                             control={control}
-                            label={field.label}
+                            label={extractLabel(field.label)}
                             type="text"
                             required={field.required}
                             error={fieldError?.message}
@@ -121,7 +122,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                         key={field.key}
                         name={fieldName}
                         control={control}
-                        label={field.label}
+                        label={extractLabel(field.label)}
                         type={field.type}
                         required={field.required}
                         error={fieldError?.message}
@@ -135,7 +136,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                         key={field.key}
                         name={fieldName}
                         control={control}
-                        label={field.label}
+                        label={extractLabel(field.label)}
                         required={field.required}
                         error={fieldError?.message}
                         rows={3}
@@ -149,7 +150,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                         key={field.key}
                         name={fieldName}
                         control={control}
-                        label={field.label}
+                        label={extractLabel(field.label)}
                         required={field.required}
                         error={fieldError?.message}
                         disabled={isDisabled}
@@ -162,7 +163,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                         key={field.key}
                         name={fieldName}
                         control={control}
-                        label={field.label}
+                        label={extractLabel(field.label)}
                         required={field.required}
                         error={fieldError?.message}
                         multiple={field.multiple}
@@ -173,12 +174,13 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
 
             case 'object':
                 // Multilingual object (name.ar, name.en)
+                const objectLabel = extractLabel(field.label);
                 return (
                     <div key={field.key} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormInput
                             name={`${fieldName}.ar`}
                             control={control}
-                            label={`${field.label} (Arabic)`}
+                            label={`${objectLabel} (Arabic)`}
                             required={field.required}
                             error={fieldError?.ar?.message}
                             disabled={isDisabled}
@@ -186,7 +188,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                         <FormInput
                             name={`${fieldName}.en`}
                             control={control}
-                            label={`${field.label} (English)`}
+                            label={`${objectLabel} (English)`}
                             required={field.required}
                             error={fieldError?.en?.message}
                             disabled={isDisabled}
@@ -217,7 +219,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                             key={field.key}
                             name={fieldName}
                             control={control}
-                            label={field.label}
+                            label={extractLabel(field.label)}
                             required={field.required}
                             options={staticOptions}
                             error={fieldError?.message}
@@ -274,7 +276,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                         key={field.key}
                         name={fieldName}
                         control={control}
-                        label={field.label}
+                        label={extractLabel(field.label)}
                         required={field.required}
                         options={dynamicOptions}
                         error={fieldError?.message}
@@ -287,7 +289,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
             case 'group':
                 return (
                     <div key={field.key} className="border rounded-lg p-4 space-y-3 bg-gray-50">
-                        <h3 className="text-base font-semibold text-gray-800 mb-3">{field.label}</h3>
+                        <h3 className="text-base font-semibold text-gray-800 mb-3">{extractLabel(field.label)}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {field.fields?.map((subField) => renderField(subField, fieldName))}
                         </div>
@@ -311,7 +313,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                 >
                     {renderField(field)}
                     {(field.note || field.notes) && (
-                        <p className="mt-1 text-xs text-gray-500 italic">{field.note || field.notes}</p>
+                        <p className="mt-1 text-xs text-gray-500 italic">{extractLabel(field.note || field.notes)}</p>
                     )}
                 </div>
             );

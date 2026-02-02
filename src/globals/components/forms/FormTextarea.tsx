@@ -8,6 +8,7 @@ interface FormTextareaProps<T extends FieldValues = FieldValues> {
     error?: string;
     placeholder?: string;
     rows?: number;
+    disabled?: boolean;
 }
 
 /**
@@ -21,6 +22,7 @@ const FormTextarea = <T extends FieldValues = FieldValues>({
     error,
     placeholder,
     rows = 4,
+    disabled,
     ...props
 }: FormTextareaProps<T>) => {
     return (
@@ -39,9 +41,10 @@ const FormTextarea = <T extends FieldValues = FieldValues>({
                         {...field}
                         rows={rows}
                         placeholder={placeholder}
+                        disabled={disabled}
                         className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
                             error || fieldState.error ? 'border-red-500' : 'border-gray-300'
-                        } resize-y`}
+                        } ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''} resize-y`}
                         {...props}
                     />
                     {(error || fieldState.error?.message) && (

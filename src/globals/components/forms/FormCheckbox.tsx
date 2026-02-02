@@ -6,6 +6,7 @@ interface FormCheckboxProps<T extends FieldValues = FieldValues> {
     label?: string;
     required?: boolean;
     error?: string;
+    disabled?: boolean;
 }
 
 /**
@@ -17,6 +18,7 @@ const FormCheckbox = <T extends FieldValues = FieldValues>({
     label,
     required = false,
     error,
+    disabled,
     ...props
 }: FormCheckboxProps<T>) => {
     return (
@@ -30,9 +32,10 @@ const FormCheckbox = <T extends FieldValues = FieldValues>({
                             {...field}
                             type="checkbox"
                             checked={field.value || false}
+                            disabled={disabled}
                             className={`w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary ${
                                 error || fieldState.error ? 'border-red-500' : ''
-                            }`}
+                            } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                             {...props}
                         />
                         {label && (

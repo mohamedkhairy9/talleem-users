@@ -8,6 +8,7 @@ interface FormFileProps<T extends FieldValues = FieldValues> {
     error?: string;
     accept?: string;
     multiple?: boolean;
+    disabled?: boolean;
 }
 
 /**
@@ -21,6 +22,7 @@ const FormFile = <T extends FieldValues = FieldValues>({
     error,
     accept,
     multiple = false,
+    disabled,
     ...props
 }: FormFileProps<T>) => {
     return (
@@ -49,9 +51,10 @@ const FormFile = <T extends FieldValues = FieldValues>({
                             accept={accept}
                             multiple={multiple}
                             onChange={handleChange}
+                            disabled={disabled}
                             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
                                 error || fieldState.error ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            } ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`}
                             {...props}
                         />
                         {(error || fieldState.error?.message) && (
