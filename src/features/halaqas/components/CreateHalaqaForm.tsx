@@ -14,7 +14,7 @@ import {
     HALAQA_PERIODS,
     HALAQA_ACTIVITIES,
     HALAQA_TEACHING_METHODS
-} from '@/config/halaqa.config';
+} from '../config';
 import { createHalaqaSchema, CreateHalaqaFormData } from '../schemas/halaqa.schema';
 
 /**

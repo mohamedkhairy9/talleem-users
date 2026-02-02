@@ -2,11 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Table, Pagination } from '@/globals/components';
-import { TableColumn } from '@/globals/types';
 import {
-    EyeIcon,
-    EditIcon,
-    TrashIcon,
     SearchIcon,
     SettingsIcon,
     XIcon
@@ -15,11 +11,10 @@ import ReactSelectComponent from '@/globals/components/ui/ReactSelect';
 import { useHalaqas, useDeleteHalaqa } from '../hooks/useHalaqas';
 import { useHalaqasListState } from '../hooks/useHalaqasListState';
 import { HalaqaListMobile } from './HalaqaListMobile';
-import type { HalaqaListItem, BilingualName } from '../types/list.types';
-import { HALAQA_PERIODS, HALAQA_TEACHING_METHODS } from '@/config/halaqa.config';
+import type { BilingualName } from '../types/list.types';
+import { HALAQA_PERIODS, HALAQA_TEACHING_METHODS, createHalaqaListColumns } from '../config';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
-import { formatDate } from '@/utils';
 
 /**
  * Halaqa List Component
@@ -99,93 +94,11 @@ const HalaqaList: React.FC = () => {
         }
     };
 
-    const columns: TableColumn<HalaqaListItem>[] = [
-        {
-            header: t('halaqa.name', 'Name'),
-            accessor: (row) => getLocalizedText(row.name)
-        },
-        {
-            header: t('halaqa.teacher', 'Teacher'),
-            accessor: (row) => getLocalizedText(row.teacher?.name)
-        },
-        {
-            header: t('halaqa.period', 'Period'),
-            accessor: (row) => (row.period ? t(`halaqa.period.${row.period}`, row.period) : '-')
-        },
-        {
-            header: t('halaqa.startDate', 'Start Date'),
-            accessor: (row) => formatDate(row.start_date)
-        },
-        {
-            header: t('halaqa.endDate', 'End Date'),
-            accessor: (row) => formatDate(row.end_date)
-        },
-        {
-            header: t('halaqa.sessionTime', 'Session Time'),
-            accessor: (row) => row.session_time || '-'
-        },
-        {
-            header: t('halaqa.activities', 'Activities'),
-            accessor: (row) => formatActivities(row.activities)
-        },
-        {
-            header: t('halaqa.platform', 'Platform'),
-            accessor: (row) => getLocalizedText(row.platform?.name)
-        },
-        {
-            header: t('halaqa.teachingMethod', 'Teaching Method'),
-            accessor: (row) => {
-                if (!row.teaching_method) return '-';
-                const keyMap: Record<string, string> = {
-                    in_person: 'inPerson',
-                    remote: 'remote',
-                    hybrid: 'hybrid'
-                };
-                const labelKey = keyMap[row.teaching_method] ?? row.teaching_method;
-                return t(`halaqa.teachingMethod.${labelKey}`, row.teaching_method);
-            }
-        },
-        {
-            header: t('halaqa.students', 'Students'),
-            accessor: (row) =>
-                row.current_students_count ?? row.students?.length ?? row.max_students ?? '-'
-        },
-        {
-            header: t('common.actions', 'Actions'),
-            cell: (row) => (
-                <div className="flex items-center gap-1">
-                    <button
-                        type="button"
-                        onClick={() => handleView(row.id)}
-                        className="p-2 rounded-lg text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                        aria-label={t('common.view', 'View')}
-                        title={t('common.view', 'View')}
-                    >
-                        <EyeIcon width={18} height={18} />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handleEdit(row.id)}
-                        className="p-2 rounded-lg text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                        aria-label={t('common.edit', 'Edit')}
-                        title={t('common.edit', 'Edit')}
-                    >
-                        <EditIcon width={18} height={18} />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handleDelete(row.id)}
-                        disabled={deleteMutation.isPending}
-                        className="p-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        aria-label={t('common.delete', 'Delete')}
-                        title={t('common.delete', 'Delete')}
-                    >
-                        <TrashIcon width={18} height={18} />
-                    </button>
-                </div>
-            )
-        }
-    ];
+    const columns = createHalaqaListColumns({
+        t,
+        getLocalizedText,
+        formatActivities
+    });
 
     if (error) {
         return (
@@ -312,6 +225,16 @@ const HalaqaList: React.FC = () => {
                         loading={isLoading}
                         emptyMessage={t('halaqa.noHalaqas', 'No halaqas found')}
                         scrollable
+                        actionButtons={{
+                            showView: true,
+                            showEdit: true,
+                            showDelete: true,
+                            onView: (row) => handleView(row.id),
+                            onEdit: (row) => handleEdit(row.id),
+                            onDelete: (row) => handleDelete(row.id),
+                            isDeleting: deleteMutation.isPending,
+                            getRowId: (row) => row.id
+                        }}
                     />
                 </div>
                 {totalPages > 1 && (

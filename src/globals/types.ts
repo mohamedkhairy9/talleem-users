@@ -140,6 +140,17 @@ export interface TableColumn<T = any> {
     cell?: (row: T) => React.ReactNode;
 }
 
+export interface TableActionButtons<T = any> {
+    showView?: boolean;
+    showEdit?: boolean;
+    showDelete?: boolean;
+    onView?: (row: T) => void;
+    onEdit?: (row: T) => void;
+    onDelete?: (row: T) => void;
+    isDeleting?: boolean;
+    getRowId?: (row: T) => number | string;
+}
+
 export interface TableProps<T = any> {
     columns?: TableColumn<T>[];
     data?: T[];
@@ -148,6 +159,8 @@ export interface TableProps<T = any> {
     className?: string;
     /** When true, table body scrolls with sticky header (use inside flex container with min-h-0) */
     scrollable?: boolean;
+    /** Action buttons configuration for dynamic action column */
+    actionButtons?: TableActionButtons<T>;
 }
 
 export interface PaginationProps {

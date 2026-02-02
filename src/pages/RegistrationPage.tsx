@@ -85,7 +85,7 @@ const RegistrationPage: React.FC = () => {
                 {/* Left Section - Registration Form */}
                 <div className="flex-1 flex items-center lg:items-end justify-center px-8 py-8 lg:py-0">
                     <div
-                        className={`w-full max-w-5xl transition-all duration-1000 ease-out transform ${
+                        className={`w-full max-w-7xl transition-all duration-1000 ease-out transform ${
                             isVisible
                                 ? 'translate-y-0 opacity-100'
                                 : 'translate-y-full opacity-0'

@@ -1,4 +1,7 @@
-import { TableProps } from '@/globals/types';
+import React from 'react';
+import { TableProps, TableColumn } from '@/globals/types';
+import { EyeIcon, EditIcon, TrashIcon } from '@/globals/icons';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Table Component
@@ -11,16 +14,77 @@ const Table = <T = any>({
     loading = false,
     emptyMessage = 'No data available',
     className = '',
-    scrollable = true
+    scrollable = true,
+    actionButtons
 }: TableProps<T>) => {
+    const { t } = useTranslation();
     const isEmpty = !loading && data.length === 0;
+
+    // Render action buttons if configured
+    const renderActionButtons = (row: T) => {
+        if (!actionButtons) return null;
+
+        const { showView, showEdit, showDelete, onView, onEdit, onDelete, isDeleting } = actionButtons;
+        const hasAnyAction = showView || showEdit || showDelete;
+        
+        if (!hasAnyAction) return null;
+
+        return (
+            <div className="flex items-center gap-1">
+                {showView && onView && (
+                    <button
+                        type="button"
+                        onClick={() => onView(row)}
+                        className="p-2 rounded-lg text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                        aria-label={t('common.view', 'View')}
+                        title={t('common.view', 'View')}
+                    >
+                        <EyeIcon width={18} height={18} />
+                    </button>
+                )}
+                {showEdit && onEdit && (
+                    <button
+                        type="button"
+                        onClick={() => onEdit(row)}
+                        className="p-2 rounded-lg text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                        aria-label={t('common.edit', 'Edit')}
+                        title={t('common.edit', 'Edit')}
+                    >
+                        <EditIcon width={18} height={18} />
+                    </button>
+                )}
+                {showDelete && onDelete && (
+                    <button
+                        type="button"
+                        onClick={() => onDelete(row)}
+                        disabled={isDeleting}
+                        className="p-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label={t('common.delete', 'Delete')}
+                        title={t('common.delete', 'Delete')}
+                    >
+                        <TrashIcon width={18} height={18} />
+                    </button>
+                )}
+            </div>
+        );
+    };
+
+    // Combine columns with action column if configured
+    const actionColumn: TableColumn<T> | null = actionButtons && (actionButtons.showView || actionButtons.showEdit || actionButtons.showDelete)
+        ? {
+              header: t('common.actions', 'Actions'),
+              cell: (row: T) => renderActionButtons(row)
+          }
+        : null;
+    
+    const allColumns: TableColumn<T>[] = actionColumn ? [...columns, actionColumn] : columns;
 
     const tableContent = (
         <>
             <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
                     <tr>
-                        {columns.map((column, index) => (
+                        {allColumns.map((column, index) => (
                             <th
                                 key={index}
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -33,7 +97,7 @@ const Table = <T = any>({
                 <tbody className="bg-white divide-y divide-gray-200">
                     {data.map((row, rowIndex) => (
                         <tr key={rowIndex} className="hover:bg-gray-50">
-                            {columns.map((column, colIndex) => (
+                            {allColumns.map((column, colIndex) => (
                                 <td
                                     key={colIndex}
                                     className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"

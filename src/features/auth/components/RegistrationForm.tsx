@@ -9,6 +9,9 @@ import { Button } from '@/globals/components';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ROUTE_PATHS } from '@/config';
+import { registrationService } from '../services/registration.service';
+import { useWatch } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 
 interface RegistrationFormProps {
     userType: UserRoleType;
@@ -41,11 +44,53 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
     const {
         control,
         handleSubmit,
-        formState: { errors }
+        formState: { errors },
+        setValue
     } = useFormWithValidation({
         schema,
         defaultValues
     });
+
+    // Watch branch_id and main_program_id to handle dependencies
+    const branchId = useWatch({ control, name: 'branch_id' });
+    const mainProgramId = useWatch({ control, name: 'main_program_id' });
+
+    // Fetch branches to get city from selected branch (always enabled for select options)
+    const { data: branchesData } = useQuery({
+        queryKey: ['branches'],
+        queryFn: () => registrationService.getBranches(),
+        staleTime: 5 * 60 * 1000
+    });
+
+    // Get selected branch and extract city
+    const selectedBranch = React.useMemo(() => {
+        if (!branchId || !branchesData?.data) return null;
+        return branchesData.data.find((b: any) => (b.id || b.value) == branchId);
+    }, [branchId, branchesData]);
+
+    // Auto-set city_id from selected branch's city when branch changes
+    React.useEffect(() => {
+        if (branchId && selectedBranch?.city) {
+            const branchCityId = selectedBranch.city.id || selectedBranch.city_id;
+            if (branchCityId) {
+                setValue('city_id', branchCityId, { shouldValidate: false });
+                // Reset neighborhood when city changes
+                setValue('neighborhood_id', '');
+            }
+        } else if (!branchId) {
+            // Reset city and neighborhood when branch is cleared
+            setValue('city_id', '');
+            setValue('neighborhood_id', '');
+        }
+    }, [branchId, selectedBranch, setValue]);
+
+    // Reset dependent fields when main_program_id changes
+    React.useEffect(() => {
+        if (mainProgramId) {
+            setValue('memorization_program_entity_type_id', '');
+            setValue('education_program_entity_type_id', '');
+        }
+    }, [mainProgramId, setValue]);
 
     const onSubmit = async (data: any) => {
         if (!formData) return;
@@ -207,7 +252,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
 
             {/* Sticky submit buttons */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-4 z-10 shadow-lg">
-                <div className="max-w-5xl mx-auto flex flex-col gap-3">
+                <div className="max-w-7xl mx-auto flex flex-col gap-3">
                     <div className="flex gap-4 justify-end">
                         <Button type="button" variant="secondary" onClick={onBack} disabled={submitMutation.isPending}>
                             {t('common.back', 'Back')}
