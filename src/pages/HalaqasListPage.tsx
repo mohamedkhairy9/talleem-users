@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/globals/components';
 import HalaqaList from '@/features/halaqas/components/HalaqaList';
+import SeedHalaqasButton from '@/features/halaqas/components/SeedHalaqasButton';
 
 /**
  * Halaqas List Page
@@ -29,6 +30,7 @@ const HalaqasListPage: React.FC = () => {
                     </p>
                 </div>
                 <div className="flex gap-2">
+                    <SeedHalaqasButton />
                     <Button
                         type="button"
                         variant="primary"

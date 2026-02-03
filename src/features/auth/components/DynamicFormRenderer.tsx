@@ -1,8 +1,8 @@
 import React from 'react';
-import { Control, FieldValues, useWatch } from 'react-hook-form';
+import { Control, FieldValues, useWatch, UseFormSetValue } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { JoinRequestFormField } from '../types/registration.types';
-import { FormInput, FormSelect, FormTextarea, FormFile, FormCheckbox } from '@/globals/components';
+import { FormInput, FormSelect, FormTextarea, FormFile, FormCheckbox, MapPicker } from '@/globals/components';
 import { useRegistrationFormOptions, useNeighborhoodsOptions } from '../hooks/useRegistrationFormOptions';
 import { extractLabel } from '../utils/extractLabel';
 
@@ -10,6 +10,7 @@ interface DynamicFormRendererProps<T extends FieldValues = FieldValues> {
     fields: JoinRequestFormField[];
     control: Control<T>;
     errors: any;
+    setValue?: UseFormSetValue<T>;
 }
 
 /**
@@ -20,15 +21,22 @@ interface DynamicFormRendererProps<T extends FieldValues = FieldValues> {
 const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     fields,
     control,
-    errors
+    errors,
+    setValue
 }: DynamicFormRendererProps<T>) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const currentLang = i18n.language || 'en';
+    
+    // Use setValue prop or fallback to any type for dynamic field names
+    const setValueFn = (setValue as any) || (() => {});
     
     // Watch form values for dependencies
     const formValues = useWatch({ control });
     const branchId = formValues?.branch_id;
     const cityId = formValues?.city_id;
     const mainProgramId = formValues?.main_program_id;
+    const latitude = formValues?.latitude;
+    const longitude = formValues?.longitude;
 
     // Fetch all form options
     const options = useRegistrationFormOptions();
@@ -43,6 +51,30 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     const branchCity = React.useMemo(() => {
         return selectedBranch?.city || null;
     }, [selectedBranch]);
+
+    // Get city name from branch's city object (bilingual)
+    const cityName = React.useMemo(() => {
+        if (!branchCity) return '';
+        
+        // Handle the structure: branch.city.name.en or branch.city.name.ar
+        if (typeof branchCity === 'object' && branchCity.name) {
+            if (typeof branchCity.name === 'object') {
+                return currentLang === 'ar' && branchCity.name.ar 
+                    ? branchCity.name.ar 
+                    : (branchCity.name.en || '');
+            }
+            return String(branchCity.name);
+        }
+        
+        // Fallback for other structures
+        if (typeof branchCity === 'object') {
+            return currentLang === 'ar' && branchCity.ar 
+                ? branchCity.ar 
+                : (branchCity.en || '');
+        }
+        
+        return String(branchCity || '');
+    }, [branchCity, currentLang]);
 
     // Fetch neighborhoods based on city_id
     const neighborhoodsOptions = useNeighborhoodsOptions(cityId);
@@ -65,8 +97,13 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     const isFieldDisabled = (field: JoinRequestFormField, prefix = ''): boolean => {
         if (field.disabled) return true;
 
-        // Disable city_id, neighborhood_id if branch_id is not selected
-        if (field.key === 'city_id' || field.key === 'neighborhood_id') {
+        // Disable city_id when branch is selected (city comes from branch, read-only)
+        if (field.key === 'city_id') {
+            return !!branchId; // Disable when branch is selected
+        }
+
+        // Disable neighborhood_id if branch_id is not selected
+        if (field.key === 'neighborhood_id') {
             return !branchId;
         }
 
@@ -98,11 +135,13 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
             case 'email':
             case 'number':
             case 'date':
+                // Hide latitude and longitude fields - they will be handled by MapPicker
+                if (field.key === 'latitude' || field.key === 'longitude') {
+                    return null;
+                }
+                
                 // Special handling for city_id - show city name from branch (read-only)
                 if (field.key === 'city_id' && branchCity) {
-                    const cityName = typeof branchCity === 'object' 
-                        ? (branchCity.ar || branchCity.en || branchCity.name?.ar || branchCity.name?.en || '')
-                        : String(branchCity || '');
                     return (
                         <FormInput
                             key={field.key}
@@ -229,6 +268,23 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                     );
                 }
 
+                // Special handling for city_id - show as read-only text input with city name from branch
+                if (field.key === 'city_id' && branchCity) {
+                    return (
+                        <FormInput
+                            key={field.key}
+                            name={fieldName}
+                            control={control}
+                            label={extractLabel(field.label)}
+                            type="text"
+                            required={field.required}
+                            error={fieldError?.message}
+                            disabled={true}
+                            value={cityName}
+                        />
+                    );
+                }
+
                 // Handle dynamic select with API call
                 let dynamicOptions: Array<{ value: string | number; label: string }> = [];
                 let isLoadingOptions = false;
@@ -301,6 +357,16 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
         }
     };
 
+    // Check if latitude and longitude fields exist
+    const hasLatitudeField = fields.some(f => f.key === 'latitude');
+    const hasLongitudeField = fields.some(f => f.key === 'longitude');
+    const hasMapFields = hasLatitudeField && hasLongitudeField;
+    
+    // Get latitude and longitude field labels
+    const latitudeField = fields.find(f => f.key === 'latitude');
+    const longitudeField = fields.find(f => f.key === 'longitude');
+    const mapLabel = latitudeField?.label || longitudeField?.label || t('common.map_location', 'Map Location');
+
     // Separate fields by type for better layout
     const renderFields = () => {
         return fields.map((field) => {
@@ -321,9 +387,49 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     };
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {renderFields()}
-        </div>
+        <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {renderFields()}
+            </div>
+            
+            {/* Map Picker for latitude and longitude - render at the end */}
+            {hasMapFields && (
+                <div className="col-span-full mt-6 space-y-3">
+                    <h4 className="text-md font-medium text-gray-700">
+                        {extractLabel(mapLabel)}
+                    </h4>
+                    <MapPicker
+                        onLocationSelect={({ lat, lng }) => {
+                            setValueFn('latitude', lat.toString(), {
+                                shouldValidate: true
+                            });
+                            setValueFn('longitude', lng.toString(), {
+                                shouldValidate: true
+                            });
+                        }}
+                        oldLocation={
+                            latitude && longitude
+                                ? {
+                                      lat: parseFloat(latitude.toString()),
+                                      lng: parseFloat(longitude.toString())
+                                  }
+                                : null
+                        }
+                        disabled={false}
+                    />
+                    {(errors.latitude || errors.longitude) && (
+                        <div className="mt-1">
+                            {errors.latitude && (
+                                <p className="text-xs text-red-600">{errors.latitude.message}</p>
+                            )}
+                            {errors.longitude && (
+                                <p className="text-xs text-red-600">{errors.longitude.message}</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+        </>
     );
 };
 
