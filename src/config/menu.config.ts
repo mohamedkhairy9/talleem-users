@@ -4,9 +4,14 @@ import { ROUTE_PATHS } from './routes.config';
 /**
  * Menu Configuration
  * Centralized menu items configuration
- * Menu items are dynamic based on user roles and permissions
+ * Menu items are dynamic based on user roles, permissions, and main_program
  */
-export const MENU_ITEMS: MenuItem[] = [
+
+/**
+ * Memorization Program Menu (main_program.id === 2)
+ * For entity managers with memorization program
+ */
+export const MEMORIZATION_MENU_ITEMS: MenuItem[] = [
     {
         path: ROUTE_PATHS.HALAQAS,
         labelKey: 'menu.halaqas',
@@ -26,3 +31,102 @@ export const MENU_ITEMS: MenuItem[] = [
         ]
     }
 ];
+
+/**
+ * Education Program Menu (for other main_program types)
+ * Add menu items for education program here
+ */
+export const EDUCATION_MENU_ITEMS: MenuItem[] = [
+    // Add education program menu items here
+    // Example:
+    // {
+    //     path: ROUTE_PATHS.EDUCATION_CLASSES,
+    //     labelKey: 'menu.educationClasses',
+    //     icon: 'BookIcon',
+    //     roles: ['entity_manager']
+    // }
+];
+
+/**
+ * Teacher Menu Items
+ * For users with teacher role
+ */
+export const TEACHER_MENU_ITEMS: MenuItem[] = [
+    {
+        path: ROUTE_PATHS.STUDY_PLAN,
+        labelKey: 'menu.studyPlan',
+        icon: 'BookOpenIcon',
+        roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.ABSENCES,
+        labelKey: 'menu.absences',
+        icon: 'CalendarIcon',
+        roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.GRADES,
+        labelKey: 'menu.grades',
+        icon: 'StarIcon',
+        roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.CERTIFICATES,
+        labelKey: 'menu.certificates',
+        icon: 'AwardIcon',
+        roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.WARNINGS,
+        labelKey: 'menu.warnings',
+        icon: 'AlertTriangleIcon',
+        roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.TRANSFERS,
+        labelKey: 'menu.transfers',
+        icon: 'ArrowRightLeftIcon',
+        roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.EVALUATIONS,
+        labelKey: 'menu.evaluations',
+        icon: 'ClipboardCheckIcon',
+        roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.DIARY,
+        labelKey: 'menu.diary',
+        icon: 'BookIcon',
+        roles: ['teacher']
+    }
+];
+
+/**
+ * Get menu items based on user's main_program and roles
+ */
+export const getMenuItems = (mainProgramId?: number, userRoles?: string[]): MenuItem[] => {
+    const menuItems: MenuItem[] = [];
+    
+    // Add program-specific menu items
+    if (mainProgramId === 2) {
+        // Memorization program
+        menuItems.push(...MEMORIZATION_MENU_ITEMS);
+    } else if (mainProgramId !== undefined && mainProgramId !== 2) {
+        // Other programs (education, etc.)
+        menuItems.push(...EDUCATION_MENU_ITEMS);
+    }
+    
+    // Add teacher menu items if user has teacher role
+    if (userRoles?.includes('teacher')) {
+        menuItems.push(...TEACHER_MENU_ITEMS);
+    }
+    
+    return menuItems;
+};
+
+/**
+ * Default menu items (for backward compatibility)
+ * @deprecated Use getMenuItems instead
+ */
+export const MENU_ITEMS: MenuItem[] = MEMORIZATION_MENU_ITEMS;

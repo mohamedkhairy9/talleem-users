@@ -6,6 +6,7 @@ import EntityManagersPage from '@/pages/EntityManagersPage';
 import HalaqasListPage from '@/pages/HalaqasListPage';
 import HalaqaDetailPage from '@/pages/HalaqaDetailPage';
 import CreateHalaqaPage from '@/pages/CreateHalaqaPage';
+import EditHalaqaPage from '@/pages/EditHalaqaPage';
 
 /**
  * Application Routes Configuration
@@ -29,6 +30,11 @@ export const routes: RouteConfig[] = [
     {
         path: ROUTE_PATHS.HALAQAS,
         element: <HalaqasListPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.EDIT_HALAQA,
+        element: <EditHalaqaPage />,
         roles: ['entity_manager']
     },
     {

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/stores';
 import { useLogoutMutation } from '@/features/auth';
 import { useLocale } from '@/utils';
-import { MENU_ITEMS } from '@/config';
+import { getMenuItems } from '@/config';
 import { useLanguagePath } from '@/utils/hooks/useLanguagePath';
 import { Button } from '@/globals/components';
 import { MenuItem } from '@/globals/types';
@@ -62,8 +62,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direct
         return user.name || user.email || t('common.user', 'User');
     };
 
+    // Get menu items based on main_program and roles
+    const mainProgramId = user?.entity?.main_program?.id;
+    const programMenuItems = getMenuItems(mainProgramId, user?.roles);
+    
     // Filter menu items based on user roles and permissions
-    const visibleMenuItems = MENU_ITEMS.filter(item => {
+    const visibleMenuItems = programMenuItems.filter(item => {
         // If no restrictions, show to everyone
         if (!item.roles && !item.permissions) return true;
         
@@ -136,13 +140,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direct
     /** Normalize menu path for comparison (strip slashes, treat empty as '') */
     const normalizeMenuPath = (path: string): string => (path ?? '').replace(/^\/+|\/+$/g, '') || '';
 
-    // Check if a path matches current path (including subitems)
+    // Check if a path matches current path (including subitems and sub-routes)
     const isPathActive = (itemPath: string, subItems?: MenuItem[]): boolean => {
         const normalizedItem = normalizeMenuPath(itemPath);
+        
+        // Exact match
         if (currentPath === normalizedItem) return true;
-        if (subItems) {
-            return subItems.some(subItem => currentPath === normalizeMenuPath(subItem.path));
+        
+        // Check if current path starts with the menu item path (for sub-routes like /halaqas/:id/edit)
+        // Only match if followed by '/' or at the end (to avoid matching partial words)
+        if (normalizedItem && currentPath.startsWith(normalizedItem + '/')) {
+            return true;
         }
+        
+        // Check subitems
+        if (subItems) {
+            return subItems.some(subItem => {
+                const normalizedSubItem = normalizeMenuPath(subItem.path);
+                if (currentPath === normalizedSubItem) return true;
+                // Also check if current path starts with subitem path
+                if (normalizedSubItem && currentPath.startsWith(normalizedSubItem + '/')) {
+                    return true;
+                }
+                return false;
+            });
+        }
+        
         return false;
     };
 

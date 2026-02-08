@@ -15,6 +15,7 @@ import type { BilingualName } from '../types/list.types';
 import { HALAQA_PERIODS, HALAQA_TEACHING_METHODS, createHalaqaListColumns } from '../config';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
+import { useConfirmationModal } from '@/globals/hooks/useConfirmationModal';
 
 /**
  * Halaqa List Component
@@ -26,6 +27,7 @@ const HalaqaList: React.FC = () => {
     const { lang } = useParams<{ lang: string }>();
     const queryClient = useQueryClient();
     const currentLang = i18n.language || lang || 'en';
+    const { showConfirmation } = useConfirmationModal();
 
     const listState = useHalaqasListState();
     const { params, page, perPage, search, period, teachingMethod, setPage, setSearch, setPeriod, setTeachingMethod, resetFilters } = listState;
@@ -81,17 +83,24 @@ const HalaqaList: React.FC = () => {
     };
 
     const handleDelete = async (id: number) => {
-        if (window.confirm(t('halaqa.deleteConfirm', 'Are you sure you want to delete this halaqa?'))) {
-            deleteMutation.mutate(id, {
-                onSuccess: () => {
-                    toast.success(t('halaqa.deleteSuccess', 'Halaqa deleted successfully'));
-                    queryClient.invalidateQueries({ queryKey: ['halaqas'] });
-                },
-                onError: (error: any) => {
-                    toast.error(error?.message || t('halaqa.deleteError', 'Error deleting halaqa'));
-                }
-            });
-        }
+        showConfirmation({
+            title: t('halaqa.deleteTitle', 'Delete Halaqa'),
+            message: t('halaqa.deleteConfirm', 'Are you sure you want to delete this halaqa?'),
+            confirmText: t('common.delete', 'Delete'),
+            cancelText: t('common.cancel', 'Cancel'),
+            variant: 'danger',
+            onConfirm: () => {
+                deleteMutation.mutate(id, {
+                    onSuccess: () => {
+                        toast.success(t('halaqa.deleteSuccess', 'Halaqa deleted successfully'));
+                        queryClient.invalidateQueries({ queryKey: ['halaqas'] });
+                    },
+                    onError: (error: any) => {
+                        toast.error(error?.message || t('halaqa.deleteError', 'Error deleting halaqa'));
+                    }
+                });
+            }
+        });
     };
 
     const columns = createHalaqaListColumns({

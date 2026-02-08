@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { halaqasService, CreateHalaqaPayload } from '../services/halaqas.service';
+import { halaqasService, CreateHalaqaPayload, UpdateHalaqaPayload, CreatePlanPayload } from '../services/halaqas.service';
 import type {
     HalaqasListParams,
     HalaqasListResponse,
@@ -53,10 +53,11 @@ export const useHalaqa = (id: number | string) => {
 
 /**
  * Update halaqa mutation hook
+ * Only allows updating: name, teacher_id, period, start_date, end_date, activities, student_ids
  */
 export const useUpdateHalaqa = () => {
     return useMutation({
-        mutationFn: ({ id, data }: { id: number | string; data: Partial<CreateHalaqaPayload> }) =>
+        mutationFn: ({ id, data }: { id: number | string; data: UpdateHalaqaPayload }) =>
             halaqasService.updateHalaqa(id, data)
     });
 };
@@ -67,6 +68,16 @@ export const useUpdateHalaqa = () => {
 export const useDeleteHalaqa = () => {
     return useMutation({
         mutationFn: (id: number | string) => halaqasService.deleteHalaqa(id)
+    });
+};
+
+/**
+ * Create plan mutation hook
+ */
+export const useCreatePlan = () => {
+    return useMutation({
+        mutationFn: ({ halaqaId, data }: { halaqaId: number | string; data: CreatePlanPayload }) =>
+            halaqasService.createPlan(halaqaId, data)
     });
 };
 

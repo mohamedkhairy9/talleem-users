@@ -8,6 +8,7 @@ import AppRoutes from './routes/AppRoutes';
 import { ErrorBoundary } from './globals/components';
 import { queryClient } from './api/queryClient';
 import { useAuthStore } from './stores';
+import { ConfirmationModalProvider } from './globals/hooks/useConfirmationModal';
 import './i18n';
 
 /**
@@ -26,18 +27,20 @@ function App() {
         <ErrorBoundary>
             <QueryClientProvider client={queryClient}>
                 <BrowserRouter>
-                    <AppRoutes />
-                    <ToastContainer
-                        position="top-right"
-                        autoClose={5000}
-                        hideProgressBar={false}
-                        newestOnTop={false}
-                        closeOnClick
-                        rtl={false}
-                        pauseOnFocusLoss
-                        draggable
-                        pauseOnHover
-                    />
+                    <ConfirmationModalProvider>
+                        <AppRoutes />
+                        <ToastContainer
+                            position="top-right"
+                            autoClose={5000}
+                            hideProgressBar={false}
+                            newestOnTop={false}
+                            closeOnClick
+                            rtl={false}
+                            pauseOnFocusLoss
+                            draggable
+                            pauseOnHover
+                        />
+                    </ConfirmationModalProvider>
                 </BrowserRouter>
                 <ReactQueryDevtools initialIsOpen={false} />
             </QueryClientProvider>

@@ -19,6 +19,7 @@ export interface CompactEntity {
     id?: number;
     memorization_program_entity_type_id?: number;
     session_mode_id?: number;
+    main_program_id?: number;
 }
 
 export interface CompactUserData {
@@ -54,23 +55,24 @@ export const cookieService = {
      * Store user data in cookie (compact format to respect 4KB limit)
      * Stores id, roles, permissions, and entity ids (for halaqa payloads)
      */
-    setUserData: (userData: CompactUserData | { id?: number; roles?: string[]; permissions?: string[]; entity?: { id?: number; memorization_program_entity_type?: { id: number }; session_mode?: { id: number } } } | null): void => {
+    setUserData: (userData: CompactUserData | { id?: number; roles?: string[]; permissions?: string[]; entity?: { id?: number; memorization_program_entity_type?: { id: number }; session_mode?: { id: number }; main_program?: { id: number } } } | null): void => {
         if (!userData) {
             Cookies.remove(USER_DATA_KEY, { path: '/' });
             return;
         }
 
-        const entity = userData.entity as { id?: number; memorization_program_entity_type?: { id: number }; session_mode?: { id: number } } | undefined;
+        const entity = userData.entity as { id?: number; memorization_program_entity_type?: { id: number }; session_mode?: { id: number }; main_program?: { id: number } } | undefined;
         const compactData: CompactUserData = {
             id: userData.id,
             roles: userData.roles || [],
             permissions: userData.permissions || [],
             entity:
-                entity && (entity.id != null || entity.memorization_program_entity_type?.id != null || entity.session_mode?.id != null)
+                entity && (entity.id != null || entity.memorization_program_entity_type?.id != null || entity.session_mode?.id != null || entity.main_program?.id != null)
                     ? {
                           id: entity.id,
                           memorization_program_entity_type_id: entity.memorization_program_entity_type?.id,
-                          session_mode_id: entity.session_mode?.id
+                          session_mode_id: entity.session_mode?.id,
+                          main_program_id: entity.main_program?.id
                       }
                     : undefined
         };

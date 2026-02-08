@@ -15,6 +15,7 @@ export const ROUTE_PATHS = {
     HALAQAS: 'halaqas',
     CREATE_HALAQA: 'create-halaqa',
     HALAQA_DETAIL: 'halaqas/:id',
+    EDIT_HALAQA: 'halaqas/:id/edit',
     // Teacher menu items
     STUDY_PLAN: 'study-plan',
     ABSENCES: 'absences',

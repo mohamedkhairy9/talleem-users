@@ -10,7 +10,8 @@ function compactEntityToEntity(compact: CompactEntity | undefined): User['entity
         ...(compact.memorization_program_entity_type_id != null && {
             memorization_program_entity_type: { id: compact.memorization_program_entity_type_id }
         }),
-        ...(compact.session_mode_id != null && { session_mode: { id: compact.session_mode_id } })
+        ...(compact.session_mode_id != null && { session_mode: { id: compact.session_mode_id } }),
+        ...(compact.main_program_id != null && { main_program: { id: compact.main_program_id } })
     };
 }
 

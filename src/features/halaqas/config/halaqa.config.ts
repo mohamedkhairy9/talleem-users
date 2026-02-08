@@ -20,7 +20,26 @@ export const HALAQA_TEACHING_METHODS = [
     { value: 'hybrid', labelKey: 'halaqa.teachingMethod.hybrid' }
 ] as const;
 
+export const PLAN_TYPES = [
+    { value: 'daily_amount', labelKey: 'plan.type.dailyAmount' },
+    { value: 'start_end', labelKey: 'plan.type.startEnd' }
+] as const;
+
+export const PLAN_UNITS = [
+    { value: 'segments', labelKey: 'plan.unit.segments' },
+    { value: 'parts', labelKey: 'plan.unit.parts' },
+    { value: 'surahs', labelKey: 'plan.unit.surahs' }
+] as const;
+
+export const PLAN_DIRECTIONS = [
+    { value: 'incremental', labelKey: 'plan.direction.incremental' },
+    { value: 'decremental', labelKey: 'plan.direction.decremental' }
+] as const;
+
 export type HalaqaPeriod = typeof HALAQA_PERIODS[number]['value'];
 export type HalaqaActivity = typeof HALAQA_ACTIVITIES[number]['value'];
 export type HalaqaTeachingMethod = typeof HALAQA_TEACHING_METHODS[number]['value'];
+export type PlanType = typeof PLAN_TYPES[number]['value'];
+export type PlanUnit = typeof PLAN_UNITS[number]['value'];
+export type PlanDirection = typeof PLAN_DIRECTIONS[number]['value'];
 

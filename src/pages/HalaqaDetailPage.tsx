@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useHalaqa } from '@/features/halaqas/hooks/useHalaqas';
 import { Button } from '@/globals/components';
 import { formatDate } from '@/utils';
+import CreatePlanForm from '@/features/halaqas/components/CreatePlanForm';
+import PlanStudentsModal from '@/features/halaqas/components/PlanStudentsModal';
 
 /**
  * Halaqa Detail Page
@@ -14,8 +16,11 @@ const HalaqaDetailPage: React.FC = () => {
     const { id, lang } = useParams<{ id: string; lang: string }>();
     const navigate = useNavigate();
     const currentLang = i18n.language || lang || 'en';
+    const [showPlanForm, setShowPlanForm] = useState(false);
 
     const { data, isLoading, error } = useHalaqa(id || '');
+    const [selectedPlanStudents, setSelectedPlanStudents] = useState<Array<{ id: number; name?: { en?: string; ar?: string } }>>([]);
+    const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
 
     // API returns { data: { id, name, ... } }; axios puts body in response.data
     const raw = data?.data;
@@ -34,6 +39,42 @@ const HalaqaDetailPage: React.FC = () => {
 
     const handleEdit = () => {
         navigate(`/${lang || currentLang}/halaqas/${id}/edit`);
+    };
+
+    // Create a map of student IDs to student objects for quick lookup
+    const studentsMap = useMemo(() => {
+        if (!halaqa?.students) return new Map();
+        const map = new Map();
+        halaqa.students.forEach((student: { id: number; name?: { en?: string; ar?: string } }) => {
+            map.set(student.id, student);
+        });
+        return map;
+    }, [halaqa?.students]);
+
+    // Get student(s) for a plan
+    const getPlanStudent = (plan: any) => {
+        // If plan has students array directly, use it
+        if (plan.students && Array.isArray(plan.students) && plan.students.length > 0) {
+            return plan.students;
+        }
+        // If plan has student_id, find it in halaqa students array
+        if (plan.student_id && studentsMap.has(plan.student_id)) {
+            return [studentsMap.get(plan.student_id)];
+        }
+        // If plan has student_id but not found in students, create a placeholder
+        if (plan.student_id) {
+            return [{ id: plan.student_id, name: undefined }];
+        }
+        // If no student info, return empty array
+        return [];
+    };
+
+    const handleShowPlanStudents = (plan: any) => {
+        const planStudents = getPlanStudent(plan);
+        if (planStudents.length > 0) {
+            setSelectedPlanStudents(planStudents);
+            setIsStudentsModalOpen(true);
+        }
     };
 
     if (isLoading) {
@@ -233,7 +274,133 @@ const HalaqaDetailPage: React.FC = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Plans Section */}
+                <div>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold text-gray-800">
+                            {t('plan.plans', 'Plans')}
+                        </h2>
+                        {!showPlanForm && (
+                            <Button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                onClick={() => setShowPlanForm(true)}
+                            >
+                                {t('plan.createPlan', 'Create Plan')}
+                            </Button>
+                        )}
+                    </div>
+
+                    {showPlanForm && (
+                        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-md font-semibold text-gray-800">
+                                    {t('plan.createNewPlan', 'Create New Plan')}
+                                </h3>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowPlanForm(false)}
+                                >
+                                    {t('common.cancel', 'Cancel')}
+                                </Button>
+                            </div>
+                            <CreatePlanForm
+                                halaqaId={id || ''}
+                                students={halaqa.students}
+                                activities={halaqa.activities}
+                                onSuccess={() => setShowPlanForm(false)}
+                            />
+                        </div>
+                    )}
+
+                    {/* Display existing plans if available */}
+                    {halaqa.plans && halaqa.plans.length > 0 ? (
+                        <div className="space-y-3">
+                            {halaqa.plans.map((plan: any, index: number) => (
+                                <div key={plan.id || index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                                        <div>
+                                            <p className="text-gray-500">{t('plan.activity', 'Activity')}</p>
+                                            <p className="font-medium text-gray-800">
+                                                {t(`halaqa.activity.${plan.activity}`, plan.activity)}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500">{t('plan.student', 'Student')}</p>
+                                            {plan.student_id || (plan.students && plan.students.length > 0) ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleShowPlanStudents(plan)}
+                                                    className="text-primary-600 hover:text-primary-700 hover:underline font-medium text-sm text-left"
+                                                >
+                                                    {(() => {
+                                                        const planStudents = getPlanStudent(plan);
+                                                        if (planStudents.length > 0) {
+                                                            return planStudents.length === 1
+                                                                ? getLocalizedText(planStudents[0]?.name) || `Student #${plan.student_id}`
+                                                                : t('plan.studentCount', '{{count}} students', { count: planStudents.length });
+                                                        }
+                                                        // If plan has students array directly
+                                                        if (plan.students && plan.students.length > 0) {
+                                                            return plan.students.length === 1
+                                                                ? getLocalizedText(plan.students[0]?.name) || `Student #${plan.students[0]?.id}`
+                                                                : t('plan.studentCount', '{{count}} students', { count: plan.students.length });
+                                                        }
+                                                        // Fallback to student_id
+                                                        return plan.student_id
+                                                            ? `${t('plan.studentCount', '1 student')} (ID: ${plan.student_id})`
+                                                            : '-';
+                                                    })()}
+                                                </button>
+                                            ) : (
+                                                <p className="font-medium text-gray-800">-</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500">{t('plan.planType', 'Plan Type')}</p>
+                                            <p className="font-medium text-gray-800">
+                                                {t(`plan.type.${plan.plan_type}`, plan.plan_type)}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500">{t('plan.unit', 'Unit')}</p>
+                                            <p className="font-medium text-gray-800">
+                                                {t(`plan.unit.${plan.unit}`, plan.unit)}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500">{t('plan.direction', 'Direction')}</p>
+                                            <p className="font-medium text-gray-800">
+                                                {t(`plan.direction.${plan.direction}`, plan.direction)}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500">{t('plan.dailyAmount', 'Daily Amount')}</p>
+                                            <p className="font-medium text-gray-800">{plan.daily_amount || '-'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-gray-500">
+                            {t('plan.noPlans', 'No plans created yet')}
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {/* Students Modal */}
+            <PlanStudentsModal
+                isOpen={isStudentsModalOpen}
+                students={selectedPlanStudents}
+                onClose={() => setIsStudentsModalOpen(false)}
+                currentLang={currentLang}
+            />
         </div>
     );
 };
