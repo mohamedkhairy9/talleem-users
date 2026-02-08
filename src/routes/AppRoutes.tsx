@@ -8,12 +8,32 @@ import UnauthorizedPage from '@/pages/UnauthorizedPage';
 import { Layout } from '@/globals/components';
 import { ROUTE_PATHS } from '@/config';
 import LanguageRouteWrapper from '@/utils/components/LanguageRouteWrapper';
+import { useAuthStore } from '@/stores';
+
+/**
+ * Helper function to check if user has access to a route
+ */
+const hasRouteAccess = (route: typeof routes[0], userRoles: string[] = []): boolean => {
+    // If route has no role restrictions, it's accessible
+    if (!route.roles || route.roles.length === 0) {
+        return true;
+    }
+    // Check if user has at least one of the required roles
+    return route.roles.some(role => userRoles.includes(role));
+};
 
 /**
  * Main Routes Component
  * Routes are organized with language prefix: /:lang/...
+ * Routes are filtered by user role
  */
 const AppRoutes: React.FC = () => {
+    const { user } = useAuthStore();
+    const userRoles = user?.roles || [];
+
+    // Filter routes based on user roles
+    const accessibleRoutes = routes.filter(route => hasRouteAccess(route, userRoles));
+
     return (
         <Routes>
             {/* Default redirect - redirect root to default language */}
@@ -37,8 +57,8 @@ const AppRoutes: React.FC = () => {
                         </ProtectedRoute>
                     }
                 >
-                    {/* Dashboard index route */}
-                    {routes
+                    {/* Index route - role-based redirect */}
+                    {accessibleRoutes
                         .filter(route => route.index)
                         .map((route, index) => (
                             <Route
@@ -48,8 +68,8 @@ const AppRoutes: React.FC = () => {
                             />
                         ))}
                     
-                    {/* Other routes */}
-                    {routes
+                    {/* Other routes - filtered by role */}
+                    {accessibleRoutes
                         .filter(route => !route.index)
                         .map((route, index) => (
                             <Route
@@ -69,7 +89,7 @@ const AppRoutes: React.FC = () => {
                 </Route>
             </Route>
 
-            {/* Catch all - redirect to default language dashboard */}
+            {/* Catch all - redirect to default language */}
             <Route path="*" element={<Navigate to="/en" replace />} />
         </Routes>
     );

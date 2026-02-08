@@ -26,6 +26,7 @@
         "not_available": "N/A",
         "filters": "Filters",
         "active": "Active",
+        "inactive": "Inactive",
         "searchPlaceholder": "Search halaqas...",
         "all": "All",
         "resetFilters": "Reset filters"
@@ -53,7 +54,8 @@
         "teachers": "Teachers",
         "entityManagers": "Entity Managers",
         "halaqas": "Halaqas",
-        "createHalaqa": "Create Halaqa"
+        "createHalaqa": "Create Halaqa",
+        "warningsManagement": "Warnings Management"
     },
     "auth": {
         "email": {
@@ -140,6 +142,31 @@
         "basicInfo": "Basic Information",
         "dates": "Dates",
         "actions": "Actions"
+    },
+    "warning": {
+        "listTitle": "Warnings",
+        "listDescription": "Manage and view all warnings",
+        "create": "Create Warning",
+        "createTitle": "Create New Warning",
+        "createSuccess": "Warning created successfully",
+        "createError": "Error creating warning",
+        "loadError": "Error loading warnings. Please try again.",
+        "noWarnings": "No warnings found",
+        "searchPlaceholder": "Search warnings...",
+        "branch": "Branch",
+        "program": "Program",
+        "warningType": "Warning Type",
+        "type.student": "Student",
+        "type.teacher": "Teacher",
+        "type.entity": "Entity",
+        "warningReason": "Warning Reason",
+        "student": "Student",
+        "teacher": "Teacher",
+        "entity": "Entity",
+        "date": "Date",
+        "note": "Note",
+        "status": "Status",
+        "target": "Target"
     },
     "unauthorized": {
         "title": "Access Denied",

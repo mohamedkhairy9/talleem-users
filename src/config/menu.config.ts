@@ -29,6 +29,12 @@ export const MEMORIZATION_MENU_ITEMS: MenuItem[] = [
                 icon: 'PlusIcon'
             }
         ]
+    },
+    {
+        path: ROUTE_PATHS.WARNINGS_MANAGEMENT,
+        labelKey: 'menu.warningsManagement',
+        icon: 'AlertTriangleIcon',
+        roles: ['admin', 'entity_manager']
     }
 ];
 

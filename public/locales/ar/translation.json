@@ -26,6 +26,7 @@
         "not_available": "غير متاح",
         "filters": "الفلاتر",
         "active": "نشط",
+        "inactive": "غير نشط",
         "searchPlaceholder": "البحث في الحلقات...",
         "all": "الكل",
         "resetFilters": "إعادة تعيين الفلاتر"
@@ -53,7 +54,8 @@
         "teachers": "المعلمون",
         "entityManagers": "مديرو الكيانات",
         "halaqas": "الحلقات",
-        "createHalaqa": "إنشاء حلقة"
+        "createHalaqa": "إنشاء حلقة",
+        "warningsManagement": "إدارة الإنذارات"
     },
     "auth": {
         "email": {
@@ -140,6 +142,31 @@
         "basicInfo": "المعلومات الأساسية",
         "dates": "التواريخ",
         "actions": "الإجراءات"
+    },
+    "warning": {
+        "listTitle": "الإنذارات",
+        "listDescription": "إدارة وعرض جميع الإنذارات",
+        "create": "إنشاء إنذار",
+        "createTitle": "إنشاء إنذار جديد",
+        "createSuccess": "تم إنشاء الإنذار بنجاح",
+        "createError": "خطأ في إنشاء الإنذار",
+        "loadError": "خطأ في تحميل الإنذارات. يرجى المحاولة مرة أخرى.",
+        "noWarnings": "لم يتم العثور على إنذارات",
+        "searchPlaceholder": "البحث في الإنذارات...",
+        "branch": "الفرع",
+        "program": "البرنامج",
+        "warningType": "نوع الإنذار",
+        "type.student": "طالب",
+        "type.teacher": "معلم",
+        "type.entity": "كيان",
+        "warningReason": "سبب الإنذار",
+        "student": "طالب",
+        "teacher": "معلم",
+        "entity": "كيان",
+        "date": "التاريخ",
+        "note": "ملاحظة",
+        "status": "الحالة",
+        "target": "الهدف"
     },
     "unauthorized": {
         "title": "الوصول مرفوض",
