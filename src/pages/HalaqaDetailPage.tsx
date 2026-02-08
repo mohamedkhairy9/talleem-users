@@ -2,10 +2,18 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useHalaqa } from '@/features/halaqas/hooks/useHalaqas';
-import { Button } from '@/globals/components';
-import { formatDate } from '@/utils';
-import CreatePlanForm from '@/features/halaqas/components/CreatePlanForm';
+import { Button, PageHeader } from '@/globals/components';
+import type { PageHeaderBadge } from '@/globals/components';
 import PlanStudentsModal from '@/features/halaqas/components/PlanStudentsModal';
+import HalaqaQuickStats from '@/features/halaqas/components/HalaqaQuickStats';
+import { CalendarIcon, CircleIcon, EditIcon } from '@/globals/icons';
+import HalaqaBasicInfo from '@/features/halaqas/components/HalaqaBasicInfo';
+import HalaqaDatesSchedule from '@/features/halaqas/components/HalaqaDatesSchedule';
+import HalaqaActivities from '@/features/halaqas/components/HalaqaActivities';
+import HalaqaStudents from '@/features/halaqas/components/HalaqaStudents';
+import HalaqaAdditionalInfo from '@/features/halaqas/components/HalaqaAdditionalInfo';
+import HalaqaPlansSection from '@/features/halaqas/components/HalaqaPlansSection';
+import { AlertTriangleIcon } from '@/globals/icons';
 
 /**
  * Halaqa Detail Page
@@ -77,11 +85,22 @@ const HalaqaDetailPage: React.FC = () => {
         }
     };
 
+    const handleViewAllStudents = () => {
+        setSelectedPlanStudents(halaqa?.students || []);
+        setIsStudentsModalOpen(true);
+    };
+
+    const handleViewStudent = (student: { id: number; name?: { en?: string; ar?: string } }) => {
+        setSelectedPlanStudents([student]);
+        setIsStudentsModalOpen(true);
+    };
+
     if (isLoading) {
         return (
-            <div className="p-6">
-                <div className="flex justify-center items-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-200 border-t-primary-600"></div>
+                    <p className="text-gray-600 text-sm">{t('common.loading', 'Loading...')}</p>
                 </div>
             </div>
         );
@@ -89,310 +108,126 @@ const HalaqaDetailPage: React.FC = () => {
 
     if (error || !halaqa) {
         return (
-            <div className="p-6">
-                <div className="text-center py-12 text-red-600">
-                    {t('halaqa.notFound', 'Halaqa not found')}
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+                <div className="text-center">
+                    <AlertTriangleIcon width={64} height={64} className="mx-auto text-red-500 mb-4" />
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('halaqa.notFound', 'Halaqa not found')}</h2>
+                    <p className="text-gray-600">{t('halaqa.notFoundDescription', 'The halaqa you are looking for does not exist or has been removed.')}</p>
                 </div>
-                <div className="flex justify-center">
-                    <Button type="button" variant="secondary" onClick={handleBack}>
-                        {t('common.back', 'Back')}
-                    </Button>
-                </div>
+                <Button type="button" variant="primary" onClick={handleBack}>
+                    {t('common.back', 'Back to Halaqas')}
+                </Button>
             </div>
         );
     }
 
+    // Calculate stats
+    const studentCount = halaqa.current_students_count ?? halaqa.students?.length ?? 0;
+    const maxStudents = halaqa.max_students ?? 0;
+
+    // Prepare badges for header
+    const headerBadges: PageHeaderBadge[] = [];
+    if (halaqa.memorization_program_entity_type?.name) {
+        headerBadges.push({
+            label: getLocalizedText(halaqa.memorization_program_entity_type.name),
+            icon: <CircleIcon width={16} height={16} />
+        });
+    }
+    if (halaqa.period) {
+        headerBadges.push({
+            label: String(t(`halaqa.period.${halaqa.period}`, halaqa.period)),
+            icon: <CalendarIcon width={16} height={16} />
+        });
+    }
+
     return (
-        <div className="p-6">
-            <div className="mb-6 flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        {getLocalizedText(halaqa.name)}
-                    </h1>
-                    <p className="text-gray-600">
-                        {t('halaqa.detailDescription', 'View halaqa details')}
-                    </p>
+        <div className="space-y-6">
+            {/* Header Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <PageHeader
+                    title={getLocalizedText(halaqa.name)}
+                    breadcrumb={{
+                        label: t('halaqa.backToHalaqas', 'Back to Halaqas'),
+                        onClick: handleBack
+                    }}
+                    badges={headerBadges}
+                    actions={[
+                        {
+                            label: t('common.edit', 'Edit'),
+                            onClick: handleEdit,
+                            variant: 'primary',
+                            icon: <EditIcon width={16} height={16} className="me-2" />,
+                            className: '!bg-white !text-primary-600 hover:!bg-gray-100'
+                        }
+                    ]}
+                    currentLang={currentLang}
+                />
+                <HalaqaQuickStats
+                    studentCount={studentCount}
+                    maxStudents={maxStudents}
+                    plansCount={halaqa.plans?.length ?? 0}
+                    durationInDays={halaqa.duration_in_days}
+                    activitiesCount={halaqa.activities?.length ?? 0}
+                />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column - Main Information */}
+                <div className="lg:col-span-2 space-y-6">
+                    <HalaqaBasicInfo
+                        name={getLocalizedText(halaqa.name)}
+                        teacher={halaqa.teacher?.name}
+                        entityType={halaqa.memorization_program_entity_type?.name}
+                        period={halaqa.period}
+                        teachingMethod={halaqa.teaching_method}
+                        platform={halaqa.platform?.name}
+                        getLocalizedText={getLocalizedText}
+                    />
+
+                    {halaqa.students && halaqa.students.length > 0 && (
+                        <HalaqaStudents
+                            students={halaqa.students}
+                            onViewAll={handleViewAllStudents}
+                            onViewStudent={handleViewStudent}
+                            getLocalizedText={getLocalizedText}
+                        />
+                    )}
                 </div>
-                <div className="flex gap-2">
-                    <Button type="button" variant="secondary" onClick={handleBack}>
-                        {t('common.back', 'Back')}
-                    </Button>
-                    <Button type="button" variant="primary" onClick={handleEdit}>
-                        {t('common.edit', 'Edit')}
-                    </Button>
+
+                {/* Right Column - Additional Info */}
+                <div className="space-y-6">
+                    <HalaqaAdditionalInfo
+                        durationInDays={halaqa.duration_in_days}
+                        weeklyHoliday={halaqa.weekly_holiday}
+                        evaluationSystem={halaqa.evaluation_system}
+                        totalMark={halaqa.total_mark}
+                    />
+
+                    {halaqa.activities && halaqa.activities.length > 0 && (
+                        <HalaqaActivities activities={halaqa.activities} />
+                    )}
+
+                    <HalaqaDatesSchedule
+                        startDate={halaqa.start_date}
+                        endDate={halaqa.end_date}
+                        sessionTime={halaqa.session_time}
+                    />
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-                {/* Basic Information */}
-                <div>
-                    <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                        {t('halaqa.basicInfo', 'Basic Information')}
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('halaqa.name', 'Name')}</p>
-                            <p className="text-base text-gray-800">{getLocalizedText(halaqa.name)}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('halaqa.teacher', 'Teacher')}</p>
-                            <p className="text-base text-gray-800">{getLocalizedText(halaqa.teacher?.name)}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('halaqa.memorizationProgramEntityType', 'Entity Type')}</p>
-                            <p className="text-base text-gray-800">
-                                {getLocalizedText(halaqa.memorization_program_entity_type?.name)}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('halaqa.period', 'Period')}</p>
-                            <p className="text-base text-gray-800">
-                                {halaqa.period ? t(`halaqa.period.${halaqa.period}`, halaqa.period) : '-'}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('halaqa.teachingMethod', 'Teaching Method')}</p>
-                            <p className="text-base text-gray-800">
-                                {halaqa.teaching_method
-                                    ? t(
-                                          `halaqa.teachingMethod.${halaqa.teaching_method === 'in_person' ? 'inPerson' : halaqa.teaching_method}`,
-                                          halaqa.teaching_method
-                                      )
-                                    : '-'}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('halaqa.platform', 'Platform')}</p>
-                            <p className="text-base text-gray-800">{getLocalizedText(halaqa.platform?.name)}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('halaqa.students', 'Students')}</p>
-                            <p className="text-base text-gray-800">
-                                {[halaqa.current_students_count, halaqa.students?.length].find((n) => n != null) ?? '-'}
-                                {halaqa.max_students != null ? ` / ${halaqa.max_students}` : ''}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Dates */}
-                <div>
-                    <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                        {t('halaqa.dates', 'Dates')}
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('halaqa.startDate', 'Start Date')}</p>
-                            <p className="text-base text-gray-800">
-                                {formatDate(halaqa.start_date)}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('halaqa.endDate', 'End Date')}</p>
-                            <p className="text-base text-gray-800">
-                                {formatDate(halaqa.end_date)}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">{t('halaqa.sessionTime', 'Session Time')}</p>
-                            <p className="text-base text-gray-800">{halaqa.session_time || '-'}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Activities */}
-                {halaqa.activities && halaqa.activities.length > 0 && (
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                            {t('halaqa.activities', 'Activities')}
-                        </h2>
-                        <div className="flex flex-wrap gap-2">
-                            {halaqa.activities.map((activity: string, index: number) => (
-                                <span
-                                    key={index}
-                                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800"
-                                >
-                                    {t(`halaqa.activity.${activity}`, activity)}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Students */}
-                {halaqa.students && halaqa.students.length > 0 && (
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                            {t('halaqa.students', 'Students')} ({halaqa.students.length})
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {halaqa.students.map((student: { id: number; name?: { en?: string; ar?: string }; joined_at?: string }, index: number) => (
-                                <div key={student.id || index} className="p-3 bg-gray-50 rounded-lg">
-                                    <p className="text-sm font-medium text-gray-800">
-                                        {getLocalizedText(student.name) || `Student #${student.id}`}
-                                    </p>
-                                    {student.joined_at && (
-                                        <p className="text-xs text-gray-500">
-                                            {t('halaqa.joinedAt', 'Joined')}: {formatDate(student.joined_at)}
-                                        </p>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Duration / extra info */}
-                {(halaqa.duration_in_days != null || halaqa.weekly_holiday || halaqa.evaluation_system) && (
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-800 mb-4">{t('halaqa.extraInfo', 'Additional Info')}</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {halaqa.duration_in_days != null && (
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">{t('halaqa.durationInDays', 'Duration (days)')}</p>
-                                    <p className="text-base text-gray-800">{halaqa.duration_in_days}</p>
-                                </div>
-                            )}
-                            {halaqa.weekly_holiday && (
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">{t('halaqa.weeklyHoliday', 'Weekly holiday')}</p>
-                                    <p className="text-base text-gray-800">{halaqa.weekly_holiday}</p>
-                                </div>
-                            )}
-                            {halaqa.evaluation_system && (
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">{t('halaqa.evaluationSystem', 'Evaluation system')}</p>
-                                    <p className="text-base text-gray-800">{halaqa.evaluation_system}</p>
-                                </div>
-                            )}
-                            {halaqa.total_mark != null && (
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">{t('halaqa.totalMark', 'Total mark')}</p>
-                                    <p className="text-base text-gray-800">{halaqa.total_mark}</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Plans Section */}
-                <div>
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-gray-800">
-                            {t('plan.plans', 'Plans')}
-                        </h2>
-                        {!showPlanForm && (
-                            <Button
-                                type="button"
-                                variant="primary"
-                                size="sm"
-                                onClick={() => setShowPlanForm(true)}
-                            >
-                                {t('plan.createPlan', 'Create Plan')}
-                            </Button>
-                        )}
-                    </div>
-
-                    {showPlanForm && (
-                        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-md font-semibold text-gray-800">
-                                    {t('plan.createNewPlan', 'Create New Plan')}
-                                </h3>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setShowPlanForm(false)}
-                                >
-                                    {t('common.cancel', 'Cancel')}
-                                </Button>
-                            </div>
-                            <CreatePlanForm
-                                halaqaId={id || ''}
-                                students={halaqa.students}
-                                activities={halaqa.activities}
-                                onSuccess={() => setShowPlanForm(false)}
-                            />
-                        </div>
-                    )}
-
-                    {/* Display existing plans if available */}
-                    {halaqa.plans && halaqa.plans.length > 0 ? (
-                        <div className="space-y-3">
-                            {halaqa.plans.map((plan: any, index: number) => (
-                                <div key={plan.id || index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-                                        <div>
-                                            <p className="text-gray-500">{t('plan.activity', 'Activity')}</p>
-                                            <p className="font-medium text-gray-800">
-                                                {t(`halaqa.activity.${plan.activity}`, plan.activity)}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">{t('plan.student', 'Student')}</p>
-                                            {plan.student_id || (plan.students && plan.students.length > 0) ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleShowPlanStudents(plan)}
-                                                    className="text-primary-600 hover:text-primary-700 hover:underline font-medium text-sm text-left"
-                                                >
-                                                    {(() => {
-                                                        const planStudents = getPlanStudent(plan);
-                                                        if (planStudents.length > 0) {
-                                                            return planStudents.length === 1
-                                                                ? getLocalizedText(planStudents[0]?.name) || `Student #${plan.student_id}`
-                                                                : t('plan.studentCount', '{{count}} students', { count: planStudents.length });
-                                                        }
-                                                        // If plan has students array directly
-                                                        if (plan.students && plan.students.length > 0) {
-                                                            return plan.students.length === 1
-                                                                ? getLocalizedText(plan.students[0]?.name) || `Student #${plan.students[0]?.id}`
-                                                                : t('plan.studentCount', '{{count}} students', { count: plan.students.length });
-                                                        }
-                                                        // Fallback to student_id
-                                                        return plan.student_id
-                                                            ? `${t('plan.studentCount', '1 student')} (ID: ${plan.student_id})`
-                                                            : '-';
-                                                    })()}
-                                                </button>
-                                            ) : (
-                                                <p className="font-medium text-gray-800">-</p>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">{t('plan.planType', 'Plan Type')}</p>
-                                            <p className="font-medium text-gray-800">
-                                                {t(`plan.type.${plan.plan_type}`, plan.plan_type)}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">{t('plan.unit', 'Unit')}</p>
-                                            <p className="font-medium text-gray-800">
-                                                {t(`plan.unit.${plan.unit}`, plan.unit)}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">{t('plan.direction', 'Direction')}</p>
-                                            <p className="font-medium text-gray-800">
-                                                {t(`plan.direction.${plan.direction}`, plan.direction)}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">{t('plan.dailyAmount', 'Daily Amount')}</p>
-                                            <p className="font-medium text-gray-800">{plan.daily_amount || '-'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-8 text-gray-500">
-                            {t('plan.noPlans', 'No plans created yet')}
-                        </div>
-                    )}
-                </div>
-            </div>
+            {/* Plans Section */}
+            <HalaqaPlansSection
+                plans={halaqa.plans || []}
+                halaqaId={id || ''}
+                students={halaqa.students}
+                activities={halaqa.activities}
+                showPlanForm={showPlanForm}
+                onTogglePlanForm={() => setShowPlanForm(!showPlanForm)}
+                onPlanFormSuccess={() => setShowPlanForm(false)}
+                onViewPlanStudents={handleShowPlanStudents}
+                getPlanStudent={getPlanStudent}
+                getLocalizedText={getLocalizedText}
+            />
 
             {/* Students Modal */}
             <PlanStudentsModal
@@ -406,4 +241,3 @@ const HalaqaDetailPage: React.FC = () => {
 };
 
 export default HalaqaDetailPage;
-

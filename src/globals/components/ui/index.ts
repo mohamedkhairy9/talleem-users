@@ -10,3 +10,5 @@ export { default as SelectRFH } from './SelectRFH';
 export type { SelectRFHOption, SelectRFHProps } from './SelectRFH';
 export { default as ConfirmationModal } from './ConfirmationModal';
 export type { ConfirmationModalProps } from './ConfirmationModal';
+export { default as PageHeader } from './PageHeader';
+export type { PageHeaderAction, PageHeaderBadge } from './PageHeader';
