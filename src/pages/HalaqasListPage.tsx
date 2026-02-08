@@ -4,7 +4,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/globals/components';
 import { PlusIcon } from '@/globals/icons';
 import HalaqaList from '@/features/halaqas/components/HalaqaList';
-import SeedHalaqasButton from '@/features/halaqas/components/SeedHalaqasButton';
 
 /**
  * Halaqas List Page
@@ -35,9 +34,6 @@ const HalaqasListPage: React.FC = () => {
             />
             {/* List area: takes remaining height so table/cards can scroll inside */}
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-white shadow-sm p-6">
-                {/* <div className="mb-4">
-                    <SeedHalaqasButton />
-                </div> */}
                 <HalaqaList />
             </div>
         </div>

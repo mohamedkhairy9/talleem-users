@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useHalaqa } from '@/features/halaqas/hooks/useHalaqas';
-import { Button, PageHeader } from '@/globals/components';
+import { PageHeader, Button } from '@/globals/components';
 import type { PageHeaderBadge } from '@/globals/components';
 import PlanStudentsModal from '@/features/halaqas/components/PlanStudentsModal';
 import HalaqaQuickStats from '@/features/halaqas/components/HalaqaQuickStats';
@@ -126,19 +126,24 @@ const HalaqaDetailPage: React.FC = () => {
     const maxStudents = halaqa.max_students ?? 0;
 
     // Prepare badges for header
-    const headerBadges: PageHeaderBadge[] = [];
-    if (halaqa.memorization_program_entity_type?.name) {
-        headerBadges.push({
-            label: getLocalizedText(halaqa.memorization_program_entity_type.name),
-            icon: <CircleIcon width={16} height={16} />
-        });
-    }
-    if (halaqa.period) {
-        headerBadges.push({
-            label: String(t(`halaqa.period.${halaqa.period}`, halaqa.period)),
-            icon: <CalendarIcon width={16} height={16} />
-        });
-    }
+    const headerBadges: PageHeaderBadge[] = useMemo(() => {
+        const badges: PageHeaderBadge[] = [];
+        if (halaqa.memorization_program_entity_type?.name) {
+            badges.push({
+                key: 'entity-type',
+                label: getLocalizedText(halaqa.memorization_program_entity_type.name),
+                icon: <CircleIcon width={16} height={16} />
+            });
+        }
+        if (halaqa.period) {
+            badges.push({
+                key: 'period',
+                label: String(t(`halaqa.period.${halaqa.period}`, halaqa.period)),
+                icon: <CalendarIcon width={16} height={16} />
+            });
+        }
+        return badges;
+    }, [halaqa.memorization_program_entity_type?.name, halaqa.period, currentLang, t, getLocalizedText]);
 
     return (
         <div className="space-y-6">
@@ -156,11 +161,9 @@ const HalaqaDetailPage: React.FC = () => {
                             label: t('common.edit', 'Edit'),
                             onClick: handleEdit,
                             variant: 'primary',
-                            icon: <EditIcon width={16} height={16} className="me-2" />,
-                            className: '!bg-white !text-primary-600 hover:!bg-gray-100'
+                            icon: <EditIcon width={16} height={16} className="me-2" />
                         }
                     ]}
-                    currentLang={currentLang}
                 />
                 <HalaqaQuickStats
                     studentCount={studentCount}

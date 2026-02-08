@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { useLocale } from '@/utils';
 import { Button } from '@/globals/components';
 import { ChevronRightIcon } from '@/globals/icons';
 
@@ -14,6 +14,7 @@ export interface PageHeaderAction {
 export interface PageHeaderBadge {
     label: string;
     icon?: React.ReactNode;
+    key?: string; // Optional key for better React list rendering
 }
 
 interface PageHeaderProps {
@@ -25,7 +26,7 @@ interface PageHeaderProps {
     };
     badges?: PageHeaderBadge[];
     actions?: PageHeaderAction[];
-    currentLang?: string;
+    currentLang?: string; // Optional override, defaults to auto-detection
     className?: string;
 }
 
@@ -39,10 +40,11 @@ const PageHeader: React.FC<PageHeaderProps> = ({
     breadcrumb,
     badges = [],
     actions = [],
-    currentLang = 'en',
+    currentLang,
     className = ''
 }) => {
-    const { t } = useTranslation();
+    const { currentLocale } = useLocale();
+    const lang = currentLang || currentLocale || 'en';
 
     return (
         <div className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${className}`}>
@@ -57,7 +59,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                             <ChevronRightIcon 
                                 width={16} 
                                 height={16} 
-                                className={`transform ${currentLang === 'ar' ? 'rotate-180' : ''}`}
+                                className={`transform ${lang === 'ar' ? 'rotate-180' : ''}`}
                             />
                             <span>{breadcrumb.label}</span>
                         </button>
@@ -77,7 +79,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                             <div className="flex flex-wrap items-center gap-3 text-white/90">
                                 {badges.map((badge, index) => (
                                     <span 
-                                        key={index}
+                                        key={badge.key || `badge-${index}`}
                                         className="flex items-center gap-1.5 text-sm"
                                     >
                                         {badge.icon}
@@ -89,18 +91,29 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                     </div>
                     {actions.length > 0 && (
                         <div className="flex gap-2 flex-shrink-0">
-                            {actions.map((action, index) => (
-                                <Button
-                                    key={index}
-                                    type="button"
-                                    variant={action.variant || 'primary'}
-                                    onClick={action.onClick}
-                                    className={action.className || (action.variant === 'primary' ? '!bg-white !text-primary-600 hover:!bg-gray-100' : '')}
-                                >
-                                    {action.icon}
-                                    {action.label}
-                                </Button>
-                            ))}
+                            {actions.map((action, index) => {
+                                // Default styling for primary variant on gradient background
+                                const getButtonClassName = () => {
+                                    if (action.className) return action.className;
+                                    if (action.variant === 'primary' || !action.variant) {
+                                        return '!bg-white !text-primary-600 hover:!bg-gray-100';
+                                    }
+                                    return '';
+                                };
+
+                                return (
+                                    <Button
+                                        key={`action-${index}-${action.label}`}
+                                        type="button"
+                                        variant={action.variant || 'primary'}
+                                        onClick={action.onClick}
+                                        className={getButtonClassName()}
+                                    >
+                                        {action.icon}
+                                        {action.label}
+                                    </Button>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

@@ -8,13 +8,12 @@ import EditHalaqaForm from '@/features/halaqas/components/EditHalaqaForm';
  * Edit Halaqa Page
  */
 const EditHalaqaPage: React.FC = () => {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const { id, lang } = useParams<{ id: string; lang: string }>();
     const navigate = useNavigate();
-    const currentLang = i18n.language || lang || 'en';
 
     const handleBack = () => {
-        navigate(`/${lang || currentLang}/halaqas/${id}`);
+        navigate(`/${lang || 'en'}/halaqas/${id}`);
     };
 
     return (
@@ -26,7 +25,6 @@ const EditHalaqaPage: React.FC = () => {
                     label: t('common.back', 'Back'),
                     onClick: handleBack
                 }}
-                currentLang={currentLang}
             />
             <div className="bg-white rounded-lg shadow-sm p-6">
                 <EditHalaqaForm />
