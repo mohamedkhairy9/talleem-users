@@ -4,6 +4,7 @@ import { Table, Pagination } from '@/globals/components';
 import { SearchIcon, SettingsIcon, XIcon } from '@/globals/icons';
 import ReactSelectComponent from '@/globals/components/ui/ReactSelect';
 import { useWarnings } from '../hooks/useWarnings';
+import { WarningsListMobile } from './WarningsListMobile';
 import type { WarningResponse } from '../services/warnings.service';
 import { formatDate } from '@/utils';
 
@@ -215,20 +216,49 @@ const WarningsList: React.FC = () => {
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="flex flex-1 flex-col overflow-hidden bg-white rounded-lg">
-                <Table
-                    data={list}
-                    columns={columns}
-                    isLoading={isLoading}
-                    emptyMessage={t('warning.noWarnings', 'No warnings found')}
-                />
+            {/* Mobile: cards - min-h-[280px] keeps area visible on small screens */}
+            <div className="flex flex-1 flex-col overflow-hidden md:hidden min-h-[280px] bg-white rounded-lg">
+                <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+                    <WarningsListMobile
+                        list={list}
+                        isLoading={isLoading}
+                        hasError={!!error}
+                        errorMessage={error ? t('warning.loadError', 'Error loading warnings.') : undefined}
+                        emptyMessage={t('warning.noWarnings', 'No warnings found')}
+                        getLocalizedText={getLocalizedText}
+                    />
+                </div>
                 {totalPages > 1 && (
-                    <div className="border-t border-gray-200 p-4">
+                    <div className="flex-shrink-0 pt-3">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}
-                            totalItems={total}
+                            perPage={meta?.per_page ?? 10}
+                            total={total}
+                            onPageChange={setPage}
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Desktop: table with scroll */}
+            <div className="hidden md:flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-hidden">
+                    <Table
+                        data={list}
+                        columns={columns}
+                        isLoading={isLoading}
+                        emptyMessage={t('warning.noWarnings', 'No warnings found')}
+                        scrollable
+                    />
+                </div>
+                {totalPages > 1 && (
+                    <div className="flex-shrink-0 pt-3">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            perPage={meta?.per_page ?? 10}
+                            total={total}
                             onPageChange={setPage}
                         />
                     </div>
