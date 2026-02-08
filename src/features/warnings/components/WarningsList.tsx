@@ -4,20 +4,29 @@ import { Table, Pagination } from '@/globals/components';
 import { SearchIcon, SettingsIcon, XIcon } from '@/globals/icons';
 import ReactSelectComponent from '@/globals/components/ui/ReactSelect';
 import { useWarnings } from '../hooks/useWarnings';
+import { useWarningsListState } from '../hooks/useWarningsListState';
 import { WarningsListMobile } from './WarningsListMobile';
 import type { WarningResponse } from '../services/warnings.service';
 import { formatDate } from '@/utils';
 
 /**
  * Warnings List Component
+ * Pagination and filters are synced with URL search params (?page=2&search=...&warning_type=...).
  */
 const WarningsList: React.FC = () => {
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'en';
-    const [page, setPage] = useState(1);
-    const [search, setSearch] = useState('');
-    const [warningType, setWarningType] = useState<'student' | 'teacher' | 'entity' | ''>('');
-    const [status, setStatus] = useState<boolean | ''>('');
+    
+    const listState = useWarningsListState();
+    const { params, page, perPage, search, warningType, status, setPage, setSearch, setWarningType, setStatus, resetFilters } = listState;
+
+    const { list, meta, isLoading, error } = useWarnings(params);
+
+    // Pagination from API meta (current_page, per_page, total, last_page)
+    const total = meta?.total ?? 0;
+    const totalPages = meta?.last_page ?? 1;
+    const currentPage = meta?.current_page ?? page;
+    const hasActiveFilters = !!(search.trim() || warningType || status !== '');
 
     const [localSearch, setLocalSearch] = useState(search);
     useEffect(() => {
@@ -28,22 +37,7 @@ const WarningsList: React.FC = () => {
             setSearch(localSearch);
         }, 400);
         return () => clearTimeout(timer);
-    }, [localSearch]);
-
-    const params = {
-        page,
-        per_page: 10,
-        ...(search.trim() && { search: search.trim() }),
-        ...(warningType && { warning_type: warningType }),
-        ...(status !== '' && { status })
-    };
-
-    const { list, meta, isLoading, error } = useWarnings(params);
-
-    const total = meta?.total ?? 0;
-    const totalPages = meta?.last_page ?? 1;
-    const currentPage = meta?.current_page ?? page;
-    const hasActiveFilters = !!(search.trim() || warningType || status !== '');
+    }, [localSearch, setSearch]);
 
     const getLocalizedText = (obj: { en?: string; ar?: string } | string | null | undefined): string => {
         if (typeof obj === 'string') return obj;
@@ -122,13 +116,6 @@ const WarningsList: React.FC = () => {
         }
     ];
 
-    const resetFilters = () => {
-        setSearch('');
-        setLocalSearch('');
-        setWarningType('');
-        setStatus('');
-        setPage(1);
-    };
 
     if (error) {
         return (
@@ -229,11 +216,11 @@ const WarningsList: React.FC = () => {
                     />
                 </div>
                 {totalPages > 1 && (
-                    <div className="flex-shrink-0 pt-3">
+                    <div className="flex-shrink-0 border-t border-gray-200 pt-3 px-4">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}
-                            perPage={meta?.per_page ?? 10}
+                            perPage={meta?.per_page ?? perPage}
                             total={total}
                             onPageChange={setPage}
                         />
@@ -253,11 +240,11 @@ const WarningsList: React.FC = () => {
                     />
                 </div>
                 {totalPages > 1 && (
-                    <div className="flex-shrink-0 pt-3">
+                    <div className="flex-shrink-0 border-t border-gray-200 pt-3 px-4">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}
-                            perPage={meta?.per_page ?? 10}
+                            perPage={meta?.per_page ?? perPage}
                             total={total}
                             onPageChange={setPage}
                         />
