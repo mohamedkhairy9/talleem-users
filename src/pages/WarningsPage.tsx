@@ -43,7 +43,10 @@ const WarningsPage: React.FC = () => {
                             {t('common.back', 'Back to List')}
                         </button>
                     </div>
-                    <CreateWarningForm onSuccess={() => setShowCreateForm(false)} />
+                    <CreateWarningForm 
+                        onSuccess={() => setShowCreateForm(false)} 
+                        onCancel={() => setShowCreateForm(false)}
+                    />
                 </div>
             ) : (
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-white shadow-sm p-6">
@@ -55,4 +58,5 @@ const WarningsPage: React.FC = () => {
 };
 
 export default WarningsPage;
+
 

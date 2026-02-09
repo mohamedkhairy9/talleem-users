@@ -11,7 +11,9 @@ function compactEntityToEntity(compact: CompactEntity | undefined): User['entity
             memorization_program_entity_type: { id: compact.memorization_program_entity_type_id }
         }),
         ...(compact.session_mode_id != null && { session_mode: { id: compact.session_mode_id } }),
-        ...(compact.main_program_id != null && { main_program: { id: compact.main_program_id } })
+        ...(compact.main_program_id != null && { main_program: { id: compact.main_program_id } }),
+        ...(compact.branch_id != null && { branch: { id: compact.branch_id } }),
+        ...(compact.program_id != null && { program: { id: compact.program_id } })
     };
 }
 

@@ -9,3 +9,4 @@ export interface BilingualName {
 
 export type WarningType = 'student' | 'teacher' | 'entity';
 
+

@@ -1,5 +1,4 @@
 import { axiosInstance } from '@/api/axiosInstance';
-import { registrationService } from '@/features/auth/services/registration.service';
 
 export interface SelectOption {
     id: number | string;
@@ -14,20 +13,6 @@ export interface SelectOption {
  * Handles API calls for form field options
  */
 export const warningsFormFieldsService = {
-    /**
-     * Get branches (reuse from registration service)
-     */
-    getBranches: (): Promise<{ data: SelectOption[] }> => {
-        return registrationService.getBranches();
-    },
-
-    /**
-     * Get programs
-     */
-    getPrograms: (params?: { branch_id?: number }): Promise<{ data: SelectOption[] }> => {
-        return axiosInstance.get('/programs', { params });
-    },
-
     /**
      * Get students (for student warnings)
      */
@@ -58,4 +43,5 @@ export const warningsFormFieldsService = {
         return axiosInstance.get('/entities', { params });
     }
 };
+
 

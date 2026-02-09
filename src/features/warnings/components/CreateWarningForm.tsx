@@ -9,19 +9,29 @@ import { useWarningFormQueries } from '../hooks/useWarningFormQueries';
 import { createWarningSchema, CreateWarningFormData } from '../schemas/warning.schema';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '@/stores';
 
 interface CreateWarningFormProps {
     onSuccess?: () => void;
+    onCancel?: () => void;
 }
 
 /**
  * Create Warning Form Component
  */
-const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess }) => {
+const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess, onCancel }) => {
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'en';
     const queryClient = useQueryClient();
     const createWarningMutation = useCreateWarning();
+    
+    // Get entity from auth store (which loads from cookies on initialization, like halaqa form)
+    const entity = useAuthStore((s) => s.user?.entity);
+    
+    // Get branch_id and program_id from entity nested objects (restored from cookies via auth store)
+    // The auth store loads from cookies and restores entity.branch.id and entity.main_program.id
+    const branchId = entity?.branch?.id as number | undefined;
+    const programId = entity?.main_program?.id as number | undefined;
 
     const {
         control,
@@ -32,8 +42,6 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess }) => {
     } = useFormWithValidation<CreateWarningFormData>({
         schema: createWarningSchema,
         defaultValues: {
-            branch_id: 0,
-            program_id: 0,
             warning_type: 'student',
             entity_id: null,
             student_id: null,
@@ -46,26 +54,20 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess }) => {
     });
 
     // Watch form values for dependencies
-    const branchId = useWatch({ control, name: 'branch_id' });
-    const programId = useWatch({ control, name: 'program_id' });
     const warningType = useWatch({ control, name: 'warning_type' });
 
-    // Fetch form options
+    // Fetch form options (using entity branch_id and program_id)
     const {
-        branchesOptions,
-        programsOptions,
         studentsOptions,
         teachersOptions,
         entitiesOptions,
-        isLoadingBranches,
-        isLoadingPrograms,
         isLoadingStudents,
         isLoadingTeachers,
         isLoadingEntities,
         mainProgramId
     } = useWarningFormQueries({
-        branchId: branchId > 0 ? branchId : null,
-        programId: programId > 0 ? programId : null,
+        branchId: branchId && branchId > 0 ? branchId : null,
+        programId: programId && programId > 0 ? programId : null,
         warningType: warningType || null
     });
 
@@ -89,16 +91,9 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess }) => {
         setValue('teacher_id', null);
     }, [warningType, setValue]);
 
-    // Reset program when branch changes
+    // Reset target fields when program changes (from entity)
     useEffect(() => {
-        if (branchId === 0 || !branchId) {
-            setValue('program_id', 0);
-        }
-    }, [branchId, setValue]);
-
-    // Reset target fields when program changes
-    useEffect(() => {
-        if (programId === 0 || !programId) {
+        if (!programId || programId === 0) {
             setValue('student_id', null);
             setValue('teacher_id', null);
             setValue('entity_id', null);
@@ -112,19 +107,32 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess }) => {
     ];
 
     const onSubmit = async (data: CreateWarningFormData) => {
-        // Clean up payload - only include the relevant ID based on warning_type
-        const payload = {
-            branch_id: data.branch_id,
-            program_id: data.program_id,
+        // Validate that branch_id and program_id are available from entity
+        if (!branchId || !programId) {
+            toast.error(t('warning.missingEntityData', 'Branch and program information is missing. Please contact support.'));
+            return;
+        }
+
+        // Clean up payload - branch_id and program_id come from entity, not form
+        // Only include the relevant ID based on warning_type
+        const payload: any = {
+            branch_id: branchId,
+            program_id: programId,
             warning_reason_id: data.warning_reason_id,
             warning_type: data.warning_type,
             date: data.date,
             note: data.note,
-            status: data.status,
-            entity_id: data.warning_type === 'entity' ? data.entity_id : null,
-            student_id: data.warning_type === 'student' ? data.student_id : null,
-            teacher_id: data.warning_type === 'teacher' ? data.teacher_id : null
+            status: data.status
         };
+
+        // Add only the relevant ID based on warning_type
+        if (data.warning_type === 'entity' && data.entity_id) {
+            payload.entity_id = data.entity_id;
+        } else if (data.warning_type === 'student' && data.student_id) {
+            payload.student_id = data.student_id;
+        } else if (data.warning_type === 'teacher' && data.teacher_id) {
+            payload.teacher_id = data.teacher_id;
+        }
 
         createWarningMutation.mutate(payload, {
             onSuccess: () => {
@@ -139,30 +147,27 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess }) => {
         });
     };
 
+    // Show error if entity data is missing
+    if (!branchId || !programId) {
+        return (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                <p className="text-sm text-red-800">
+                    {t('warning.missingEntityData', 'Branch and program information is missing from your account. Please contact support.')}
+                </p>
+            </div>
+        );
+    }
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Info banner showing entity branch/program */}
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <p className="text-sm text-blue-800">
+                    {t('warning.entityInfo', 'Warning will be created for your entity\'s branch and program.')}
+                </p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Branch */}
-                <FormSelect
-                    name="branch_id"
-                    label={t('warning.branch', 'Branch')}
-                    control={control}
-                    error={errors.branch_id?.message}
-                    options={branchesOptions}
-                    isLoading={isLoadingBranches}
-                />
-
-                {/* Program */}
-                <FormSelect
-                    name="program_id"
-                    label={t('warning.program', 'Program')}
-                    control={control}
-                    error={errors.program_id?.message}
-                    options={programsOptions}
-                    isLoading={isLoadingPrograms}
-                    disabled={!branchId || branchId === 0}
-                />
-
                 {/* Warning Type */}
                 <FormSelect
                     name="warning_type"
@@ -191,7 +196,7 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess }) => {
                         control={control}
                         error={errors.student_id?.message}
                         options={studentsOptions}
-                        isLoading={isLoadingStudents}
+                        loading={isLoadingStudents}
                         disabled={!programId || programId === 0}
                     />
                 )}
@@ -204,7 +209,7 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess }) => {
                         control={control}
                         error={errors.teacher_id?.message}
                         options={teachersOptions}
-                        isLoading={isLoadingTeachers}
+                        loading={isLoadingTeachers}
                         disabled={!programId || programId === 0}
                     />
                 )}
@@ -217,7 +222,7 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess }) => {
                         control={control}
                         error={errors.entity_id?.message}
                         options={entitiesOptions}
-                        isLoading={isLoadingEntities}
+                        loading={isLoadingEntities}
                         disabled={!programId || programId === 0}
                     />
                 )}
@@ -265,7 +270,10 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess }) => {
                 <Button
                     type="button"
                     variant="outline"
-                    onClick={() => reset()}
+                    onClick={() => {
+                        reset();
+                        onCancel?.();
+                    }}
                 >
                     {t('common.cancel', 'Cancel')}
                 </Button>

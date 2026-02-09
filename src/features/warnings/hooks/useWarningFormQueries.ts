@@ -16,21 +16,6 @@ export const useWarningFormQueries = (filters: {
     const entity = useAuthStore((s) => s.user?.entity);
     const mainProgramId = entity?.main_program?.id;
 
-    // Fetch branches
-    const branchesQuery = useQuery({
-        queryKey: ['warning-form-options', 'branches'],
-        queryFn: () => warningsFormFieldsService.getBranches(),
-        staleTime: 5 * 60 * 1000
-    });
-
-    // Fetch programs (filtered by branch if selected)
-    const programsQuery = useQuery({
-        queryKey: ['warning-form-options', 'programs', filters.branchId],
-        queryFn: () => warningsFormFieldsService.getPrograms({ branch_id: filters.branchId! }),
-        enabled: !!filters.branchId,
-        staleTime: 5 * 60 * 1000
-    });
-
     // Fetch students (only if warning type is 'student')
     const studentsQuery = useQuery({
         queryKey: ['warning-form-options', 'students', filters.branchId, filters.programId],
@@ -83,17 +68,14 @@ export const useWarningFormQueries = (filters: {
     };
 
     return {
-        branchesOptions: transformOptions(branchesQuery.data?.data || []),
-        programsOptions: transformOptions(programsQuery.data?.data || []),
         studentsOptions: transformOptions(studentsQuery.data?.data || []),
         teachersOptions: transformOptions(teachersQuery.data?.data || []),
         entitiesOptions: transformOptions(entitiesQuery.data?.data || []),
-        isLoadingBranches: branchesQuery.isLoading,
-        isLoadingPrograms: programsQuery.isLoading,
         isLoadingStudents: studentsQuery.isLoading,
         isLoadingTeachers: teachersQuery.isLoading,
         isLoadingEntities: entitiesQuery.isLoading,
         mainProgramId
     };
 };
+
 

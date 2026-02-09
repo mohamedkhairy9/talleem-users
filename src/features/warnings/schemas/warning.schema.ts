@@ -2,10 +2,9 @@ import * as yup from 'yup';
 
 /**
  * Create Warning Form Schema
+ * Note: branch_id and program_id are set automatically from entity data, not from form
  */
 export const createWarningSchema = yup.object({
-    branch_id: yup.number().required('Branch is required').positive(),
-    program_id: yup.number().required('Program is required').positive(),
     warning_type: yup.string().oneOf(['student', 'teacher', 'entity'], 'Warning type must be student, teacher, or entity').required('Warning type is required'),
     entity_id: yup.number().nullable().when('warning_type', {
         is: 'entity',
@@ -30,10 +29,9 @@ export const createWarningSchema = yup.object({
 
 /**
  * Create Warning Form Data Type
+ * Note: branch_id and program_id are not in form data, they're set from entity when submitting
  */
 export interface CreateWarningFormData {
-    branch_id: number;
-    program_id: number;
     warning_type: 'student' | 'teacher' | 'entity';
     entity_id?: number | null;
     student_id?: number | null;
@@ -43,4 +41,5 @@ export interface CreateWarningFormData {
     note: string;
     status: boolean;
 }
+
 
