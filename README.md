@@ -4,14 +4,17 @@ Production-ready admin dashboard for students, teachers, and entity managers.
 
 ## Architecture
 
-This project follows a scalable, feature-based architecture:
+This project follows a scalable, role-based and feature-based architecture:
 
-- **pages/** - Page components that render main feature components
-- **features/** - Feature-specific components, services, constants, and hooks
+- **features/** - Feature modules organized by role (entity-manager, teacher, etc.)
+- **pages/** - Page components organized by role
+- **routes/** - Route configuration organized by role
 - **globals/** - Global components organized by UI type (tables, forms, etc.)
 - **globals/icons/** - Individual SVG icon components (accept props for styling)
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed documentation.
+
+For information about the role-based structure, see [ROLE_BASED_STRUCTURE.md](./ROLE_BASED_STRUCTURE.md).
 
 ## Tech Stack
 
@@ -78,13 +81,31 @@ The built files will be in the `dist/` directory.
 
 ```
 src/
-├── api/              # API layer (axios, services, hooks)
-├── features/         # Feature modules
-├── globals/          # Global components and icons
-├── pages/            # Page components
-├── routes/           # Routing configuration
-├── stores/           # State management (Zustand)
-└── utils/            # Utilities and helpers
+├── api/                      # API layer (axios, services, hooks)
+├── features/                 # Feature modules organized by role
+│   ├── auth/                # Authentication features
+│   ├── entity-manager/       # Entity Manager features
+│   │   ├── halaqas/         # Halaqas management
+│   │   ├── warnings/        # Warnings management
+│   │   └── index.ts         # Barrel exports
+│   └── students/            # Students features
+├── globals/                  # Global components and icons
+├── pages/                    # Page components organized by role
+│   ├── entity-manager/       # Entity Manager pages
+│   │   ├── HalaqasListPage.tsx
+│   │   ├── CreateHalaqaPage.tsx
+│   │   ├── EditHalaqaPage.tsx
+│   │   ├── HalaqaDetailPage.tsx
+│   │   ├── WarningsPage.tsx
+│   │   └── index.ts
+│   └── [other shared pages]
+├── routes/                   # Routing configuration organized by role
+│   ├── entity-manager/       # Entity Manager routes
+│   │   ├── routes.tsx
+│   │   └── index.ts
+│   └── routes.tsx            # Main routes (imports role-specific routes)
+├── stores/                   # State management (Zustand)
+└── utils/                    # Utilities and helpers
 ```
 
 ## Authentication
@@ -101,10 +122,17 @@ src/
 
 ## Adding New Features
 
-1. Create feature directory in `src/features/[feature-name]/`
+### For Entity Managers:
+1. Create feature directory in `src/features/entity-manager/[feature-name]/`
 2. Add components, services, hooks, and constants
-3. Create page component in `src/pages/`
-4. Add route in `src/routes/routes.js`
+3. Create page component in `src/pages/entity-manager/`
+4. Add route in `src/routes/entity-manager/routes.tsx`
+
+### For Other Roles (Teachers, Admins, etc.):
+1. Create role directory: `src/features/[role-name]/[feature-name]/`
+2. Create pages: `src/pages/[role-name]/[PageName].tsx`
+3. Create routes: `src/routes/[role-name]/routes.tsx`
+4. Import routes in `src/routes/routes.tsx`
 
 ## Adding New Icons
 

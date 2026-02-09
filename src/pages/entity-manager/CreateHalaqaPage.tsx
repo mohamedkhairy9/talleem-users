@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/globals/components';
-import CreateHalaqaForm from '@/features/halaqas/components/CreateHalaqaForm';
+import CreateHalaqaForm from '@/features/entity-manager/halaqas/components/CreateHalaqaForm';
 
 /**
  * Create Halaqa Page

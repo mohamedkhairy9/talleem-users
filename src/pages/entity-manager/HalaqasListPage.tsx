@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/globals/components';
 import { PlusIcon } from '@/globals/icons';
-import HalaqaList from '@/features/halaqas/components/HalaqaList';
+import HalaqaList from '@/features/entity-manager/halaqas/components/HalaqaList';
 
 /**
  * Halaqas List Page

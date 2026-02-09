@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, PageHeader } from '@/globals/components';
 import { PlusIcon } from '@/globals/icons';
-import WarningsList from '@/features/warnings/components/WarningsList';
-import CreateWarningForm from '@/features/warnings/components/CreateWarningForm';
+import WarningsList from '@/features/entity-manager/warnings/components/WarningsList';
+import CreateWarningForm from '@/features/entity-manager/warnings/components/CreateWarningForm';
 
 /**
  * Warnings Page

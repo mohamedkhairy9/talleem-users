@@ -6,18 +6,34 @@
 Tallem-users-dashboards/
 ├── src/
 │   ├── api/                    # API layer
-│   │   ├── config.js          # API configuration
-│   │   ├── axiosInstance.js   # Axios instance with interceptors
-│   │   ├── queryClient.js     # React Query client config
-│   │   ├── services/          # API services
-│   │   └── hooks/             # API hooks (React Query)
+│   │   ├── config.ts          # API configuration
+│   │   ├── axiosInstance.ts   # Axios instance with interceptors
+│   │   ├── queryClient.ts     # React Query client config
+│   │   └── index.ts           # Barrel exports
 │   │
-│   ├── features/              # Feature modules
-│   │   └── [feature-name]/
-│   │       ├── components/    # Feature-specific components
-│   │       ├── hooks/        # Feature-specific hooks
-│   │       ├── services/     # Feature-specific services
-│   │       └── constants/    # Feature-specific constants
+│   ├── features/              # Feature modules organized by role
+│   │   ├── auth/              # Authentication features
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   ├── services/
+│   │   │   └── utils/
+│   │   ├── entity-manager/    # Entity Manager features
+│   │   │   ├── halaqas/       # Halaqas management
+│   │   │   │   ├── components/
+│   │   │   │   ├── hooks/
+│   │   │   │   ├── services/
+│   │   │   │   ├── schemas/
+│   │   │   │   ├── types/
+│   │   │   │   └── utils/
+│   │   │   ├── warnings/      # Warnings management
+│   │   │   │   ├── components/
+│   │   │   │   ├── hooks/
+│   │   │   │   ├── services/
+│   │   │   │   ├── schemas/
+│   │   │   │   ├── types/
+│   │   │   │   └── utils/
+│   │   │   └── index.ts       # Barrel exports
+│   │   └── students/          # Students features
 │   │
 │   ├── globals/               # Global/shared code
 │   │   ├── components/        # Global components
@@ -27,28 +43,47 @@ Tallem-users-dashboards/
 │   │   │   └── layout/       # Layout components (Layout, Navbar, Sidebar)
 │   │   └── icons/            # SVG icon components
 │   │
-│   ├── pages/                # Page components
-│   │   └── [PageName].jsx    # Each page renders the main feature component
+│   ├── pages/                # Page components organized by role
+│   │   ├── entity-manager/   # Entity Manager pages
+│   │   │   ├── HalaqasListPage.tsx
+│   │   │   ├── CreateHalaqaPage.tsx
+│   │   │   ├── EditHalaqaPage.tsx
+│   │   │   ├── HalaqaDetailPage.tsx
+│   │   │   ├── WarningsPage.tsx
+│   │   │   └── index.ts      # Barrel exports
+│   │   ├── DashboardPage.tsx
+│   │   ├── LoginPage.tsx
+│   │   └── [other shared pages]
 │   │
-│   ├── routes/               # Routing configuration
-│   │   ├── AppRoutes.jsx     # Main routes component
-│   │   ├── ProtectedRoute.jsx # Auth-protected route wrapper
-│   │   └── routes.js         # Routes configuration
+│   ├── routes/               # Routing configuration organized by role
+│   │   ├── entity-manager/   # Entity Manager routes
+│   │   │   ├── routes.tsx    # Route definitions
+│   │   │   └── index.ts      # Barrel exports
+│   │   ├── AppRoutes.tsx     # Main routes component
+│   │   ├── ProtectedRoute.tsx # Auth-protected route wrapper
+│   │   ├── RoleBasedIndexRoute.tsx # Role-based index redirect
+│   │   └── routes.tsx        # Main routes (imports role-specific routes)
 │   │
 │   ├── stores/               # State management (Zustand)
-│   │   ├── auth.store.js     # Authentication store
-│   │   └── language.store.js # Language store
+│   │   ├── auth.store.ts     # Authentication store
+│   │   ├── language.store.ts # Language store
+│   │   └── index.ts          # Barrel exports
 │   │
 │   ├── utils/                # Utility functions
-│   │   ├── cookies.js        # Cookie management
-│   │   ├── urlParams.js      # URL parameter utilities
+│   │   ├── cookies.ts        # Cookie management
+│   │   ├── urlParams.ts      # URL parameter utilities
 │   │   ├── hooks/           # Custom hooks
-│   │   ├── constants/       # Global constants
-│   │   └── helpers/         # Helper functions
+│   │   ├── constants/        # Global constants
+│   │   └── helpers/          # Helper functions
 │   │
-│   ├── App.jsx              # Main app component
-│   ├── main.jsx             # App entry point
-│   ├── i18n.js              # i18n configuration
+│   ├── config/               # Configuration files
+│   │   ├── routes.config.ts  # Route paths and labels
+│   │   ├── menu.config.ts   # Menu configuration
+│   │   └── index.ts         # Barrel exports
+│   │
+│   ├── App.tsx              # Main app component
+│   ├── main.tsx             # App entry point
+│   ├── i18n.ts              # i18n configuration
 │   └── index.css            # Global styles
 │
 └── public/
@@ -59,20 +94,36 @@ Tallem-users-dashboards/
 
 ## Key Principles
 
-### 1. Feature-Based Organization
+### 1. Role-Based Organization
+- Features, pages, and routes are organized by user role
+- Each role has its own module: `entity-manager/`, `teacher/`, `admin/`, etc.
+- Makes it easy to add new roles and maintain role-specific code
+- Example structure:
+  - `src/features/entity-manager/` - Entity manager features
+  - `src/pages/entity-manager/` - Entity manager pages
+  - `src/routes/entity-manager/` - Entity manager routes
+
+### 2. Feature-Based Organization
 - Each feature is self-contained with its own components, services, hooks, and constants
 - Features are isolated and can be easily maintained or removed
+- Features are nested under role directories
 
-### 2. Page Components
+### 3. Page Components
 - Pages are thin wrappers that render the main feature component
 - Pages handle routing-level logic and data fetching coordination
+- Pages are organized by role in `pages/[role-name]/`
 
-### 3. Global Components
+### 4. Route Organization
+- Routes are organized by role in `routes/[role-name]/`
+- Main `routes.tsx` imports and spreads role-specific routes
+- Makes it easy to add new role routes without cluttering the main file
+
+### 5. Global Components
 - Organized by UI type (ui, forms, tables, layout)
-- Reusable across all features
+- Reusable across all features and roles
 - Located in `globals/components/`
 
-### 4. Icons System
+### 6. Icons System
 - Each icon is a separate component file
 - Icons accept props for styling (width, height, className, etc.)
 - Located in `globals/icons/`

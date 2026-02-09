@@ -19,12 +19,15 @@ This is a **separate repository** from the original Tallem project, located at t
 - Pages contain business logic
 - Services scattered in api/services
 - No clear feature boundaries
+- No role-based organization
 
 **After (Tallem Users Dashboards):**
-- **Feature-based organization**: Each feature is self-contained
+- **Role-based organization**: Features, pages, and routes organized by user role
+- **Feature-based organization**: Each feature is self-contained within its role
 - **Pages are thin**: Only render main feature components
-- **Clear separation**: Features, globals, pages, routes
-- **Scalable**: Easy to add/remove features
+- **Clear separation**: Features, globals, pages, routes all organized by role
+- **Scalable**: Easy to add/remove features and roles
+- **Modular**: Each role module is self-contained
 
 ### 2. Authentication Security
 
@@ -81,19 +84,33 @@ This is a **separate repository** from the original Tallem project, located at t
 Tallem-users-dashboards/
 ├── src/
 │   ├── api/                    # API layer
-│   │   ├── axiosInstance.js    # Axios with cookie interceptors
-│   │   ├── queryClient.js      # React Query config
-│   │   ├── services/          # API services
-│   │   └── hooks/             # API hooks
+│   │   ├── axiosInstance.ts    # Axios with cookie interceptors
+│   │   ├── queryClient.ts      # React Query config
+│   │   └── index.ts            # Barrel exports
 │   │
-│   ├── features/              # Feature modules
-│   │   ├── auth/
-│   │   │   └── components/
-│   │   └── students/
-│   │       ├── components/
-│   │       ├── hooks/
-│   │       ├── services/
-│   │       └── constants/
+│   ├── features/              # Feature modules organized by role
+│   │   ├── auth/              # Authentication features
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   ├── services/
+│   │   │   └── utils/
+│   │   ├── entity-manager/    # Entity Manager features
+│   │   │   ├── halaqas/       # Halaqas management
+│   │   │   │   ├── components/
+│   │   │   │   ├── hooks/
+│   │   │   │   ├── services/
+│   │   │   │   ├── schemas/
+│   │   │   │   ├── types/
+│   │   │   │   └── utils/
+│   │   │   ├── warnings/      # Warnings management
+│   │   │   │   ├── components/
+│   │   │   │   ├── hooks/
+│   │   │   │   ├── services/
+│   │   │   │   ├── schemas/
+│   │   │   │   ├── types/
+│   │   │   │   └── utils/
+│   │   │   └── index.ts       # Barrel exports
+│   │   └── students/          # Students features
 │   │
 │   ├── globals/               # Global/shared code
 │   │   ├── components/
@@ -103,23 +120,40 @@ Tallem-users-dashboards/
 │   │   │   └── layout/       # Layout, Navbar, Sidebar
 │   │   └── icons/            # SVG icon components
 │   │
-│   ├── pages/                 # Page components
-│   │   ├── StudentsPage.jsx
-│   │   ├── TeachersPage.jsx
-│   │   └── ...
+│   ├── pages/                 # Page components organized by role
+│   │   ├── entity-manager/   # Entity Manager pages
+│   │   │   ├── HalaqasListPage.tsx
+│   │   │   ├── CreateHalaqaPage.tsx
+│   │   │   ├── EditHalaqaPage.tsx
+│   │   │   ├── HalaqaDetailPage.tsx
+│   │   │   ├── WarningsPage.tsx
+│   │   │   └── index.ts      # Barrel exports
+│   │   ├── DashboardPage.tsx
+│   │   ├── LoginPage.tsx
+│   │   └── [other shared pages]
 │   │
-│   ├── routes/                # Routing
-│   │   ├── AppRoutes.jsx
-│   │   ├── ProtectedRoute.jsx
-│   │   └── routes.js
+│   ├── routes/                # Routing organized by role
+│   │   ├── entity-manager/   # Entity Manager routes
+│   │   │   ├── routes.tsx    # Route definitions
+│   │   │   └── index.ts      # Barrel exports
+│   │   ├── AppRoutes.tsx      # Main routes component
+│   │   ├── ProtectedRoute.tsx # Auth-protected route wrapper
+│   │   ├── RoleBasedIndexRoute.tsx # Role-based index redirect
+│   │   └── routes.tsx         # Main routes (imports role-specific routes)
 │   │
 │   ├── stores/                # Zustand stores
-│   │   ├── auth.store.js
-│   │   └── language.store.js
+│   │   ├── auth.store.ts
+│   │   ├── language.store.ts
+│   │   └── index.ts          # Barrel exports
+│   │
+│   ├── config/                # Configuration files
+│   │   ├── routes.config.ts  # Route paths and labels
+│   │   ├── menu.config.ts   # Menu configuration
+│   │   └── index.ts         # Barrel exports
 │   │
 │   └── utils/                 # Utilities
-│       ├── cookies.js         # Cookie management
-│       ├── urlParams.js       # URL param utilities
+│       ├── cookies.ts         # Cookie management
+│       ├── urlParams.ts       # URL param utilities
 │       ├── hooks/            # Custom hooks
 │       └── helpers/          # Helper functions
 │

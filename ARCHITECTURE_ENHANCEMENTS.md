@@ -186,11 +186,58 @@ import { ROUTE_PATHS } from '@/config';
 5. **Better Developer Experience**: Shorter, cleaner import paths
 6. **Scalability**: Easy to add new routes, menu items, or components
 
+### 6. Role-Based Organization
+
+**New Structure:**
+- `src/features/entity-manager/` - Entity manager features (halaqas, warnings)
+- `src/pages/entity-manager/` - Entity manager pages
+- `src/routes/entity-manager/` - Entity manager routes
+- Each role module is self-contained and scalable
+
+**Benefits:**
+- Clear separation of concerns by role
+- Easy to add new roles (teacher, admin, etc.)
+- Better code organization and maintainability
+- Scalable architecture for future growth
+
+**Structure:**
+```
+src/
+├── features/
+│   ├── auth/                  # Shared authentication
+│   ├── entity-manager/        # Entity manager features
+│   │   ├── halaqas/
+│   │   ├── warnings/
+│   │   └── index.ts
+│   └── [future: teacher/, admin/]
+├── pages/
+│   ├── entity-manager/        # Entity manager pages
+│   │   └── index.ts
+│   └── [future: teacher/, admin/]
+└── routes/
+    ├── entity-manager/        # Entity manager routes
+    │   └── routes.tsx
+    └── routes.tsx             # Imports role-specific routes
+```
+
+**Usage:**
+```typescript
+// Import entity manager routes
+import { entityManagerRoutes } from '@/routes/entity-manager';
+
+// In main routes.tsx
+export const routes: RouteConfig[] = [
+    // ... shared routes
+    ...entityManagerRoutes,
+    // ... future: ...teacherRoutes, ...adminRoutes
+];
+```
+
 ## Next Steps (Optional Future Enhancements)
 
 1. Add environment-based configuration
 2. Implement route guards/permissions system
 3. Add route metadata (title, breadcrumbs, etc.)
-4. Create feature-based route modules
-5. Add configuration validation
-6. Implement dynamic menu generation from routes
+4. Add configuration validation
+5. Implement dynamic menu generation from routes
+6. Add teacher and admin role modules following the same pattern

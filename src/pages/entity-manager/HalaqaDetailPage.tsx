@@ -1,18 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useHalaqa } from '@/features/halaqas/hooks/useHalaqas';
+import { useHalaqa } from '@/features/entity-manager/halaqas/hooks/useHalaqas';
 import { PageHeader, Button } from '@/globals/components';
 import type { PageHeaderBadge } from '@/globals/components';
-import PlanStudentsModal from '@/features/halaqas/components/PlanStudentsModal';
-import HalaqaQuickStats from '@/features/halaqas/components/HalaqaQuickStats';
+import PlanStudentsModal from '@/features/entity-manager/halaqas/components/PlanStudentsModal';
+import HalaqaQuickStats from '@/features/entity-manager/halaqas/components/HalaqaQuickStats';
 import { CalendarIcon, CircleIcon, EditIcon } from '@/globals/icons';
-import HalaqaBasicInfo from '@/features/halaqas/components/HalaqaBasicInfo';
-import HalaqaDatesSchedule from '@/features/halaqas/components/HalaqaDatesSchedule';
-import HalaqaActivities from '@/features/halaqas/components/HalaqaActivities';
-import HalaqaStudents from '@/features/halaqas/components/HalaqaStudents';
-import HalaqaAdditionalInfo from '@/features/halaqas/components/HalaqaAdditionalInfo';
-import HalaqaPlansSection from '@/features/halaqas/components/HalaqaPlansSection';
+import HalaqaBasicInfo from '@/features/entity-manager/halaqas/components/HalaqaBasicInfo';
+import HalaqaDatesSchedule from '@/features/entity-manager/halaqas/components/HalaqaDatesSchedule';
+import HalaqaActivities from '@/features/entity-manager/halaqas/components/HalaqaActivities';
+import HalaqaStudents from '@/features/entity-manager/halaqas/components/HalaqaStudents';
+import HalaqaAdditionalInfo from '@/features/entity-manager/halaqas/components/HalaqaAdditionalInfo';
+import HalaqaPlansSection from '@/features/entity-manager/halaqas/components/HalaqaPlansSection';
 import { AlertTriangleIcon } from '@/globals/icons';
 
 /**
