@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
-import { PageHeader } from '@/globals/components';
+import { Button, PageHeader } from '@/globals/components';
 import { PlusIcon } from '@/globals/icons';
 import WarningsList from '@/features/warnings/components/WarningsList';
 import CreateWarningForm from '@/features/warnings/components/CreateWarningForm';
@@ -12,7 +11,6 @@ import CreateWarningForm from '@/features/warnings/components/CreateWarningForm'
  */
 const WarningsPage: React.FC = () => {
     const { t } = useTranslation();
-    const { lang } = useParams<{ lang: string }>();
     const [showCreateForm, setShowCreateForm] = useState(false);
 
     return (
@@ -32,16 +30,17 @@ const WarningsPage: React.FC = () => {
 
             {showCreateForm ? (
                 <div className="bg-white rounded-lg shadow-sm p-6">
-                    <div className="mb-6">
+                    <div className="mb-6 flex justify-between items-center">
                         <h2 className="text-xl font-bold text-gray-900 mb-2">
                             {t('warning.createTitle', 'Create New Warning')}
                         </h2>
-                        <button
+                        <Button
                             onClick={() => setShowCreateForm(false)}
                             className="text-sm text-gray-600 hover:text-gray-900"
+                            variant="outline"
                         >
                             {t('common.back', 'Back to List')}
-                        </button>
+                        </Button>
                     </div>
                     <CreateWarningForm 
                         onSuccess={() => setShowCreateForm(false)} 

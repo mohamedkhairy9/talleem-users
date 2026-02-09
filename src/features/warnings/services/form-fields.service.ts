@@ -16,9 +16,9 @@ export const warningsFormFieldsService = {
     /**
      * Get students (for student warnings)
      */
-    getStudents: (params?: { branch_id?: number; program_id?: number; search?: string }): Promise<{
+    getStudents: (params?: { branch_id?: number; main_program_id?: number; entity_id?: number; search?: string; page?: number; per_page?: number }): Promise<{
         data: SelectOption[];
-        meta?: { current_page?: number; last_page?: number; total?: number };
+        meta?: { current_page?: number; last_page?: number; total?: number; per_page?: number };
     }> => {
         return axiosInstance.get('/students', { params });
     },
@@ -26,9 +26,9 @@ export const warningsFormFieldsService = {
     /**
      * Get teachers (for teacher warnings)
      */
-    getTeachers: (params?: { branch_id?: number; program_id?: number; search?: string }): Promise<{
+    getTeachers: (params?: { branch_id?: number; main_program_id?: number; entity_id?: number; search?: string; page?: number; per_page?: number }): Promise<{
         data: SelectOption[];
-        meta?: { current_page?: number; last_page?: number; total?: number };
+        meta?: { current_page?: number; last_page?: number; total?: number; per_page?: number };
     }> => {
         return axiosInstance.get('/teachers', { params });
     },
@@ -36,9 +36,9 @@ export const warningsFormFieldsService = {
     /**
      * Get entities (for entity warnings)
      */
-    getEntities: (params?: { branch_id?: number; program_id?: number; search?: string }): Promise<{
+    getEntities: (params?: { branch_id?: number; main_program_id?: number; search?: string; page?: number; per_page?: number }): Promise<{
         data: SelectOption[];
-        meta?: { current_page?: number; last_page?: number; total?: number };
+        meta?: { current_page?: number; last_page?: number; total?: number; per_page?: number };
     }> => {
         return axiosInstance.get('/entities', { params });
     }
