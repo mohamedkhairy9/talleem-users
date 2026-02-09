@@ -95,6 +95,27 @@ const HalaqaDetailPage: React.FC = () => {
         setIsStudentsModalOpen(true);
     };
 
+    // Prepare badges for header - MUST be before early returns to maintain hook order
+    const headerBadges: PageHeaderBadge[] = useMemo(() => {
+        if (!halaqa) return [];
+        const badges: PageHeaderBadge[] = [];
+        if (halaqa.memorization_program_entity_type?.name) {
+            badges.push({
+                key: 'entity-type',
+                label: getLocalizedText(halaqa.memorization_program_entity_type.name),
+                icon: <CircleIcon width={16} height={16} />
+            });
+        }
+        if (halaqa.period) {
+            badges.push({
+                key: 'period',
+                label: String(t(`halaqa.period.${halaqa.period}`, halaqa.period)),
+                icon: <CalendarIcon width={16} height={16} />
+            });
+        }
+        return badges;
+    }, [halaqa?.memorization_program_entity_type?.name, halaqa?.period, currentLang, t, getLocalizedText]);
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -124,26 +145,6 @@ const HalaqaDetailPage: React.FC = () => {
     // Calculate stats
     const studentCount = halaqa.current_students_count ?? halaqa.students?.length ?? 0;
     const maxStudents = halaqa.max_students ?? 0;
-
-    // Prepare badges for header
-    const headerBadges: PageHeaderBadge[] = useMemo(() => {
-        const badges: PageHeaderBadge[] = [];
-        if (halaqa.memorization_program_entity_type?.name) {
-            badges.push({
-                key: 'entity-type',
-                label: getLocalizedText(halaqa.memorization_program_entity_type.name),
-                icon: <CircleIcon width={16} height={16} />
-            });
-        }
-        if (halaqa.period) {
-            badges.push({
-                key: 'period',
-                label: String(t(`halaqa.period.${halaqa.period}`, halaqa.period)),
-                icon: <CalendarIcon width={16} height={16} />
-            });
-        }
-        return badges;
-    }, [halaqa.memorization_program_entity_type?.name, halaqa.period, currentLang, t, getLocalizedText]);
 
     return (
         <div className="space-y-6">
