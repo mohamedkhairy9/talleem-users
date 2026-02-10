@@ -59,51 +59,9 @@ export const EDUCATION_MENU_ITEMS: MenuItem[] = [
  */
 export const TEACHER_MENU_ITEMS: MenuItem[] = [
     {
-        path: ROUTE_PATHS.STUDY_PLAN,
-        labelKey: 'menu.studyPlan',
-        icon: 'BookOpenIcon',
-        roles: ['teacher']
-    },
-    {
-        path: ROUTE_PATHS.ABSENCES,
-        labelKey: 'menu.absences',
-        icon: 'CalendarIcon',
-        roles: ['teacher']
-    },
-    {
-        path: ROUTE_PATHS.GRADES,
-        labelKey: 'menu.grades',
-        icon: 'StarIcon',
-        roles: ['teacher']
-    },
-    {
-        path: ROUTE_PATHS.CERTIFICATES,
-        labelKey: 'menu.certificates',
-        icon: 'AwardIcon',
-        roles: ['teacher']
-    },
-    {
-        path: ROUTE_PATHS.WARNINGS,
-        labelKey: 'menu.warnings',
-        icon: 'AlertTriangleIcon',
-        roles: ['teacher']
-    },
-    {
-        path: ROUTE_PATHS.TRANSFERS,
-        labelKey: 'menu.transfers',
-        icon: 'ArrowRightLeftIcon',
-        roles: ['teacher']
-    },
-    {
-        path: ROUTE_PATHS.EVALUATIONS,
-        labelKey: 'menu.evaluations',
-        icon: 'ClipboardCheckIcon',
-        roles: ['teacher']
-    },
-    {
-        path: ROUTE_PATHS.DIARY,
-        labelKey: 'menu.diary',
-        icon: 'BookIcon',
+        path: ROUTE_PATHS.TEACHER_HALAQAS,
+        labelKey: 'menu.halaqaty',
+        icon: 'CircleIcon',
         roles: ['teacher']
     }
 ];

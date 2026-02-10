@@ -18,6 +18,11 @@ const RoleBasedIndexRoute: React.FC = () => {
         return <Navigate to={`/${currentLang}/${ROUTE_PATHS.HALAQAS}`} replace />;
     }
 
+    if (user?.roles?.includes('teacher')) {
+        // Teachers: redirect to my halaqas (their index page)
+        return <Navigate to={`/${currentLang}/${ROUTE_PATHS.TEACHER_HALAQAS}`} replace />;
+    }
+
     // For other roles: redirect to dashboard
     return <Navigate to={`/${currentLang}/${ROUTE_PATHS.DASHBOARD}`} replace />;
 };

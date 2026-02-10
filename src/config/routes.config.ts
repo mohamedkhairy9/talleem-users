@@ -18,14 +18,8 @@ export const ROUTE_PATHS = {
     EDIT_HALAQA: 'halaqas/:id/edit',
     WARNINGS_MANAGEMENT: 'warnings-management',
     // Teacher menu items
-    STUDY_PLAN: 'study-plan',
-    ABSENCES: 'absences',
-    GRADES: 'grades',
-    CERTIFICATES: 'certificates',
-    WARNINGS: 'warnings',
-    TRANSFERS: 'transfers',
-    EVALUATIONS: 'evaluations',
-    DIARY: 'diary',
+    TEACHER_HALAQAS: 'halaqaty',
+    TEACHER_HALAQA_DETAIL: 'halaqaty/:id',
     SETTINGS: 'settings'
 } as const;
 

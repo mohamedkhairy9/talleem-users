@@ -5,6 +5,7 @@ import TeachersPage from '@/pages/TeachersPage';
 import EntityManagersPage from '@/pages/EntityManagersPage';
 import RoleBasedIndexRoute from './RoleBasedIndexRoute';
 import { entityManagerRoutes } from './entity-manager';
+import { teacherRoutes } from './teacher';
 
 /**
  * Application Routes Configuration
@@ -40,5 +41,7 @@ export const routes: RouteConfig[] = [
         roles: ['admin']
     },
     // Entity Manager Routes (Halaqas, Warnings, etc.)
-    ...entityManagerRoutes
+    ...entityManagerRoutes,
+    // Teacher Routes (My Halaqas, etc.)
+    ...teacherRoutes
 ];
