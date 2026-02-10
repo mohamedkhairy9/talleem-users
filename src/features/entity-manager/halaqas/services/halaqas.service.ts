@@ -27,7 +27,7 @@ export interface CreateHalaqaPayload {
     activities: Array<'tasbit' | 'hifz' | 'murajaa'>;
     student_ids: number[];
     session_time: string;
-    platform_id: number;
+    platform_id?: number;
     teaching_method: 'in_person' | 'remote' | 'hybrid';
 }
 
@@ -58,8 +58,11 @@ export interface CreatePlanPayload {
     plan_type: 'daily_amount' | 'start_end';
     unit: 'segments' | 'parts' | 'surahs';
     direction: 'incremental' | 'decremental';
-    start_verse_id: number;
     daily_amount: number;
+    // Conditional fields based on unit
+    start_segment_id?: number; // Required when unit is 'segments'
+    start_juz_number?: number; // Required when unit is 'parts'
+    start_surah_id?: number; // Required when unit is 'surahs'
 }
 
 /**

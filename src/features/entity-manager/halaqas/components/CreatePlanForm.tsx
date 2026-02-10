@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useWatch } from 'react-hook-form';
 import { useFormWithValidation } from '@/utils';
 import { FormInput, FormSelect, Button } from '@/globals/components';
 import SelectRFH from '@/globals/components/ui/SelectRFH';
 import { useCreatePlan } from '../hooks/useHalaqas';
 import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
+import type { CreatePlanPayload } from '../services/halaqas.service';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -55,12 +57,27 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             plan_type: 'daily_amount',
             unit: 'segments',
             direction: 'incremental',
-            start_verse_id: 0,
+            start_segment_id: undefined,
+            start_juz_number: undefined,
+            start_surah_id: undefined,
             daily_amount: 0
         }
     });
 
     const currentActivity = watch('activity');
+    const currentUnit = useWatch({
+        control,
+        name: 'unit'
+    });
+
+    // Clear start fields when unit changes
+    useEffect(() => {
+        if (currentUnit) {
+            setValue('start_segment_id', undefined);
+            setValue('start_juz_number', undefined);
+            setValue('start_surah_id', undefined);
+        }
+    }, [currentUnit, setValue]);
 
     // Update activity if current value is not in halaqa activities
     React.useEffect(() => {
@@ -117,8 +134,22 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
     }));
 
     const onSubmit = async (data: CreatePlanFormData) => {
+        // Build payload with only the relevant start field based on unit
+        const payload: CreatePlanPayload = {
+            activity: data.activity,
+            student_id: data.student_id,
+            plan_type: data.plan_type,
+            unit: data.unit,
+            direction: data.direction,
+            daily_amount: data.daily_amount,
+            // Include only the start field that matches the selected unit
+            ...(data.unit === 'segments' && data.start_segment_id && { start_segment_id: data.start_segment_id }),
+            ...(data.unit === 'parts' && data.start_juz_number && { start_juz_number: data.start_juz_number }),
+            ...(data.unit === 'surahs' && data.start_surah_id && { start_surah_id: data.start_surah_id })
+        };
+
         createPlanMutation.mutate(
-            { halaqaId, data },
+            { halaqaId, data: payload },
             {
                 onSuccess: () => {
                     toast.success(t('plan.createSuccess', 'Plan created successfully'));
@@ -129,7 +160,9 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                         plan_type: 'daily_amount',
                         unit: 'segments',
                         direction: 'incremental',
-                        start_verse_id: 0,
+                        start_segment_id: undefined,
+                        start_juz_number: undefined,
+                        start_surah_id: undefined,
                         daily_amount: 0
                     });
                     if (onSuccess) {
@@ -197,15 +230,37 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 error={errors.direction?.message}
             />
 
-            {/* Start Verse ID */}
-            <FormInput
-                name="start_verse_id"
-                control={control}
-                label={t('plan.startVerseId', 'Start Verse ID')}
-                required
-                type="number"
-                error={errors.start_verse_id?.message}
-            />
+            {/* Conditional Start Fields based on Unit */}
+            {currentUnit === 'segments' && (
+                <FormInput
+                    name="start_segment_id"
+                    control={control}
+                    label={t('plan.startSegmentId', 'Start Segment ID')}
+                    required
+                    type="number"
+                    error={errors.start_segment_id?.message}
+                />
+            )}
+            {currentUnit === 'parts' && (
+                <FormInput
+                    name="start_juz_number"
+                    control={control}
+                    label={t('plan.startJuzNumber', 'Start Juz Number')}
+                    required
+                    type="number"
+                    error={errors.start_juz_number?.message}
+                />
+            )}
+            {currentUnit === 'surahs' && (
+                <FormInput
+                    name="start_surah_id"
+                    control={control}
+                    label={t('plan.startSurahId', 'Start Surah ID')}
+                    required
+                    type="number"
+                    error={errors.start_surah_id?.message}
+                />
+            )}
 
             {/* Daily Amount */}
             <FormInput

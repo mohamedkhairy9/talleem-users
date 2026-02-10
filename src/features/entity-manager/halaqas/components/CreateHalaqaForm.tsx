@@ -1,5 +1,5 @@
-import React from 'react';
-import { Controller } from 'react-hook-form';
+import React, { useEffect } from 'react';
+import { Controller, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useFormWithValidation } from '@/utils';
@@ -8,6 +8,7 @@ import SelectRFH from '@/globals/components/ui/SelectRFH';
 import { useAuthStore } from '@/stores';
 import { useCreateHalaqa } from '../hooks/useHalaqas';
 import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
+import type { CreateHalaqaPayload } from '../services/halaqas.service';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -30,7 +31,8 @@ const CreateHalaqaForm: React.FC = () => {
     const {
         control,
         handleSubmit,
-        formState: { errors }
+        formState: { errors },
+        setValue
     } = useFormWithValidation<CreateHalaqaFormData>({
         schema: createHalaqaSchema,
         defaultValues: {
@@ -42,10 +44,23 @@ const CreateHalaqaForm: React.FC = () => {
             activities: [],
             student_ids: [],
             session_time: '',
-            platform_id: 0,
+            platform_id: undefined,
             teaching_method: 'in_person'
         }
     });
+
+    // Watch teaching_method to conditionally show platform field
+    const teachingMethod = useWatch({
+        control,
+        name: 'teaching_method'
+    });
+
+    // Clear platform_id when teaching method changes to in_person
+    useEffect(() => {
+        if (teachingMethod === 'in_person') {
+            setValue('platform_id', undefined);
+        }
+    }, [teachingMethod]);
 
     const entity = useAuthStore((s) => s.user?.entity);
     const {
@@ -76,10 +91,15 @@ const CreateHalaqaForm: React.FC = () => {
     const onSubmit = async (data: CreateHalaqaFormData) => {
         const memorization_program_entity_type_id = entity?.memorization_program_entity_type?.id ?? 0;
         const session_mode_id = entity?.session_mode?.id;
-        const payload = {
-            ...data,
+        
+        // Build payload, excluding platform_id if teaching method is in_person
+        const { platform_id, ...restData } = data;
+        const payload: CreateHalaqaPayload = {
+            ...restData,
             memorization_program_entity_type_id,
-            ...(session_mode_id != null && { session_mode_id })
+            ...(session_mode_id != null && { session_mode_id }),
+            // Only include platform_id if teaching method is not in_person and it has a value
+            ...(data.teaching_method !== 'in_person' && platform_id ? { platform_id } : {})
         };
         createHalaqaMutation.mutate(payload, {
             onSuccess: () => {
@@ -243,18 +263,6 @@ const CreateHalaqaForm: React.FC = () => {
                 )}
             </div>
 
-            {/* Platform */}
-            <SelectRFH
-                name="platform_id"
-                control={control}
-                label={t('halaqa.platform', 'Platform')}
-                required
-                options={platformsOptions}
-                loading={isLoadingPlatforms}
-                error={errors.platform_id?.message}
-                placeholder={t('halaqa.selectPlatform', 'Select a platform')}
-            />
-
             {/* Teaching Method */}
             <FormSelect
                 name="teaching_method"
@@ -264,6 +272,20 @@ const CreateHalaqaForm: React.FC = () => {
                 options={teachingMethodOptions}
                 error={errors.teaching_method?.message}
             />
+
+            {/* Platform - Only show if teaching method is not in_person */}
+            {teachingMethod && teachingMethod !== 'in_person' && (
+                <SelectRFH
+                    name="platform_id"
+                    control={control}
+                    label={t('halaqa.platform', 'Platform')}
+                    required
+                    options={platformsOptions}
+                    loading={isLoadingPlatforms}
+                    error={errors.platform_id?.message}
+                    placeholder={t('halaqa.selectPlatform', 'Select a platform')}
+                />
+            )}
 
             {/* Error Message */}
             {createHalaqaMutation.error && (
