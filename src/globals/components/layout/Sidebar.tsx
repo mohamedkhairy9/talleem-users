@@ -24,7 +24,8 @@ import {
     CircleIcon,
     PlusIcon,
     ChevronDownIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    LogoutIcon
 } from '@/globals/icons';
 
 interface SidebarProps {
@@ -312,6 +313,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direct
                             loading={logout.isPending}
                             className="w-full"
                         >
+                            <LogoutIcon width={16} height={16} className="me-2" />
                             {t('navbar.logout', 'Logout')}
                         </Button>
                     </div>
@@ -327,7 +329,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direct
                             {logout.isPending ? (
                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600" />
                             ) : (
-                                <XIcon width={20} height={20} /> 
+                                <LogoutIcon width={20} height={20} /> 
                             )}
                         </button>
                     </div>
