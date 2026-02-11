@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { halaqasService, CreateHalaqaPayload, UpdateHalaqaPayload, CreatePlanPayload } from '../services/halaqas.service';
+import { halaqasService, CreateHalaqaPayload, UpdateHalaqaPayload, CreatePlanPayload, CheckAvailabilityPayload } from '../services/halaqas.service';
 import type {
     HalaqasListParams,
     HalaqasListResponse,
@@ -78,6 +78,16 @@ export const useCreatePlan = () => {
     return useMutation({
         mutationFn: ({ halaqaId, data }: { halaqaId: number | string; data: CreatePlanPayload }) =>
             halaqasService.createPlan(halaqaId, data)
+    });
+};
+
+/**
+ * Check availability mutation hook
+ * Must be triggered manually via mutate()
+ */
+export const useCheckAvailability = () => {
+    return useMutation({
+        mutationFn: (payload: CheckAvailabilityPayload) => halaqasService.checkAvailability(payload)
     });
 };
 

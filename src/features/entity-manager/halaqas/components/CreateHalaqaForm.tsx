@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Controller, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -6,9 +6,9 @@ import { useFormWithValidation } from '@/utils';
 import { FormInput, FormSelect, Button } from '@/globals/components';
 import SelectRFH from '@/globals/components/ui/SelectRFH';
 import { useAuthStore } from '@/stores';
-import { useCreateHalaqa } from '../hooks/useHalaqas';
+import { useCreateHalaqa, useCheckAvailability } from '../hooks/useHalaqas';
 import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
-import type { CreateHalaqaPayload } from '../services/halaqas.service';
+import type { CreateHalaqaPayload, CheckAvailabilityPayload, CheckAvailabilityResponse } from '../services/halaqas.service';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -17,16 +17,18 @@ import {
     HALAQA_TEACHING_METHODS
 } from '../config';
 import { createHalaqaSchema, CreateHalaqaFormData } from '../schemas/halaqa.schema';
+import { AlertTriangleIcon, ClipboardCheckIcon, CircleIcon } from '@/globals/icons';
 
 /**
  * Create Halaqa Form Component
  */
 const CreateHalaqaForm: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { lang } = useParams<{ lang: string }>();
     const queryClient = useQueryClient();
     const createHalaqaMutation = useCreateHalaqa();
+    const currentLang = i18n.language || lang || 'en';
 
     const {
         control,
@@ -55,12 +57,89 @@ const CreateHalaqaForm: React.FC = () => {
         name: 'teaching_method'
     });
 
+    // Watch fields needed for availability check
+    const teacherId = useWatch({ control, name: 'teacher_id' });
+    const studentIds = useWatch({ control, name: 'student_ids' });
+    const startDate = useWatch({ control, name: 'start_date' });
+    const endDate = useWatch({ control, name: 'end_date' });
+    const period = useWatch({ control, name: 'period' });
+    const sessionTime = useWatch({ control, name: 'session_time' });
+
+    // State for availability check result
+    const [availabilityResult, setAvailabilityResult] = useState<CheckAvailabilityResponse | null>(null);
+
     // Clear platform_id when teaching method changes to in_person
     useEffect(() => {
         if (teachingMethod === 'in_person') {
             setValue('platform_id', undefined);
         }
-    }, [teachingMethod]);
+    }, [teachingMethod, setValue]);
+
+    // Clear availability result when form fields change
+    useEffect(() => {
+        setAvailabilityResult(null);
+    }, [teacherId, studentIds, startDate, endDate, period, sessionTime]);
+
+    // Check availability mutation
+    const checkAvailabilityMutation = useCheckAvailability();
+
+    // Check if all required fields are filled for availability check
+    const canCheckAvailability = useMemo(() => {
+        return !!(
+            teacherId &&
+            Array.isArray(studentIds) &&
+            studentIds.length > 0 &&
+            startDate &&
+            endDate &&
+            period &&
+            sessionTime
+        );
+    }, [teacherId, studentIds, startDate, endDate, period, sessionTime]);
+
+    // Handle availability check button click
+    const handleCheckAvailability = useCallback(() => {
+        if (!canCheckAvailability) return;
+
+        const payload: CheckAvailabilityPayload = {
+            teacher_id: teacherId,
+            student_ids: studentIds,
+            start_date: startDate,
+            end_date: endDate,
+            period: period as 'morning' | 'evening',
+            session_time: sessionTime
+        };
+
+        checkAvailabilityMutation.mutate(payload, {
+            onSuccess: (response: CheckAvailabilityResponse) => {
+                // Axios interceptor already extracts response.data, so response IS the CheckAvailabilityResponse
+                // API returns 200 even when has_conflict is true
+                setAvailabilityResult(response);
+            },
+            onError: () => {
+                setAvailabilityResult(null);
+                toast.error(t('halaqa.availabilityCheckError', 'Unable to check availability. Please try again.'));
+            }
+        });
+    }, [canCheckAvailability, teacherId, studentIds, startDate, endDate, period, sessionTime, checkAvailabilityMutation, t]);
+
+    // Check availability status - API returns 200 even with conflicts
+    const isAvailable = useMemo(() => {
+        return availabilityResult ? !availabilityResult.has_conflict : false;
+    }, [availabilityResult]);
+
+    const hasConflict = useMemo(() => {
+        return availabilityResult ? Boolean(availabilityResult.has_conflict) : false;
+    }, [availabilityResult]);
+
+    const hasConflictsData = useMemo(() => {
+        if (!availabilityResult?.conflicts) return false;
+        return !!(
+            availabilityResult.conflicts.teacher ||
+            (Array.isArray(availabilityResult.conflicts.students) && availabilityResult.conflicts.students.length > 0)
+        );
+    }, [availabilityResult]);
+
+    const isCheckingAvailability = checkAvailabilityMutation.isPending;
 
     const entity = useAuthStore((s) => s.user?.entity);
     const {
@@ -72,21 +151,27 @@ const CreateHalaqaForm: React.FC = () => {
         isLoadingPlatforms,
     } = useCreateHalaqaFormQueries();
 
-    // Get localized options for static fields
-    const periodOptions = HALAQA_PERIODS.map(period => ({
-        value: period.value,
-        label: t(period.labelKey, period.value)
-    }));
+    // Get localized options for static fields (memoized)
+    const periodOptions = useMemo(() => 
+        HALAQA_PERIODS.map(period => ({
+            value: period.value,
+            label: t(period.labelKey, period.value)
+        })), [t]
+    );
 
-    const activityOptions = HALAQA_ACTIVITIES.map(activity => ({
-        value: activity.value,
-        label: t(activity.labelKey, activity.value)
-    }));
+    const activityOptions = useMemo(() => 
+        HALAQA_ACTIVITIES.map(activity => ({
+            value: activity.value,
+            label: t(activity.labelKey, activity.value)
+        })), [t]
+    );
 
-    const teachingMethodOptions = HALAQA_TEACHING_METHODS.map(method => ({
-        value: method.value,
-        label: t(method.labelKey, method.value)
-    }));
+    const teachingMethodOptions = useMemo(() => 
+        HALAQA_TEACHING_METHODS.map(method => ({
+            value: method.value,
+            label: t(method.labelKey, method.value)
+        })), [t]
+    );
 
     const onSubmit = async (data: CreateHalaqaFormData) => {
         const memorization_program_entity_type_id = entity?.memorization_program_entity_type?.id ?? 0;
@@ -287,6 +372,136 @@ const CreateHalaqaForm: React.FC = () => {
                 />
             )}
 
+            {/* Availability Check Button */}
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                            {t('halaqa.checkAvailability', 'Check Availability')}
+                        </h3>
+                        <p className="text-xs text-gray-600">
+                            {t('halaqa.checkAvailabilityDescription', 'Verify teacher and student availability before creating the halaqa')}
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleCheckAvailability}
+                        disabled={!canCheckAvailability || isCheckingAvailability}
+                        loading={isCheckingAvailability}
+                    >
+                        {isCheckingAvailability 
+                            ? t('halaqa.checking', 'Checking...') 
+                            : t('halaqa.checkAvailability', 'Check Availability')}
+                    </Button>
+                </div>
+
+                {/* Availability Check Status */}
+                {isCheckingAvailability && (
+                    <div className="flex items-center gap-3 text-gray-600 p-3 bg-white rounded-lg border border-gray-200">
+                        <CircleIcon width={20} height={20} className="animate-spin" />
+                        <span className="text-sm font-medium">{t('halaqa.checkingAvailability', 'Checking availability...')}</span>
+                    </div>
+                )}
+
+                {checkAvailabilityMutation.error && (
+                    <div className="flex items-center gap-3 text-amber-600 p-3 bg-white rounded-lg border border-amber-200">
+                        <AlertTriangleIcon width={20} height={20} />
+                        <span className="text-sm font-medium">{t('halaqa.availabilityCheckError', 'Unable to check availability. Please try again.')}</span>
+                    </div>
+                )}
+
+                {availabilityResult && (
+                    <div className="space-y-4 mt-4">
+                        {/* Availability Status */}
+                        <div className={`flex items-center gap-3 p-4 rounded-lg border-2 ${
+                            isAvailable 
+                                ? 'bg-green-50 border-green-300' 
+                                : 'bg-red-50 border-red-300'
+                        }`}>
+                            {isAvailable ? (
+                                <>
+                                    <ClipboardCheckIcon width={24} height={24} className="text-green-600 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <p className="text-base font-bold text-green-900">
+                                            {t('halaqa.available', 'Available')}
+                                        </p>
+                                        <p className="text-sm text-green-700 mt-1">{availabilityResult.message}</p>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <AlertTriangleIcon width={24} height={24} className="text-red-600 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <p className="text-base font-bold text-red-900">
+                                            {t('halaqa.notAvailable', 'Not Available')}
+                                        </p>
+                                        <p className="text-sm text-red-700 mt-1">{availabilityResult.message}</p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Conflicts - Show when has_conflict is true OR when conflicts object exists */}
+                        {(hasConflict || hasConflictsData) && availabilityResult?.conflicts && (
+                            <div className="p-4 bg-red-50 border-2 border-red-300 rounded-lg mt-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <AlertTriangleIcon width={20} height={20} className="text-red-600" />
+                                    <p className="text-base font-bold text-red-900">
+                                        {t('halaqa.conflicts', 'Conflicts Detected')}
+                                    </p>
+                                </div>
+                                <div className="space-y-3 text-sm bg-white p-3 rounded border border-red-200">
+                                    {availabilityResult.conflicts.teacher && (
+                                        <div className="flex items-start gap-2">
+                                            <span className="font-semibold text-red-800 min-w-[80px]">{t('halaqa.teacher', 'Teacher')}:</span>
+                                            <span className="text-red-700 font-medium">
+                                                {currentLang === 'ar' 
+                                                    ? availabilityResult.conflicts.teacher.ar 
+                                                    : availabilityResult.conflicts.teacher.en}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {Array.isArray(availabilityResult.conflicts.students) && availabilityResult.conflicts.students.length > 0 && (
+                                        <div className="flex items-start gap-2">
+                                            <span className="font-semibold text-red-800 min-w-[80px]">{t('halaqa.students', 'Students')}:</span>
+                                            <div className="flex-1">
+                                                <span className="text-red-700 font-medium">
+                                                    {availabilityResult.conflicts.students.map((student: { ar: string; en: string }) => 
+                                                        currentLang === 'ar' ? student.ar : student.en
+                                                    ).join(', ')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {!availabilityResult.conflicts.teacher && 
+                                     (!Array.isArray(availabilityResult.conflicts.students) || availabilityResult.conflicts.students.length === 0) && (
+                                        <p className="text-red-700">{t('halaqa.conflictsUnknown', 'Conflicts detected but details are not available')}</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Generated Schedule */}
+                        {availabilityResult.generated_schedule && availabilityResult.generated_schedule.length > 0 && (
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p className="text-sm font-semibold text-blue-900 mb-2">
+                                    {t('halaqa.generatedSchedule', 'Generated Schedule')}:
+                                </p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                                    {availabilityResult.generated_schedule.map((schedule: { day: string; from: string; to: string }, index: number) => (
+                                        <div key={index} className="p-2 bg-white rounded border border-blue-100">
+                                            <p className="font-medium text-blue-900">{schedule.day}</p>
+                                            <p className="text-blue-700">{schedule.from} - {schedule.to}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
             {/* Error Message */}
             {createHalaqaMutation.error && (
                 <div className="text-red-600 text-sm">
@@ -300,7 +515,7 @@ const CreateHalaqaForm: React.FC = () => {
                     type="submit"
                     variant="primary"
                     loading={createHalaqaMutation.isPending}
-                    disabled={createHalaqaMutation.isPending}
+                    disabled={createHalaqaMutation.isPending || !isAvailable}
                 >
                     {createHalaqaMutation.isPending ? t('common.loading', 'Loading...') : t('halaqa.create', 'Create Halaqa')}
                 </Button>

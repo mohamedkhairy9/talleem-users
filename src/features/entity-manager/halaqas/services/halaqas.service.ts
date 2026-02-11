@@ -66,6 +66,35 @@ export interface CreatePlanPayload {
 }
 
 /**
+ * Check Availability Request Payload
+ */
+export interface CheckAvailabilityPayload {
+    teacher_id: number;
+    student_ids: number[];
+    start_date: string;
+    end_date: string;
+    period: 'morning' | 'evening';
+    session_time: string; // Format: "HH:MM-HH:MM"
+}
+
+/**
+ * Check Availability Response
+ */
+export interface CheckAvailabilityResponse {
+    has_conflict: boolean;
+    conflicts: {
+        teacher: { ar: string; en: string } | null;
+        students: Array<{ ar: string; en: string }>;
+    };
+    generated_schedule: Array<{
+        day: string;
+        from: string;
+        to: string;
+    }>;
+    message: string;
+}
+
+/**
  * Halaqas Service
  */
 export const halaqasService = {
@@ -113,6 +142,15 @@ export const halaqasService = {
      */
     createPlan: (halaqaId: number | string, data: CreatePlanPayload): Promise<any> => {
         return axiosInstance.post(`/halaqas/${halaqaId}/plans`, data);
+    },
+
+    /**
+     * Check availability for halaqa creation
+     * POST /halaqas/check-availability
+     * Note: Axios interceptor returns response.data directly, so this returns CheckAvailabilityResponse
+     */
+    checkAvailability: (data: CheckAvailabilityPayload): Promise<CheckAvailabilityResponse> => {
+        return axiosInstance.post('/halaqas/check-availability', data);
     }
 };
 
