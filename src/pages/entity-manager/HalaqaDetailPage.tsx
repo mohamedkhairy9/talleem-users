@@ -15,6 +15,7 @@ import HalaqaAdditionalInfo from '@/features/entity-manager/halaqas/components/H
 import HalaqaPlansSection from '@/features/entity-manager/halaqas/components/HalaqaPlansSection';
 import { AlertTriangleIcon } from '@/globals/icons';
 import type { HalaqaActivity } from '@/features/entity-manager/halaqas/config';
+import type { Student, Plan } from '@/features/entity-manager/halaqas/types';
 
 /**
  * Halaqa Detail Page
@@ -28,7 +29,7 @@ const HalaqaDetailPage: React.FC = () => {
     const [showPlanForm, setShowPlanForm] = useState(false);
 
     const { data, isLoading, error } = useHalaqa(id || '');
-    const [selectedPlanStudents, setSelectedPlanStudents] = useState<Array<{ id: number; name?: { en?: string; ar?: string } }>>([]);
+    const [selectedPlanStudents, setSelectedPlanStudents] = useState<Student[]>([]);
     const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
 
     // API returns { data: { id, name, ... } }; axios puts body in response.data
@@ -52,33 +53,37 @@ const HalaqaDetailPage: React.FC = () => {
 
     // Create a map of student IDs to student objects for quick lookup
     const studentsMap = useMemo(() => {
-        if (!halaqa?.students) return new Map();
-        const map = new Map();
-        halaqa.students.forEach((student: { id: number; name?: { en?: string; ar?: string } }) => {
+        if (!halaqa?.students) return new Map<number, Student>();
+        const map = new Map<number, Student>();
+        halaqa.students.forEach((student: Student) => {
             map.set(student.id, student);
         });
         return map;
     }, [halaqa?.students]);
 
     // Get student(s) for a plan
-    const getPlanStudent = (plan: any) => {
+    const getPlanStudent = (plan: Plan): Student[] => {
         // If plan has students array directly, use it
         if (plan.students && Array.isArray(plan.students) && plan.students.length > 0) {
             return plan.students;
         }
+        // If plan has a single student object, wrap it in an array
+        if (plan.student) {
+            return [plan.student];
+        }
         // If plan has student_id, find it in halaqa students array
         if (plan.student_id && studentsMap.has(plan.student_id)) {
-            return [studentsMap.get(plan.student_id)];
+            return [studentsMap.get(plan.student_id)!];
         }
         // If plan has student_id but not found in students, create a placeholder
         if (plan.student_id) {
-            return [{ id: plan.student_id, name: undefined }];
+            return [{ id: plan.student_id }];
         }
         // If no student info, return empty array
         return [];
     };
 
-    const handleShowPlanStudents = (plan: any) => {
+    const handleShowPlanStudents = (plan: Plan) => {
         const planStudents = getPlanStudent(plan);
         if (planStudents.length > 0) {
             setSelectedPlanStudents(planStudents);
@@ -91,7 +96,7 @@ const HalaqaDetailPage: React.FC = () => {
         setIsStudentsModalOpen(true);
     };
 
-    const handleViewStudent = (student: { id: number; name?: { en?: string; ar?: string } }) => {
+    const handleViewStudent = (student: Student) => {
         setSelectedPlanStudents([student]);
         setIsStudentsModalOpen(true);
     };

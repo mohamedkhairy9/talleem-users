@@ -5,26 +5,7 @@ import { BookOpenIcon, PlusIcon, XIcon } from '@/globals/icons';
 import CreatePlanForm from './CreatePlanForm';
 import HalaqaPlanCard from './HalaqaPlanCard';
 import type { HalaqaActivity } from '../config';
-import { DailyScheduleItem } from './PlanDailySchedule';
-
-interface Plan {
-    id?: number;
-    activity: string;
-    student_id?: number;
-    students?: Array<{ id: number; name?: { en?: string; ar?: string } }>;
-    plan_type: string;
-    unit: string;
-    direction: string;
-    daily_amount?: number;
-    start_verse_id?: number;
-    end_verse_id?: number;
-    daily_schedule?: DailyScheduleItem[];
-}
-
-interface Student {
-    id: number;
-    name?: { en?: string; ar?: string };
-}
+import type { Plan, Student } from '../types';
 
 interface HalaqaPlansSectionProps {
     plans: Plan[];
@@ -35,7 +16,7 @@ interface HalaqaPlansSectionProps {
     onTogglePlanForm: () => void;
     onPlanFormSuccess: () => void;
     onViewPlanStudents: (plan: Plan) => void;
-    getPlanStudent: (plan: Plan) => Array<{ id: number; name?: { en?: string; ar?: string } }>;
+    getPlanStudent: (plan: Plan) => Student[];
     getLocalizedText: (obj: { en?: string; ar?: string } | string | null | undefined) => string;
 }
 

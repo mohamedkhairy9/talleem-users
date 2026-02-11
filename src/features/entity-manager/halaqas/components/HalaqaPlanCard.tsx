@@ -3,25 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { BookOpenIcon, CalendarIcon } from '@/globals/icons';
 import { Button } from '@/globals/components';
 import PlanScheduleModal from './PlanScheduleModal';
-import { DailyScheduleItem } from './PlanDailySchedule';
-
-interface Plan {
-    id?: number;
-    activity: string;
-    student_id?: number;
-    students?: Array<{ id: number; name?: { en?: string; ar?: string } }>;
-    plan_type: string;
-    unit: string;
-    direction: string;
-    daily_amount?: number;
-    start_verse_id?: number;
-    end_verse_id?: number;
-    daily_schedule?: DailyScheduleItem[];
-}
+import type { Plan, Student } from '../types';
 
 interface HalaqaPlanCardProps {
     plan: Plan;
-    planStudents: Array<{ id: number; name?: { en?: string; ar?: string } }>;
+    planStudents: Student[];
     onViewStudents: () => void;
     onViewDetails?: () => void;
     getLocalizedText: (obj: { en?: string; ar?: string } | string | null | undefined) => string;

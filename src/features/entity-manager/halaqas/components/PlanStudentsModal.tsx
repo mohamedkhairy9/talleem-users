@@ -2,10 +2,11 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { XIcon } from '@/globals/icons';
 import Button from '@/globals/components/ui/Button';
+import type { Student } from '../types';
 
 interface PlanStudentsModalProps {
     isOpen: boolean;
-    students: Array<{ id: number; name?: { en?: string; ar?: string } | string }>;
+    students: Student[];
     onClose: () => void;
     currentLang?: string;
 }
@@ -63,20 +64,64 @@ const PlanStudentsModal: React.FC<PlanStudentsModalProps> = ({
                     {/* Body */}
                     <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
                         {students.length > 0 ? (
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 {students.map((student, index) => (
                                     <div
                                         key={student.id || index}
-                                        className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                                        className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors"
                                     >
-                                        <p className="text-sm font-medium text-gray-800">
-                                            {getLocalizedText(student.name) || `Student #${student.id}`}
-                                        </p>
-                                        {student.id && (
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                ID: {student.id}
-                                            </p>
-                                        )}
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <p className="text-sm font-semibold text-gray-900 mb-2">
+                                                    {getLocalizedText(student.name) || `Student #${student.id}`}
+                                                </p>
+                                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                                    {student.national_id && (
+                                                        <div>
+                                                            <span className="text-gray-500">National ID: </span>
+                                                            <span className="text-gray-700 font-medium">{student.national_id}</span>
+                                                        </div>
+                                                    )}
+                                                    {student.phone && (
+                                                        <div>
+                                                            <span className="text-gray-500">Phone: </span>
+                                                            <span className="text-gray-700 font-medium">{student.phone}</span>
+                                                        </div>
+                                                    )}
+                                                    {student.email && (
+                                                        <div>
+                                                            <span className="text-gray-500">Email: </span>
+                                                            <span className="text-gray-700 font-medium">{student.email}</span>
+                                                        </div>
+                                                    )}
+                                                    {student.gender && (
+                                                        <div>
+                                                            <span className="text-gray-500">Gender: </span>
+                                                            <span className="text-gray-700 font-medium capitalize">{student.gender}</span>
+                                                        </div>
+                                                    )}
+                                                    {student.school_name && (
+                                                        <div>
+                                                            <span className="text-gray-500">School: </span>
+                                                            <span className="text-gray-700 font-medium">{student.school_name}</span>
+                                                        </div>
+                                                    )}
+                                                    {student.registration_date && (
+                                                        <div>
+                                                            <span className="text-gray-500">Registered: </span>
+                                                            <span className="text-gray-700 font-medium">
+                                                                {new Date(student.registration_date).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {student.id && (
+                                                <div className="ml-4 text-xs text-gray-400">
+                                                    ID: {student.id}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>

@@ -2,12 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '@/utils';
 import { UsersIcon, UserIcon } from '@/globals/icons';
-
-interface Student {
-    id: number;
-    name?: { en?: string; ar?: string };
-    joined_at?: string;
-}
+import type { Student } from '../types';
 
 interface HalaqaStudentsProps {
     students: Student[];

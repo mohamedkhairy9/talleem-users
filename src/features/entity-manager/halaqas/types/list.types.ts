@@ -14,6 +14,71 @@ export interface MemorizationProgramEntityType {
     code?: number;
 }
 
+/**
+ * Full Student object structure as returned in plan data
+ */
+export interface Student {
+    id: number;
+    name?: BilingualName;
+    user_id?: number;
+    main_program_id?: number;
+    education_program_entity_type_id?: number | null;
+    branch_id?: number;
+    memorization_program_entity_type_id?: number;
+    registration_date?: string;
+    entity_id?: number;
+    national_id?: string;
+    phone?: string;
+    nationality_id?: number;
+    email?: string;
+    specification_id?: number;
+    school_name?: string;
+    city_id?: number;
+    address?: string;
+    date_of_birth?: string;
+    has_medical_issues?: boolean;
+    issue_description?: string;
+    academic_level_id?: number;
+    status?: boolean;
+    gender?: string;
+    created_at?: string;
+    updated_at?: string;
+    joined_at?: string;
+}
+
+/**
+ * Daily schedule item structure
+ */
+export interface DailyScheduleItem {
+    day: number;
+    date: string;
+    text: string;
+    to_text: string;
+    day_name: string;
+    from_text: string;
+    to_verse_id: number;
+    from_verse_id: number;
+    juz_numbers?: number[];
+}
+
+/**
+ * Plan interface with full student object support
+ */
+export interface Plan {
+    id?: number;
+    activity: string;
+    student_id?: number;
+    student?: Student; // Full student object from plan data
+    students?: Student[]; // Array of students (for multiple students per plan)
+    plan_type: string;
+    unit: string;
+    direction: string;
+    daily_amount?: number;
+    start_verse_id?: number;
+    end_verse_id?: number;
+    daily_schedule?: DailyScheduleItem[];
+}
+
 export interface HalaqaListItem {
     id: number;
     name?: BilingualName;
@@ -34,8 +99,8 @@ export interface HalaqaListItem {
     session_time?: string;
     session_from?: string;
     session_to?: string;
-    students?: Array<{ id: number; name?: BilingualName; joined_at?: string }>;
-    plans?: unknown[];
+    students?: Student[];
+    plans?: Plan[];
     [key: string]: unknown;
 }
 
