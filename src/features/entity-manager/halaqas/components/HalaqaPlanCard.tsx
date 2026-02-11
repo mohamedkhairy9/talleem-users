@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpenIcon, EyeIcon, CalendarIcon } from '@/globals/icons';
+import { BookOpenIcon, CalendarIcon } from '@/globals/icons';
 import { Button } from '@/globals/components';
 import PlanScheduleModal from './PlanScheduleModal';
 import { DailyScheduleItem } from './PlanDailySchedule';

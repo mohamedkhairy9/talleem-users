@@ -44,8 +44,17 @@ export const buildDynamicSchema = (fields: JoinRequestFormField[]): yup.AnyObjec
                 break;
 
             case 'select':
-                if (field.options && field.options.length > 0) {
-                    fieldSchema = yup.string().oneOf(field.options);
+                if (field.options) {
+                    if (Array.isArray(field.options) && field.options.length > 0) {
+                        fieldSchema = yup.string().oneOf(field.options);
+                    } else if (typeof field.options === 'object' && !Array.isArray(field.options)) {
+                        // Handle Record<string, string> - convert to array of values
+                        const optionValues = Object.values(field.options);
+                        fieldSchema = yup.string().oneOf(optionValues);
+                    } else {
+                        // For dynamic selects, accept string or number
+                        fieldSchema = yup.mixed();
+                    }
                 } else {
                     // For dynamic selects, accept string or number
                     fieldSchema = yup.mixed();

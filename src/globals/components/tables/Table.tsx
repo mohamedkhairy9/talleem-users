@@ -1,4 +1,3 @@
-import React from 'react';
 import { TableProps, TableColumn } from '@/globals/types';
 import { EyeIcon, EditIcon, TrashIcon } from '@/globals/icons';
 import { useTranslation } from 'react-i18next';

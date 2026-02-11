@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import ConfirmationModal, { ConfirmationModalProps } from '@/globals/components/ui/ConfirmationModal';
+import ConfirmationModal from '@/globals/components/ui/ConfirmationModal';
 
 interface ConfirmationOptions {
     title: string;

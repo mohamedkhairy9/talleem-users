@@ -34,7 +34,6 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     const formValues = useWatch({ control });
     const branchId = formValues?.branch_id;
     const cityId = formValues?.city_id;
-    const mainProgramId = formValues?.main_program_id;
     const latitude = formValues?.latitude;
     const longitude = formValues?.longitude;
 
@@ -80,7 +79,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     const neighborhoodsOptions = useNeighborhoodsOptions(cityId);
 
     // Check if field should be visible based on visible_when conditions
-    const isFieldVisible = (field: JoinRequestFormField, prefix = ''): boolean => {
+    const isFieldVisible = (field: JoinRequestFormField) : boolean => {
         if (!field.visible_when) return true;
 
         for (const [depField, allowedValues] of Object.entries(field.visible_when)) {
@@ -94,7 +93,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     };
 
     // Check if field should be disabled
-    const isFieldDisabled = (field: JoinRequestFormField, prefix = ''): boolean => {
+    const isFieldDisabled = (field: JoinRequestFormField) : boolean => {
         if (field.disabled) return true;
 
         // Disable city_id when branch is selected (city comes from branch, read-only)
@@ -124,11 +123,11 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
             : errors[field.key];
 
         // Check visibility
-        if (!isFieldVisible(field, prefix)) {
+        if (!isFieldVisible(field)) {
             return null;
         }
 
-        const isDisabled = isFieldDisabled(field, prefix);
+        const isDisabled = isFieldDisabled(field);
 
         switch (field.type) {
             case 'text':

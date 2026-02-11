@@ -21,8 +21,7 @@ interface NavbarProps {
  */
 const Navbar: React.FC<NavbarProps> = ({
     isSidebarOpen = false,
-    onToggleSidebar,
-    direction = 'ltr'
+    onToggleSidebar
 }) => {
     const { currentLocale, changeLanguage } = useLocale();
 

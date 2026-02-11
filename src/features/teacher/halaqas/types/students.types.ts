@@ -5,6 +5,9 @@
 
 import type { Halaqa, BilingualName } from './list.types';
 
+// Re-export BilingualName for convenience
+export type { BilingualName };
+
 export interface AttendanceType {
     id: number;
     name?: BilingualName;

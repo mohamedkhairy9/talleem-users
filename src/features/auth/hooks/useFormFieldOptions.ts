@@ -1,19 +1,33 @@
 import { useQuery } from '@tanstack/react-query';
-import { registrationService, SelectOption } from '../services/registration.service';
+import { SelectOption, registrationService } from '../services/registration.service';
 import { useTranslation } from 'react-i18next';
 
 /**
- * Map field keys to their corresponding API endpoints
+ * Map field keys to their corresponding service methods
  */
-const FIELD_ENDPOINT_MAP: Record<string, () => Promise<{ data: SelectOption[] }>> = {
-    neighborhood_id: (params?: { city_id?: number | string }) => registrationService.getNeighborhoods(params),
-    branch_id: () => registrationService.getBranches(),
-    session_mode_id: () => registrationService.getSessionModes(),
-    nationality_id: () => registrationService.getNationalities(),
-    major_id: () => registrationService.getMajors(),
-    academic_qualification_id: () => registrationService.getAcademicQualifications(),
-    'remotely-attendance-platforms': () => registrationService.getRemotelyAttendancePlatforms(),
-    memorization_program_entity_type_id: () => registrationService.getMemorizationProgramEntityTypes()
+const getFieldEndpoint = (fieldKey: string, params?: { city_id?: number | string }) => {
+    switch (fieldKey) {
+        case 'neighborhood_id':
+            return registrationService.getNeighborhoods(params);
+        case 'branch_id':
+            return registrationService.getBranches();
+        case 'main_program_id':
+            return registrationService.getMainPrograms();
+        case 'session_mode_id':
+            return registrationService.getSessionModes();
+        case 'nationality_id':
+            return registrationService.getNationalities();
+        case 'major_id':
+            return registrationService.getMajors();
+        case 'academic_qualification_id':
+            return registrationService.getAcademicQualifications();
+        case 'remotely-attendance-platforms':
+            return registrationService.getRemotelyAttendancePlatforms();
+        case 'memorization_program_entity_type_id':
+            return registrationService.getMemorizationProgramEntityTypes();
+        default:
+            throw new Error(`Unknown field key: ${fieldKey}`);
+    }
 };
 
 /**

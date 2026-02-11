@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Controller, Control, FieldValues, Path, useWatch } from 'react-hook-form';
-import Select, { AsyncProps } from 'react-select';
+import { useState, useEffect } from 'react';
+import { Controller, Control, FieldValues, Path, PathValue, useWatch } from 'react-hook-form';
+import Select from 'react-select';
 import AsyncSelect from 'react-select/async';
 import { useTranslation } from 'react-i18next';
 
@@ -25,10 +25,9 @@ export interface SelectRFHProps<T extends FieldValues = FieldValues> {
     isMulti?: boolean;
     disabled?: boolean;
     width?: string;
-    defaultValue?: unknown;
+    defaultValue?: PathValue<T, Path<T>>;
     classes?: string;
     placeholder?: string;
-    info?: string;
     required?: boolean;
     loading?: boolean;
     // Async loading props
@@ -115,7 +114,6 @@ function SelectRFH<T extends FieldValues = FieldValues>({
     defaultValue,
     classes = '',
     placeholder = 'common.select',
-    info = '',
     required = false,
     loading = false,
     loadOptions,
@@ -396,10 +394,11 @@ function SelectRFH<T extends FieldValues = FieldValues>({
                                     );
                                     field.onChange(primitiveValues as any);
                                 } else {
+                                    const selectedOption = selectedOptionOrOptions as SelectRFHOption | null;
                                     const primitiveValue =
-                                        selectedOptionOrOptions?.value !== undefined
-                                            ? selectedOptionOrOptions.value
-                                            : (selectedOptionOrOptions as SelectRFHOption)?.id;
+                                        selectedOption?.value !== undefined
+                                            ? selectedOption.value
+                                            : selectedOption?.id;
                                     field.onChange(primitiveValue ?? null);
                                 }
                             }}

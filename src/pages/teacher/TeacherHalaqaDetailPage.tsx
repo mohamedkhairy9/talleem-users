@@ -18,7 +18,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
     const navigate = useNavigate();
     const currentLang = i18n.language || lang || 'en';
 
-    const { halaqa, students, attendanceTypes, date, time, isLoading, error } = useTeacherHalaqaStudents(id);
+    const { halaqa, students, date, time, isLoading, error } = useTeacherHalaqaStudents(id);
 
     const getLocalizedText = (obj: BilingualName | string | null | undefined): string => {
         if (typeof obj === 'string') return obj;

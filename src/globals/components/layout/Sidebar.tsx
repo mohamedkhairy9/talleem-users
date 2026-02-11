@@ -8,7 +8,6 @@ import { useLanguagePath } from '@/utils/hooks/useLanguagePath';
 import { Button } from '@/globals/components';
 import { MenuItem } from '@/globals/types';
 import {
-    XIcon,
     HomeIcon,
     BookIcon,
     CalendarIcon,

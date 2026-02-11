@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { warningsService, CreateWarningPayload, UpdateWarningPayload, WarningReasonsResponse } from '../services/warnings.service';
+import { warningsService, CreateWarningPayload, UpdateWarningPayload } from '../services/warnings.service';
 import type { WarningsListParams, WarningsListResponse, WarningResponse } from '../services/warnings.service';
 
 /**

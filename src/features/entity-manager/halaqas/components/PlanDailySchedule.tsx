@@ -130,10 +130,9 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                 </div>
 
                 <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                    {itemsToShow.map((item, index) => {
+                    {itemsToShow.map((item) => {
                         const isToday = item.date === today;
                         const isPast = new Date(item.date) < new Date(today);
-                        const isFuture = new Date(item.date) > new Date(today);
 
                         return (
                             <div
