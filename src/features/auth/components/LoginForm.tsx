@@ -120,7 +120,7 @@ const LoginForm: React.FC = () => {
                         type="button"
                         onClick={() => {
                             const currentLang = window.location.pathname.split('/')[1] || 'en';
-                            window.location.href = `/${currentLang}/${ROUTE_PATHS.REGISTER}`;
+                            navigate(`/${currentLang}/${ROUTE_PATHS.REGISTER}`);
                         }}
                         className="text-primary-600 hover:text-primary-700 font-medium cursor-pointer"
                     >
@@ -133,7 +133,7 @@ const LoginForm: React.FC = () => {
                         type="button"
                         onClick={() => {
                             const currentLang = window.location.pathname.split('/')[1] || 'en';
-                            window.location.href = `/${currentLang}/${ROUTE_PATHS.REGISTER}?checkStatus=1`;
+                            navigate(`/${currentLang}/${ROUTE_PATHS.REGISTER}?checkStatus=1`);
                         }}
                         className="text-primary-600 hover:text-primary-700 font-medium cursor-pointer"
                     >
