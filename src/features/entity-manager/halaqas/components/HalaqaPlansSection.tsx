@@ -4,6 +4,8 @@ import { Button } from '@/globals/components';
 import { BookOpenIcon, PlusIcon, XIcon } from '@/globals/icons';
 import CreatePlanForm from './CreatePlanForm';
 import HalaqaPlanCard from './HalaqaPlanCard';
+import type { HalaqaActivity } from '../config';
+import { DailyScheduleItem } from './PlanDailySchedule';
 
 interface Plan {
     id?: number;
@@ -14,6 +16,9 @@ interface Plan {
     unit: string;
     direction: string;
     daily_amount?: number;
+    start_verse_id?: number;
+    end_verse_id?: number;
+    daily_schedule?: DailyScheduleItem[];
 }
 
 interface Student {
@@ -25,7 +30,7 @@ interface HalaqaPlansSectionProps {
     plans: Plan[];
     halaqaId: string;
     students?: Student[];
-    activities?: string[];
+    activities?: HalaqaActivity[];
     showPlanForm: boolean;
     onTogglePlanForm: () => void;
     onPlanFormSuccess: () => void;

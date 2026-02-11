@@ -99,6 +99,12 @@ export interface CreateWarningPayload {
     status: boolean;
 }
 
+export interface UpdateWarningPayload extends CreateWarningPayload {}
+
+export interface WarningDetailResponse {
+    data: WarningResponse;
+}
+
 export interface WarningsListParams {
     page?: number;
     per_page?: number;
@@ -148,6 +154,27 @@ export const warningsService = {
      */
     createWarning: (data: CreateWarningPayload): Promise<any> => {
         return axiosInstance.post('/warnings', data);
+    },
+
+    /**
+     * Get a single warning by ID
+     */
+    getWarning: (id: number): Promise<WarningDetailResponse> => {
+        return axiosInstance.get(`/warnings/${id}`);
+    },
+
+    /**
+     * Update a warning by ID
+     */
+    updateWarning: (id: number, data: UpdateWarningPayload): Promise<any> => {
+        return axiosInstance.put(`/warnings/${id}`, data);
+    },
+
+    /**
+     * Delete a warning by ID
+     */
+    deleteWarning: (id: number): Promise<any> => {
+        return axiosInstance.delete(`/warnings/${id}`);
     }
 };
 

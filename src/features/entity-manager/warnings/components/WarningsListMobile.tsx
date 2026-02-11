@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { EyeIcon, TrashIcon } from '@/globals/icons';
 import type { WarningResponse } from '../services/warnings.service';
 import { formatDate } from '@/utils';
 
@@ -10,6 +11,9 @@ interface WarningsListMobileProps {
     errorMessage?: string;
     emptyMessage: string;
     getLocalizedText: (obj: { en?: string; ar?: string } | string | null | undefined) => string;
+    onView?: (warning: WarningResponse) => void;
+    onDelete?: (warning: WarningResponse) => void;
+    isDeleting?: boolean;
 }
 
 export const WarningsListMobile: React.FC<WarningsListMobileProps> = ({
@@ -18,7 +22,10 @@ export const WarningsListMobile: React.FC<WarningsListMobileProps> = ({
     hasError,
     errorMessage,
     emptyMessage,
-    getLocalizedText
+    getLocalizedText,
+    onView,
+    onDelete,
+    isDeleting = false
 }) => {
     const { t } = useTranslation();
 
@@ -60,9 +67,6 @@ export const WarningsListMobile: React.FC<WarningsListMobileProps> = ({
                     if (row.warning_type === 'teacher' && row.teacher) {
                         return getLocalizedText(row.teacher.name);
                     }
-                    if (row.warning_type === 'entity' && row.entity) {
-                        return getLocalizedText(row.entity.name);
-                    }
                     return '-';
                 };
 
@@ -98,18 +102,6 @@ export const WarningsListMobile: React.FC<WarningsListMobileProps> = ({
                                 </span>
                             </div>
                             <div className="flex justify-between gap-2">
-                                <span className="text-gray-500">{t('warning.branch', 'Branch')}</span>
-                                <span className="text-gray-900 text-end">
-                                    {getLocalizedText(row.branch?.name)}
-                                </span>
-                            </div>
-                            <div className="flex justify-between gap-2">
-                                <span className="text-gray-500">{t('warning.program', 'Program')}</span>
-                                <span className="text-gray-900 text-end">
-                                    {getLocalizedText(row.program?.name)}
-                                </span>
-                            </div>
-                            <div className="flex justify-between gap-2">
                                 <span className="text-gray-500">
                                     {t('warning.warningReason', 'Warning Reason')}
                                 </span>
@@ -126,6 +118,34 @@ export const WarningsListMobile: React.FC<WarningsListMobileProps> = ({
                                 </div>
                             )}
                         </dl>
+                        {/* Action Buttons */}
+                        {(onView || onDelete) && (
+                            <div className="mt-4 flex items-center justify-end gap-2 border-t border-gray-200 pt-3">
+                                {onView && (
+                                    <button
+                                        type="button"
+                                        onClick={() => onView(row)}
+                                        className="p-2 rounded-lg text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                                        aria-label={t('common.view', 'View')}
+                                        title={t('common.view', 'View')}
+                                    >
+                                        <EyeIcon width={18} height={18} />
+                                    </button>
+                                )}
+                                {onDelete && (
+                                    <button
+                                        type="button"
+                                        onClick={() => onDelete(row)}
+                                        disabled={isDeleting}
+                                        className="p-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        aria-label={t('common.delete', 'Delete')}
+                                        title={t('common.delete', 'Delete')}
+                                    >
+                                        <TrashIcon width={18} height={18} />
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 );
             })}

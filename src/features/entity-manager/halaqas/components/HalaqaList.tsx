@@ -11,7 +11,7 @@ import ReactSelectComponent from '@/globals/components/ui/ReactSelect';
 import { useHalaqas, useDeleteHalaqa } from '../hooks/useHalaqas';
 import { useHalaqasListState } from '../hooks/useHalaqasListState';
 import { HalaqaListMobile } from './HalaqaListMobile';
-import type { BilingualName } from '../types/list.types';
+import type { BilingualName, HalaqaListItem } from '../types/list.types';
 import { HALAQA_PERIODS, HALAQA_TEACHING_METHODS, createHalaqaListColumns } from '../config';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
@@ -238,11 +238,11 @@ const HalaqaList: React.FC = () => {
                             showView: true,
                             showEdit: true,
                             showDelete: true,
-                            onView: (row) => handleView(row.id),
-                            onEdit: (row) => handleEdit(row.id),
-                            onDelete: (row) => handleDelete(row.id),
+                            onView: (row: HalaqaListItem) => handleView(row.id),
+                            onEdit: (row: HalaqaListItem) => handleEdit(row.id),
+                            onDelete: (row: HalaqaListItem) => handleDelete(row.id),
                             isDeleting: deleteMutation.isPending,
-                            getRowId: (row) => row.id
+                            getRowId: (row: HalaqaListItem) => row.id
                         }}
                     />
                 </div>

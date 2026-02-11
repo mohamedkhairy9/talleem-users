@@ -14,6 +14,7 @@ import HalaqaStudents from '@/features/entity-manager/halaqas/components/HalaqaS
 import HalaqaAdditionalInfo from '@/features/entity-manager/halaqas/components/HalaqaAdditionalInfo';
 import HalaqaPlansSection from '@/features/entity-manager/halaqas/components/HalaqaPlansSection';
 import { AlertTriangleIcon } from '@/globals/icons';
+import type { HalaqaActivity } from '@/features/entity-manager/halaqas/config';
 
 /**
  * Halaqa Detail Page
@@ -224,7 +225,7 @@ const HalaqaDetailPage: React.FC = () => {
                 plans={halaqa.plans || []}
                 halaqaId={id || ''}
                 students={halaqa.students}
-                activities={halaqa.activities}
+                activities={halaqa.activities as HalaqaActivity[] | undefined}
                 showPlanForm={showPlanForm}
                 onTogglePlanForm={() => setShowPlanForm(!showPlanForm)}
                 onPlanFormSuccess={() => setShowPlanForm(false)}

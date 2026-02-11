@@ -13,14 +13,15 @@ import {
     HALAQA_ACTIVITIES,
     PLAN_TYPES,
     PLAN_UNITS,
-    PLAN_DIRECTIONS
+    PLAN_DIRECTIONS,
+    type HalaqaActivity
 } from '../config';
 import { createPlanSchema, CreatePlanFormData } from '../schemas/plan.schema';
 
 interface CreatePlanFormProps {
     halaqaId: number | string;
     students?: Array<{ id: number; name?: { en?: string; ar?: string } }>;
-    activities?: Array<'hifz' | 'tasbit' | 'murajaa'>;
+    activities?: HalaqaActivity[];
     onSuccess?: () => void;
 }
 

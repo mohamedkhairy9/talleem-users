@@ -4,13 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { useFormWithValidation } from '@/utils';
 import { FormInput, FormSelect, FormTextarea, Button } from '@/globals/components';
 import SelectRFH from '@/globals/components/ui/SelectRFH';
-import { useCreateWarning, useWarningReasons } from '../hooks/useWarnings';
-import { createWarningSchema, CreateWarningFormData } from '../schemas/warning.schema';
-import { CreateWarningPayload } from '../services/warnings.service';
+import { useCreateWarning, useWarningReasons } from '../hooks';
+import { createWarningSchema, CreateWarningFormData } from '../schemas';
+import { CreateWarningPayload } from '../services';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores';
-import { createStudentsLoader, createTeachersLoader, createEntitiesLoader } from '../utils/asyncSelectLoaders';
+import { createStudentsLoader, createTeachersLoader } from '../utils';
+import { WARNING_TYPES } from '../config';
 
 interface CreateWarningFormProps {
     onSuccess?: () => void;
@@ -42,7 +43,6 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess, onCanc
         schema: createWarningSchema,
         defaultValues: {
             warning_type: 'student',
-            entity_id: null,
             student_id: null,
             teacher_id: null,
             warning_reason_id: 0,
@@ -65,11 +65,6 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess, onCanc
         [branchId, mainProgramId, entityId]
     );
 
-    const entitiesLoader = useMemo(
-        () => createEntitiesLoader(branchId, mainProgramId),
-        [branchId, mainProgramId]
-    );
-
     // Fetch warning reasons
     const { data: warningReasonsData, isLoading: isLoadingReasons } = useWarningReasons(mainProgramId);
 
@@ -84,15 +79,15 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess, onCanc
     }, [warningReasonsData, i18n.language]);
 
     // Warning type options
-    const warningTypeOptions = useMemo(() => [
-        { value: 'student' as const, label: t('warning.type.student', 'Student') },
-        { value: 'teacher' as const, label: t('warning.type.teacher', 'Teacher') },
-        { value: 'entity' as const, label: t('warning.type.entity', 'Entity') }
-    ], [t]);
+    const warningTypeOptions = useMemo(() => 
+        WARNING_TYPES.map(type => ({
+            value: type.value as 'student' | 'teacher',
+            label: t(type.labelKey, type.value)
+        }))
+    , [t]);
 
     // Reset target fields when warning type changes
     useEffect(() => {
-        setValue('entity_id', null);
         setValue('student_id', null);
         setValue('teacher_id', null);
     }, [warningType, setValue]);
@@ -102,7 +97,6 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess, onCanc
         if (!mainProgramId) {
             setValue('student_id', null);
             setValue('teacher_id', null);
-            setValue('entity_id', null);
         }
     }, [mainProgramId, setValue]);
 
@@ -122,9 +116,6 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess, onCanc
 
         // Add only the relevant target ID
         switch (data.warning_type) {
-            case 'entity':
-                if (data.entity_id) payload.entity_id = data.entity_id;
-                break;
             case 'student':
                 if (data.student_id) payload.student_id = data.student_id;
                 break;
@@ -225,22 +216,6 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess, onCanc
                         cacheOptions={true}
                         disabled={isTargetFieldDisabled}
                         placeholder={t('warning.searchTeacher', 'Search and select teacher...')}
-                    />
-                )}
-
-                {/* Conditional: Entity ID */}
-                {warningType === 'entity' && (
-                    <SelectRFH
-                        name="entity_id"
-                        label={t('warning.entity', 'Entity')}
-                        control={control}
-                        error={errors.entity_id?.message}
-                        isAsync={true}
-                        loadOptions={entitiesLoader}
-                        defaultOptions={true}
-                        cacheOptions={true}
-                        disabled={isTargetFieldDisabled}
-                        placeholder={t('warning.searchEntity', 'Search and select entity...')}
                     />
                 )}
 

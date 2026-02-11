@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { warningsService, CreateWarningPayload, WarningReasonsResponse } from '../services/warnings.service';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { warningsService, CreateWarningPayload, UpdateWarningPayload, WarningReasonsResponse } from '../services/warnings.service';
 import type { WarningsListParams, WarningsListResponse, WarningResponse } from '../services/warnings.service';
 
 /**
@@ -48,8 +48,52 @@ export const useWarningReasonsOptions = (mainProgramId: number | null | undefine
  * Create warning mutation hook
  */
 export const useCreateWarning = () => {
+    const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (data: CreateWarningPayload) => warningsService.createWarning(data)
+        mutationFn: (data: CreateWarningPayload) => warningsService.createWarning(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['warnings'] });
+        }
+    });
+};
+
+/**
+ * Get a single warning by ID
+ */
+export const useWarning = (id: number | null | undefined) => {
+    return useQuery({
+        queryKey: ['warning', id],
+        queryFn: () => warningsService.getWarning(id!),
+        enabled: !!id,
+        staleTime: 2 * 60 * 1000
+    });
+};
+
+/**
+ * Update warning mutation hook
+ */
+export const useUpdateWarning = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: UpdateWarningPayload }) =>
+            warningsService.updateWarning(id, data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['warnings'] });
+            queryClient.invalidateQueries({ queryKey: ['warning', variables.id] });
+        }
+    });
+};
+
+/**
+ * Delete warning mutation hook
+ */
+export const useDeleteWarning = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => warningsService.deleteWarning(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['warnings'] });
+        }
     });
 };
 

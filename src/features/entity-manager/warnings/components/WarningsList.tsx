@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Table, Pagination } from '@/globals/components';
+import { Table, Pagination, ConfirmationModal } from '@/globals/components';
 import { SearchIcon, SettingsIcon, XIcon } from '@/globals/icons';
 import ReactSelectComponent from '@/globals/components/ui/ReactSelect';
-import { useWarnings } from '../hooks/useWarnings';
-import { useWarningsListState } from '../hooks/useWarningsListState';
+import { useWarnings, useDeleteWarning, useWarningsListState } from '../hooks';
 import { WarningsListMobile } from './WarningsListMobile';
-import type { WarningResponse } from '../services/warnings.service';
-import { formatDate } from '@/utils';
+import WarningViewEditModal from './WarningViewEditModal';
+import type { WarningResponse } from '../services';
+import { toast } from 'react-toastify';
+import { createWarningsListColumns, WARNING_TYPES, WARNING_STATUS_OPTIONS } from '../config';
 
 /**
  * Warnings List Component
@@ -21,6 +22,14 @@ const WarningsList: React.FC = () => {
     const { params, page, perPage, search, warningType, status, setPage, setSearch, setWarningType, setStatus, resetFilters } = listState;
 
     const { list, meta, isLoading, error } = useWarnings(params);
+    const deleteWarningMutation = useDeleteWarning();
+    
+    // Modal and delete confirmation state
+    const [selectedWarningId, setSelectedWarningId] = useState<number | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
+    const [deleteWarningId, setDeleteWarningId] = useState<number | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     // Pagination from API meta (current_page, per_page, total, last_page)
     const total = meta?.total ?? 0;
@@ -47,74 +56,62 @@ const WarningsList: React.FC = () => {
         return t('common.not_available', 'N/A');
     };
 
-    const warningTypeOptions = [
-        { value: '', label: t('common.all', 'All') },
-        { value: 'student', label: t('warning.type.student', 'Student') },
-        { value: 'teacher', label: t('warning.type.teacher', 'Teacher') },
-        { value: 'entity', label: t('warning.type.entity', 'Entity') }
-    ];
+    // Action handlers
+    const handleView = (warning: WarningResponse) => {
+        setSelectedWarningId(warning.id);
+        setModalMode('view');
+        setIsModalOpen(true);
+    };
 
-    const statusOptions = [
-        { value: '', label: t('common.all', 'All') },
-        { value: 'true', label: t('common.active', 'Active') },
-        { value: 'false', label: t('common.inactive', 'Inactive') }
-    ];
+    const handleDelete = (warning: WarningResponse) => {
+        setDeleteWarningId(warning.id);
+        setIsDeleteModalOpen(true);
+    };
 
-    const columns = [
-        {
-            header: t('warning.date', 'Date'),
-            accessor: (row: WarningResponse) => formatDate(row.date)
-        },
-        {
-            header: t('warning.branch', 'Branch'),
-            accessor: (row: WarningResponse) => getLocalizedText(row.branch?.name)
-        },
-        {
-            header: t('warning.program', 'Program'),
-            accessor: (row: WarningResponse) => getLocalizedText(row.program?.name)
-        },
-        {
-            header: t('warning.warningType', 'Warning Type'),
-            accessor: (row: WarningResponse) => t(`warning.type.${row.warning_type}`, row.warning_type)
-        },
-        {
-            header: t('warning.target', 'Target'),
-            accessor: (row: WarningResponse) => {
-                if (row.warning_type === 'student' && row.student) {
-                    return getLocalizedText(row.student.name);
-                }
-                if (row.warning_type === 'teacher' && row.teacher) {
-                    return getLocalizedText(row.teacher.name);
-                }
-                if (row.warning_type === 'entity' && row.entity) {
-                    return getLocalizedText(row.entity.name);
-                }
-                return '-';
+    const confirmDelete = () => {
+        if (!deleteWarningId) return;
+        
+        deleteWarningMutation.mutate(deleteWarningId, {
+            onSuccess: () => {
+                toast.success(t('warning.deleteSuccess', 'Warning deleted successfully'));
+                setIsDeleteModalOpen(false);
+                setDeleteWarningId(null);
+            },
+            onError: (error: any) => {
+                const errorMessage = error?.response?.data?.message ||
+                                   error?.message ||
+                                   t('warning.deleteError', 'Error deleting warning');
+                toast.error(errorMessage);
             }
-        },
-        {
-            header: t('warning.warningReason', 'Warning Reason'),
-            accessor: (row: WarningResponse) => getLocalizedText(row.warning_reason?.name)
-        },
-        {
-            header: t('warning.note', 'Note'),
-            accessor: (row: WarningResponse) => row.note || '-'
-        },
-        {
-            header: t('warning.status', 'Status'),
-            accessor: (row: WarningResponse) => (
-                <span
-                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                        row.status
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                    }`}
-                >
-                    {row.status ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
-                </span>
-            )
-        }
-    ];
+        });
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedWarningId(null);
+    };
+
+    // Get static data from config
+    const warningTypeOptions = useMemo(() => [
+        { value: '', label: t('common.all', 'All') },
+        ...WARNING_TYPES.map(type => ({
+            value: type.value,
+            label: t(type.labelKey, type.value)
+        }))
+    ], [t]);
+    
+    const statusOptions = useMemo(() => [
+        { value: '', label: t('common.all', 'All') },
+        ...WARNING_STATUS_OPTIONS.map(status => ({
+            value: String(status.value),
+            label: t(status.labelKey, status.value ? 'Active' : 'Inactive')
+        }))
+    ], [t]);
+    
+    const columns = useMemo(
+        () => createWarningsListColumns({ t, getLocalizedText }),
+        [t, getLocalizedText]
+    );
 
 
     if (error) {
@@ -213,6 +210,9 @@ const WarningsList: React.FC = () => {
                         errorMessage={error ? t('warning.loadError', 'Error loading warnings.') : undefined}
                         emptyMessage={t('warning.noWarnings', 'No warnings found')}
                         getLocalizedText={getLocalizedText}
+                        onView={handleView}
+                        onDelete={handleDelete}
+                        isDeleting={deleteWarningMutation.isPending}
                     />
                 </div>
                 {totalPages > 1 && (
@@ -234,9 +234,18 @@ const WarningsList: React.FC = () => {
                     <Table
                         data={list}
                         columns={columns}
-                        isLoading={isLoading}
+                        loading={isLoading}
                         emptyMessage={t('warning.noWarnings', 'No warnings found')}
                         scrollable
+                        actionButtons={{
+                            showView: true,
+                            showEdit: false,
+                            showDelete: true,
+                            onView: handleView,
+                            onDelete: handleDelete,
+                            isDeleting: deleteWarningMutation.isPending,
+                            getRowId: (row) => row.id
+                        }}
                     />
                 </div>
                 {totalPages > 1 && (
@@ -251,6 +260,30 @@ const WarningsList: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* View/Edit Modal */}
+            <WarningViewEditModal
+                isOpen={isModalOpen}
+                warningId={selectedWarningId}
+                onClose={handleCloseModal}
+                mode={modalMode}
+            />
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                title={t('warning.deleteTitle', 'Delete Warning')}
+                message={t('warning.deleteMessage', 'Are you sure you want to delete this warning? This action cannot be undone.')}
+                confirmText={t('common.delete', 'Delete')}
+                cancelText={t('common.cancel', 'Cancel')}
+                variant="danger"
+                onConfirm={confirmDelete}
+                onCancel={() => {
+                    setIsDeleteModalOpen(false);
+                    setDeleteWarningId(null);
+                }}
+                isLoading={deleteWarningMutation.isPending}
+            />
         </div>
     );
 };
