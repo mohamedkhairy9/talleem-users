@@ -25,6 +25,12 @@ export const createPlanSchema = yup.object({
         is: 'surahs',
         then: (schema) => schema.required('Start surah ID is required when unit is surahs').positive('Start surah ID must be positive'),
         otherwise: (schema) => schema.notRequired()
+    }),
+    // End segment ID - required when unit is 'segments' and plan_type is 'start_end'
+    end_segment_id: yup.number().when(['unit', 'plan_type'], {
+        is: (unit: string, planType: string) => unit === 'segments' && planType === 'start_end',
+        then: (schema) => schema.required('End segment ID is required when plan type is start_end and unit is segments').positive('End segment ID must be positive'),
+        otherwise: (schema) => schema.notRequired()
     })
 });
 
@@ -42,6 +48,7 @@ export interface CreatePlanFormData {
     start_segment_id?: number; // Required when unit is 'segments'
     start_juz_number?: number; // Required when unit is 'parts'
     start_surah_id?: number; // Required when unit is 'surahs'
+    end_segment_id?: number; // Required when unit is 'segments' and plan_type is 'start_end'
 }
 
 
