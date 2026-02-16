@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Database } from 'sql.js';
+import type { Database, SqlValue } from 'sql.js';
 import './MushafPage.css';
 
 interface Word {
@@ -56,7 +56,7 @@ const MushafPage: React.FC<MushafPageProps> = ({
             const result = wordsDb.exec(query);
 
             if (result.length > 0 && result[0].values.length > 0) {
-                return result[0].values.map(row => ({
+                return result[0].values.map((row: SqlValue[]) => ({
                     id: row[0] as number,
                     text: row[1] as string,
                     location: row[2] as string

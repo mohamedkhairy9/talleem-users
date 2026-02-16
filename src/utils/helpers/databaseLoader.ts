@@ -1,4 +1,5 @@
-import initSqlJs, { Database } from 'sql.js';
+import initSqlJs from 'sql.js';
+import type { Database, SqlJsStatic, SqlValue } from 'sql.js';
 import sqlWasm from 'sql.js/dist/sql-wasm.wasm?url';
 
 /**
@@ -6,7 +7,7 @@ import sqlWasm from 'sql.js/dist/sql-wasm.wasm?url';
  * Handles loading and initialization of SQLite databases
  */
 class QuranDatabaseLoader {
-    private SQL: typeof initSqlJs | null = null;
+    private SQL: SqlJsStatic | null = null;
     private linesDb: Database | null = null;
     private wordsDb: Database | null = null;
     private surahData: Record<string, any> | null = null;
@@ -17,7 +18,7 @@ class QuranDatabaseLoader {
      * @returns {Promise<Object>} Object containing all loaded data
      */
     async initialize(): Promise<{
-        SQL: typeof initSqlJs;
+        SQL: SqlJsStatic;
         linesDb: Database;
         wordsDb: Database;
         surahData: Record<string, any>;
@@ -94,7 +95,7 @@ class QuranDatabaseLoader {
             
             // Test query to verify database
             const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table'");
-            console.log(`✅ ${name} ready. Tables:`, tables[0]?.values.map(t => t[0]));
+            console.log(`✅ ${name} ready. Tables:`, tables[0]?.values.map((t: SqlValue[]) => t[0]));
             
             return db;
         } catch (error) {
@@ -132,7 +133,7 @@ class QuranDatabaseLoader {
      * @returns {Object} Object containing all databases and data
      */
     getAllData(): {
-        SQL: typeof initSqlJs;
+        SQL: SqlJsStatic;
         linesDb: Database;
         wordsDb: Database;
         surahData: Record<string, any>;
