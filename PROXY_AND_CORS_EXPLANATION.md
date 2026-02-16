@@ -122,3 +122,4 @@ This tells Vercel: "For any route, serve `index.html` and let React Router handl
 - Development: Use the proxy (don't set `VITE_API_BASE_URL` or set it to `/api/front`)
 - Production: Set `VITE_API_BASE_URL` to the full backend URL
 
+
