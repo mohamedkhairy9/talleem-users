@@ -20,6 +20,7 @@ export interface HalaqaStudent {
     is_present: boolean | null;
     attendance_type_id: number | null;
     can_memorize: boolean;
+    activities?: string[];
 }
 
 export interface TeacherHalaqaStudentsResponse {
@@ -28,5 +29,29 @@ export interface TeacherHalaqaStudentsResponse {
     attendance_types: AttendanceType[];
     date: string;
     time: string;
+}
+
+export interface TodaySchedule {
+    day_number: number;
+    date: string;
+    day_name_ar: string;
+    day_name_en: string;
+    juz_numbers: number[];
+    from_verse_id: number;
+    to_verse_id: number;
+    text: string;
+}
+
+export interface StudentPlanResponse {
+    plan: {
+        id: number;
+        activity: string;
+        daily_amount: number;
+        unit: string;
+        direction: string;
+    };
+    today_schedule: TodaySchedule;
+    evaluation_system: string;
+    total_mark: number;
 }
 

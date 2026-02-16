@@ -1,6 +1,6 @@
 import { axiosInstance } from '@/api/axiosInstance';
 import type { TeacherHalaqasListResponse } from '../types/list.types';
-import type { TeacherHalaqaStudentsResponse } from '../types/students.types';
+import type { TeacherHalaqaStudentsResponse, StudentPlanResponse } from '../types/students.types';
 
 /**
  * Teacher Halaqas Service
@@ -24,6 +24,21 @@ export const teacherHalaqasService = {
      */
     getHalaqaStudents: (halaqaId: number | string): Promise<TeacherHalaqaStudentsResponse> => {
         return axiosInstance.get(`/teacher/halaqas/${halaqaId}/students`);
+    },
+
+    /**
+     * Get plan for a specific student and activity
+     * GET /teacher/halaqas/:halaqaId/students/:studentId/plan?activity={activity}
+     * Axios interceptor extracts response.data, so this returns StudentPlanResponse directly
+     */
+    getStudentPlan: (
+        halaqaId: number | string,
+        studentId: number | string,
+        activity: string
+    ): Promise<StudentPlanResponse> => {
+        return axiosInstance.get(`/teacher/halaqas/${halaqaId}/students/${studentId}/plan`, {
+            params: { activity }
+        });
     }
 };
 

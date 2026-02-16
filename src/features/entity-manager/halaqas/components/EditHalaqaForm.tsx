@@ -15,6 +15,19 @@ import {
 import { updateHalaqaSchema, UpdateHalaqaFormData } from '../schemas/halaqa.schema';
 
 /**
+ * Normalize date to ISO format (YYYY-MM-DD) - ensures 24-hour system compatibility
+ */
+const normalizeDate = (dateStr: string): string => {
+    if (!dateStr) return dateStr;
+    // If already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    // Otherwise, parse and format to ISO
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toISOString().split('T')[0];
+};
+
+/**
  * Edit Halaqa Form Component
  * Only allows editing: name, teacher_id, period, start_date, end_date, activities, student_ids
  */
@@ -86,8 +99,15 @@ const EditHalaqaForm: React.FC = () => {
     const onSubmit = async (data: UpdateHalaqaFormData) => {
         if (!id) return;
 
+        // Normalize dates to ISO format (YYYY-MM-DD) - ensure 24-hour system
+        const normalizedData = {
+            ...data,
+            start_date: normalizeDate(data.start_date),
+            end_date: normalizeDate(data.end_date)
+        };
+
         updateHalaqaMutation.mutate(
-            { id, data },
+            { id, data: normalizedData },
             {
                 onSuccess: () => {
                     toast.success(t('halaqa.updateSuccess', 'Halaqa updated successfully'));

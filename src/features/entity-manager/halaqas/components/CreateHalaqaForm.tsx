@@ -20,6 +20,47 @@ import { createHalaqaSchema, CreateHalaqaFormData } from '../schemas/halaqa.sche
 import { AlertTriangleIcon, ClipboardCheckIcon, CircleIcon } from '@/globals/icons';
 
 /**
+ * Normalize date to ISO format (YYYY-MM-DD) - ensures 24-hour system compatibility
+ */
+const normalizeDate = (dateStr: string): string => {
+    if (!dateStr) return dateStr;
+    // If already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    // Otherwise, parse and format to ISO
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toISOString().split('T')[0];
+};
+
+/**
+ * Normalize session time to 24-hour format (HH:MM-HH:MM)
+ */
+const normalizeSessionTime = (timeStr: string): string => {
+    if (!timeStr) return timeStr;
+    // If already in HH:MM-HH:MM format, return as is
+    if (/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(timeStr)) return timeStr;
+    // Parse and ensure 24-hour format (handles AM/PM if present)
+    const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?-(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+    if (match) {
+        let startHour = parseInt(match[1], 10);
+        const startMin = match[2];
+        const startPeriod = match[3]?.toUpperCase();
+        let endHour = parseInt(match[4], 10);
+        const endMin = match[5];
+        const endPeriod = match[6]?.toUpperCase();
+
+        // Convert to 24-hour format
+        if (startPeriod === 'PM' && startHour !== 12) startHour += 12;
+        if (startPeriod === 'AM' && startHour === 12) startHour = 0;
+        if (endPeriod === 'PM' && endHour !== 12) endHour += 12;
+        if (endPeriod === 'AM' && endHour === 12) endHour = 0;
+
+        return `${String(startHour).padStart(2, '0')}:${startMin}-${String(endHour).padStart(2, '0')}:${endMin}`;
+    }
+    return timeStr;
+};
+
+/**
  * Create Halaqa Form Component
  */
 const CreateHalaqaForm: React.FC = () => {
@@ -103,10 +144,10 @@ const CreateHalaqaForm: React.FC = () => {
         const payload: CheckAvailabilityPayload = {
             teacher_id: teacherId,
             student_ids: studentIds,
-            start_date: startDate,
-            end_date: endDate,
+            start_date: normalizeDate(startDate),
+            end_date: normalizeDate(endDate),
             period: period as 'morning' | 'evening',
-            session_time: sessionTime
+            session_time: normalizeSessionTime(sessionTime)
         };
 
         checkAvailabilityMutation.mutate(payload, {
@@ -181,6 +222,9 @@ const CreateHalaqaForm: React.FC = () => {
         const { platform_id, ...restData } = data;
         const payload: CreateHalaqaPayload = {
             ...restData,
+            start_date: normalizeDate(data.start_date),
+            end_date: normalizeDate(data.end_date),
+            session_time: normalizeSessionTime(data.session_time),
             memorization_program_entity_type_id,
             ...(session_mode_id != null && { session_mode_id }),
             // Only include platform_id if teaching method is not in_person and it has a value
@@ -323,9 +367,10 @@ const CreateHalaqaForm: React.FC = () => {
                                 <div className="flex-1 min-w-[120px]">
                                     <input
                                         type="time"
+                                        step="60"
                                         value={endTime}
                                         onChange={(e) => {
-                                            const end = e.target.value;
+                                            const end = e.target.value; // Already in HH:MM format (24-hour)
                                             const start = startTime || end;
                                             field.onChange(end ? `${start}-${end}` : '');
                                         }}
