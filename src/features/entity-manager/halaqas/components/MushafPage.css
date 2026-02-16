@@ -21,7 +21,7 @@
     background-position: center;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     border-radius: 4px;
-    overflow: visible;
+    overflow: hidden;
     /* Allow container to expand with content */
     display: flex;
     flex-direction: column;
@@ -181,16 +181,21 @@
 @media (max-width: 768px) {
     .mushaf-border {
         width: 100%;
-        max-width: 600px;
+        max-width: 100%;
+        min-height: auto;
+        /* Maintain aspect ratio: 600:900 = 2:3 */
+        aspect-ratio: 2 / 3;
+        background-size: 100% 100%;
     }
     
     .page-content {
-        padding: 30px 20px;
-        min-height: 800px;
+        /* Scale padding proportionally: 50px -> ~8.3%, 40px -> ~6.7% */
+        padding: 8.3% 6.7%;
+        min-height: auto;
     }
     
     .font-loading {
-        min-height: 800px;
+        min-height: auto;
     }
     
     .line {
@@ -199,6 +204,27 @@
     
     .line.surah-name {
         font-size: 5em;
+    }
+}
+
+@media (max-width: 480px) {
+    .mushaf-border {
+        width: 100%;
+        max-width: 100%;
+        aspect-ratio: 2 / 3;
+    }
+    
+    .page-content {
+        /* Further reduced padding for very small screens */
+        padding: 7% 5%;
+    }
+    
+    .line {
+        font-size: 1.3em;
+    }
+    
+    .line.surah-name {
+        font-size: 4em;
     }
 }
 

@@ -188,7 +188,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                     </div>
 
                     {/* Body */}
-                    <div className="px-6 py-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
+                    <div className="px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
                         {isLoading ? (
                             <div className="flex items-center justify-center py-20">
                                 <div className="text-center">
