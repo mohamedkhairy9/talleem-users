@@ -11,7 +11,22 @@ export type { BilingualName };
 export interface AttendanceType {
     id: number;
     name?: BilingualName;
+    code?: number;
+    status?: boolean;
+    with_excuse?: boolean;
+    created_at?: string;
+    updated_at?: string;
     [key: string]: unknown;
+}
+
+export interface AttendanceTypesResponse {
+    data: AttendanceType[];
+    meta?: {
+        current_page?: number;
+        per_page?: number;
+        total?: number;
+        last_page?: number;
+    };
 }
 
 export interface HalaqaStudent {

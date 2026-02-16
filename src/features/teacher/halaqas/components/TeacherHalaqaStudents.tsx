@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { UsersIcon, UserIcon, CircleIcon, AlertTriangleIcon, XIcon } from '@/globals/icons';
-import type { HalaqaStudent, BilingualName } from '../types/students.types';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { UsersIcon, UserIcon, AlertTriangleIcon, XIcon, CheckIcon, BookIcon } from '@/globals/icons';
+import type { HalaqaStudent, BilingualName, AttendanceType } from '../types/students.types';
 import { useStudentPlan } from '../hooks/useStudentPlan';
+import { teacherHalaqasService } from '../services/halaqas.service';
 import { formatDate } from '@/utils';
 import { Button } from '@/globals/components';
 
@@ -12,6 +14,7 @@ interface TeacherHalaqaStudentsProps {
     error?: any;
     getLocalizedText: (obj: BilingualName | string | null | undefined) => string;
     halaqaId: number | string | undefined;
+    attendanceTypes?: AttendanceType[];
 }
 
 const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
@@ -19,13 +22,38 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
     isLoading,
     error,
     getLocalizedText,
-    halaqaId
+    halaqaId,
+    attendanceTypes = []
 }) => {
     const { t, i18n } = useTranslation();
+    const queryClient = useQueryClient();
     const [selectedPlan, setSelectedPlan] = useState<{
         studentId: number;
         activity: string;
     } | null>(null);
+    
+    const [attendanceModal, setAttendanceModal] = useState<{
+        studentId: number;
+        studentName: string;
+        isPresent: boolean;
+    } | null>(null);
+    const [selectedAttendanceType, setSelectedAttendanceType] = useState<number | null>(null);
+
+    // Fetch attendance types if not provided or empty
+    const { data: attendanceTypesData } = useQuery({
+        queryKey: ['attendance-types'],
+        queryFn: () => teacherHalaqasService.getAttendanceTypes(),
+        enabled: !attendanceTypes || attendanceTypes.length === 0,
+        staleTime: 5 * 60 * 1000
+    });
+
+    // Use attendance types from props, or from API if not available
+    const availableAttendanceTypes = useMemo(() => {
+        if (attendanceTypes && attendanceTypes.length > 0) {
+            return attendanceTypes;
+        }
+        return attendanceTypesData?.data ?? [];
+    }, [attendanceTypes, attendanceTypesData]);
 
     const { data: planData, isLoading: isLoadingPlan, error: planError } = useStudentPlan(
         halaqaId,
@@ -34,12 +62,59 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
         !!selectedPlan
     );
 
+    // Mutation for submitting attendance
+    const attendanceMutation = useMutation({
+        mutationFn: (data: { student_id: number; is_present: boolean; attendance_type_id?: number }) => {
+            return teacherHalaqasService.submitAttendance(halaqaId!, data);
+        },
+        onSuccess: () => {
+            // Invalidate and refetch students data
+            queryClient.invalidateQueries({ queryKey: ['teacher-halaqa-students', halaqaId] });
+            setAttendanceModal(null);
+            setSelectedAttendanceType(null);
+        }
+    });
+
     const handleActivityClick = (studentId: number, activity: string) => {
         setSelectedPlan({ studentId, activity });
     };
 
     const handleCloseModal = () => {
         setSelectedPlan(null);
+    };
+
+    const handleMarkAttendance = (studentId: number, studentName: string, isPresent: boolean) => {
+        if (isPresent) {
+            // Mark as present - no need for attendance type
+            attendanceMutation.mutate({
+                student_id: studentId,
+                is_present: true
+            });
+        } else {
+            // Mark as absent - need to show modal to select attendance type
+            setAttendanceModal({ studentId, studentName, isPresent: false });
+            setSelectedAttendanceType(null);
+        }
+    };
+
+    const handleCloseAttendanceModal = () => {
+        setAttendanceModal(null);
+        setSelectedAttendanceType(null);
+    };
+
+    const handleSubmitAttendance = () => {
+        if (!attendanceModal) return;
+        
+        if (!attendanceModal.isPresent && !selectedAttendanceType) {
+            // Show error or validation message
+            return;
+        }
+
+        attendanceMutation.mutate({
+            student_id: attendanceModal.studentId,
+            is_present: attendanceModal.isPresent,
+            attendance_type_id: attendanceModal.isPresent ? undefined : selectedAttendanceType!
+        });
     };
 
     const currentLang = i18n.language || 'en';
@@ -105,59 +180,114 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                     <span className="ml-2 text-sm font-normal text-gray-500">({students.length})</span>
                 </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {students.map((student) => (
                     <div
                         key={student.id}
-                        className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors"
+                        className="group p-5 bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all duration-200"
                     >
-                        <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                                <UserIcon width={20} height={20} className="text-primary-600" />
+                        <div className="flex items-start gap-4">
+                            {/* Avatar */}
+                            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-50 rounded-full flex items-center justify-center ring-2 ring-primary-50 group-hover:ring-primary-100 transition-all">
+                                <UserIcon width={24} height={24} className="text-primary-600" />
                             </div>
+                            
+                            {/* Content */}
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-sm font-semibold text-gray-900 truncate mb-2">
-                                        {getLocalizedText(student.name) || `Student #${student.id}`}
-                                    </p>
-
+                                {/* Name and Status Row */}
+                                <div className="flex items-start justify-between gap-2 mb-3">
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-base font-semibold text-gray-900 truncate">
+                                            {getLocalizedText(student.name) || `Student #${student.id}`}
+                                        </h3>
+                                    </div>
+                                    
                                     {/* Status Badges */}
-                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                    <div className="flex items-center gap-1.5 flex-shrink-0">
                                         {/* Attendance Status */}
                                         {student.is_present !== null && (
-                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${student.is_present
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-red-100 text-red-800'
-                                                }`}>
-                                                <CircleIcon width={12} height={12} className="fill-current" />
+                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm ${
+                                                student.is_present
+                                                    ? 'bg-green-50 text-green-700 border border-green-200'
+                                                    : 'bg-red-50 text-red-700 border border-red-200'
+                                            }`}>
+                                                {student.is_present ? (
+                                                    <CheckIcon width={12} height={12} className="text-green-600" />
+                                                ) : (
+                                                    <XIcon width={12} height={12} className="text-red-600" />
+                                                )}
                                                 {student.is_present ? t('halaqa.present', 'Present') : t('halaqa.absent', 'Absent')}
                                             </span>
                                         )}
                                         {/* Can Memorize Badge */}
                                         {student.can_memorize && (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
                                                 {t('halaqa.canMemorize', 'Can Memorize')}
                                             </span>
                                         )}
                                     </div>
-
                                 </div>
-                                {/* Activity Buttons */}
-                                {student.activities && student.activities.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-3">
-                                        {student.activities.map((activity) => (
-                                            <Button
-                                                key={activity}
-                                                type="button"
-                                                onClick={() => handleActivityClick(student.id, activity)}
-                                                size="sm"
-                                                variant="outline"
-                                            >
-                                                {t(`halaqa.activity.${activity}`, activity)}
-                                            </Button>
-                                        ))}
-                                    </div>
-                                )}
+
+                                {/* Actions Section */}
+                                <div className="space-y-3">
+                                    {/* Attendance Actions - Show when is_present is null */}
+                                    {student.is_present === null && (
+                                        <div className="pb-3 border-b border-gray-100">
+                                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                                                {t('attendance.attendance', 'Attendance')}
+                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => handleMarkAttendance(student.id, getLocalizedText(student.name) || `Student #${student.id}`, true)}
+                                                    size="sm"
+                                                    variant="success"
+                                                    loading={attendanceMutation.isPending && attendanceModal?.studentId === student.id && attendanceModal?.isPresent === true}
+                                                    className="flex items-center gap-1.5"
+                                                >
+                                                    <CheckIcon width={14} height={14} />
+                                                    {t('attendance.markPresent', 'Mark Present')}
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => handleMarkAttendance(student.id, getLocalizedText(student.name) || `Student #${student.id}`, false)}
+                                                    size="sm"
+                                                    variant="danger"
+                                                    loading={attendanceMutation.isPending && attendanceModal?.studentId === student.id && attendanceModal?.isPresent === false}
+                                                    className="flex items-center gap-1.5"
+                                                >
+                                                    <XIcon width={14} height={14} />
+                                                    {t('attendance.markAbsent', 'Mark Absent')}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Activity Actions */}
+                                    {student.activities && student.activities.length > 0 && (
+                                        <div>
+                                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                                                <BookIcon width={12} height={12} />
+                                                {t('halaqa.activities', 'Activities')}
+                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {student.activities.map((activity) => (
+                                                    <Button
+                                                        key={activity}
+                                                        type="button"
+                                                        onClick={() => handleActivityClick(student.id, activity)}
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="flex items-center gap-1.5 hover:bg-primary-50 hover:border-primary-300 hover:text-primary-700 transition-colors"
+                                                    >
+                                                        <BookIcon width={14} height={14} />
+                                                        {t(`halaqa.activity.${activity}`, activity)}
+                                                    </Button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -166,7 +296,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
 
             {/* Plan Details Modal */}
             {selectedPlan && (
-                <div className="fixed inset-0 z-50 overflow-y-auto">
+                <div className="fixed inset-0 z-[60] overflow-y-auto">
                     {/* Backdrop */}
                     <div
                         className="fixed inset-0 bg-black transition-opacity"
@@ -176,8 +306,8 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                     />
 
                     {/* Modal */}
-                    <div className="relative flex min-h-full items-center justify-center p-4">
-                        <div className="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all z-10">
+                    <div className="relative flex min-h-full items-center justify-center p-4 pt-20 md:pt-24">
+                        <div className="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all z-10 max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)]">
                             {/* Header */}
                             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
                                 <h3 className="text-lg font-semibold text-gray-900">
@@ -194,7 +324,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                             </div>
 
                             {/* Body */}
-                            <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+                            <div className="px-6 py-4 max-h-[calc(100vh-12rem)] md:max-h-[calc(100vh-14rem)] overflow-y-auto">
                                 {isLoadingPlan ? (
                                     <div className="flex items-center justify-center py-8">
                                         <div className="flex flex-col items-center gap-2">
@@ -342,6 +472,83 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                         </div>
                                     </div>
                                 ) : null}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Attendance Modal */}
+            {attendanceModal && (
+                <div className="fixed inset-0 z-[60] overflow-y-auto">
+                    {/* Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black transition-opacity"
+                        style={{ opacity: 0.5 }}
+                        onClick={handleCloseAttendanceModal}
+                        aria-hidden="true"
+                    />
+
+                    {/* Modal */}
+                    <div className="relative flex min-h-full items-center justify-center p-4 pt-20 md:pt-24">
+                        <div className="relative w-full max-w-md transform overflow-hidden rounded-lg bg-white shadow-xl transition-all z-10">
+                            {/* Header */}
+                            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    {t('attendance.markAbsent', 'Mark Absent')}
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={handleCloseAttendanceModal}
+                                    className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                                    aria-label="Close"
+                                >
+                                    <XIcon width={20} height={20} />
+                                </button>
+                            </div>
+
+                            {/* Body */}
+                            <div className="px-6 py-4">
+                                <p className="text-sm text-gray-600 mb-4">
+                                    {t('attendance.selectType', 'Select attendance type for')} <span className="font-semibold text-gray-900">{attendanceModal.studentName}</span>
+                                </p>
+                                
+                                <div className="space-y-3">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        {t('attendance.attendanceType', 'Attendance Type')} <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={selectedAttendanceType || ''}
+                                        onChange={(e) => setSelectedAttendanceType(Number(e.target.value))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                    >
+                                        <option value="">{t('attendance.selectType', 'Select attendance type')}</option>
+                                        {availableAttendanceTypes.map((type) => (
+                                            <option key={type.id} value={type.id}>
+                                                {getLocalizedText(type.name)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="flex items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
+                                <Button
+                                    variant="outline"
+                                    onClick={handleCloseAttendanceModal}
+                                    disabled={attendanceMutation.isPending}
+                                >
+                                    {t('common.cancel', 'Cancel')}
+                                </Button>
+                                <Button
+                                    variant="danger"
+                                    onClick={handleSubmitAttendance}
+                                    loading={attendanceMutation.isPending}
+                                    disabled={!selectedAttendanceType}
+                                >
+                                    {t('attendance.submit', 'Submit')}
+                                </Button>
                             </div>
                         </div>
                     </div>

@@ -24,7 +24,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
     const navigate = useNavigate();
     const currentLang = i18n.language || lang || 'en';
 
-    const { halaqa, students, date, time, isLoading, error } = useTeacherHalaqaStudents(id);
+    const { halaqa, students, date, time, isLoading, error, attendanceTypes } = useTeacherHalaqaStudents(id);
 
     const getLocalizedText = (obj: BilingualName | string | null | undefined): string => {
         if (typeof obj === 'string') return obj;
@@ -64,6 +64,24 @@ const TeacherHalaqaDetailPage: React.FC = () => {
         ? (error as any)?.message || (error as any)?.data?.message || t('halaqa.loadError', 'Error loading halaqa. Please try again.')
         : null;
 
+    // Check if error is related to time restrictions
+    const isTimeRestrictionError = errorMessage && (
+        errorMessage.toLowerCase().includes('cannot record') ||
+        errorMessage.toLowerCase().includes('time window') ||
+        errorMessage.toLowerCase().includes('allowed time') ||
+        (error as any)?.data?.can_record === false
+    );
+
+    // Determine error title based on error type
+    const errorTitle = isTimeRestrictionError
+        ? t('halaqa.timeRestriction', 'Access Restricted')
+        : t('halaqa.notFound', 'Halaqa not found');
+
+    // Determine error description
+    const errorDescription = isTimeRestrictionError
+        ? errorMessage || t('halaqa.timeRestrictionDescription', 'This halaqa is only available during its scheduled time window.')
+        : errorMessage || t('halaqa.notFoundDescription', 'The halaqa you are looking for does not exist or has been removed.');
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -80,8 +98,8 @@ const TeacherHalaqaDetailPage: React.FC = () => {
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
                 <div className="text-center">
                     <AlertTriangleIcon width={64} height={64} className="mx-auto text-red-500 mb-4" />
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('halaqa.notFound', 'Halaqa not found')}</h2>
-                    <p className="text-gray-600">{errorMessage || t('halaqa.notFoundDescription', 'The halaqa you are looking for does not exist or has been removed.')}</p>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{errorTitle}</h2>
+                    <p className="text-gray-600">{errorDescription}</p>
                 </div>
             </div>
         );
@@ -132,6 +150,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                             error={error}
                             getLocalizedText={getLocalizedText}
                             halaqaId={id}
+                            attendanceTypes={attendanceTypes}
                         />
                     )}
                 </div>

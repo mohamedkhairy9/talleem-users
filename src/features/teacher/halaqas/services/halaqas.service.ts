@@ -1,6 +1,6 @@
 import { axiosInstance } from '@/api/axiosInstance';
 import type { TeacherHalaqasListResponse } from '../types/list.types';
-import type { TeacherHalaqaStudentsResponse, StudentPlanResponse } from '../types/students.types';
+import type { TeacherHalaqaStudentsResponse, StudentPlanResponse, AttendanceTypesResponse } from '../types/students.types';
 
 /**
  * Teacher Halaqas Service
@@ -39,6 +39,31 @@ export const teacherHalaqasService = {
         return axiosInstance.get(`/teacher/halaqas/${halaqaId}/students/${studentId}/plan`, {
             params: { activity }
         });
+    },
+
+    /**
+     * Submit attendance for a student
+     * POST /teacher/halaqas/:halaqaId/attendance
+     * Payload: { student_id: number, is_present: boolean, attendance_type_id?: number }
+     */
+    submitAttendance: (
+        halaqaId: number | string,
+        data: {
+            student_id: number;
+            is_present: boolean;
+            attendance_type_id?: number;
+        }
+    ): Promise<any> => {
+        return axiosInstance.post(`/teacher/halaqas/${halaqaId}/attendance`, data);
+    },
+
+    /**
+     * Get attendance types
+     * GET /attendance-types
+     * Axios interceptor extracts response.data, so this returns AttendanceTypesResponse directly
+     */
+    getAttendanceTypes: (): Promise<AttendanceTypesResponse> => {
+        return axiosInstance.get('/attendance-types');
     }
 };
 

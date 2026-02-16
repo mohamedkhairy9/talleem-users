@@ -190,7 +190,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
     const isTargetFieldDisabled = !mainProgramId || mode === 'view';
 
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="fixed inset-0 z-[60] overflow-y-auto">
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black transition-opacity"
@@ -200,8 +200,8 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
             />
 
             {/* Modal */}
-            <div className="relative flex min-h-full items-center justify-center p-4 z-10">
-                <div className="relative bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="relative flex min-h-full items-center justify-center p-4 pt-20 md:pt-24 z-10">
+                <div className="relative bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)] overflow-hidden">
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50">
                         <div className="flex items-center gap-3">
@@ -229,7 +229,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
                     </div>
 
                     {/* Content */}
-                    <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                    <div className="p-6 overflow-y-auto max-h-[calc(100vh-12rem)] md:max-h-[calc(100vh-14rem)]">
                         {isLoadingWarning ? (
                             <div className="flex items-center justify-center py-12">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>

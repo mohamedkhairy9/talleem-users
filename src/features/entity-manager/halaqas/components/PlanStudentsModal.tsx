@@ -34,7 +34,7 @@ const PlanStudentsModal: React.FC<PlanStudentsModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="fixed inset-0 z-[60] overflow-y-auto">
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black transition-opacity"
@@ -44,8 +44,8 @@ const PlanStudentsModal: React.FC<PlanStudentsModalProps> = ({
             />
 
             {/* Modal */}
-            <div className="relative flex min-h-full items-center justify-center p-4">
-                <div className="relative w-full max-w-md transform overflow-hidden rounded-lg bg-white shadow-xl transition-all z-10">
+            <div className="relative flex min-h-full items-center justify-center p-4 pt-20 md:pt-24">
+                <div className="relative w-full max-w-md transform overflow-hidden rounded-lg bg-white shadow-xl transition-all z-10 max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)]">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
                         <h3 className="text-lg font-semibold text-gray-900">
@@ -62,7 +62,7 @@ const PlanStudentsModal: React.FC<PlanStudentsModalProps> = ({
                     </div>
 
                     {/* Body */}
-                    <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
+                    <div className="px-6 py-4 max-h-[calc(100vh-12rem)] md:max-h-[calc(100vh-14rem)] overflow-y-auto">
                         {students.length > 0 ? (
                             <div className="space-y-3">
                                 {students.map((student, index) => (

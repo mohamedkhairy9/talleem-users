@@ -22,6 +22,7 @@ export { default as SearchIcon } from './SearchIcon';
 export { default as SettingsIcon } from './SettingsIcon';
 export { default as UsersIcon } from './UsersIcon';
 export { default as CircleIcon } from './CircleIcon';
+export { default as CheckIcon } from './CheckIcon';
 export { default as PlusIcon } from './PlusIcon';
 export { default as ChevronDownIcon } from './ChevronDownIcon';
 export { default as ChevronRightIcon } from './ChevronRightIcon';
