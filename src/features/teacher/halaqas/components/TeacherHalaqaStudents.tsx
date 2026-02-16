@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { UsersIcon, UserIcon, AlertTriangleIcon, XIcon, CheckIcon, BookIcon } from '@/globals/icons';
+import { UsersIcon, UserIcon, AlertTriangleIcon, XIcon, CheckIcon, BookIcon, ClipboardCheckIcon } from '@/globals/icons';
 import type { HalaqaStudent, BilingualName, AttendanceType } from '../types/students.types';
 import { useStudentPlan } from '../hooks/useStudentPlan';
 import { teacherHalaqasService } from '../services/halaqas.service';
@@ -39,6 +39,26 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
     } | null>(null);
     const [selectedAttendanceType, setSelectedAttendanceType] = useState<number | null>(null);
 
+    const [gradeModal, setGradeModal] = useState<{
+        studentId: number;
+        studentName: string;
+        activity: string;
+    } | null>(null);
+    const [gradeForm, setGradeForm] = useState({
+        is_complete: true,
+        grade: '',
+        actual_end_verse_id: '',
+        notes: ''
+    });
+
+    // Fetch plan data for grade submission
+    const { data: gradePlanData, isLoading: isLoadingGradePlan } = useStudentPlan(
+        halaqaId,
+        gradeModal?.studentId,
+        gradeModal?.activity,
+        !!gradeModal
+    );
+
     // Fetch attendance types if not provided or empty
     const { data: attendanceTypesData } = useQuery({
         queryKey: ['attendance-types'],
@@ -72,6 +92,32 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
             queryClient.invalidateQueries({ queryKey: ['teacher-halaqa-students', halaqaId] });
             setAttendanceModal(null);
             setSelectedAttendanceType(null);
+        }
+    });
+
+    // Mutation for submitting grade/memorization
+    const gradeMutation = useMutation({
+        mutationFn: (data: {
+            student_id: number;
+            activity: string;
+            halaqa_plan_id: number;
+            is_complete: boolean;
+            grade: number;
+            actual_end_verse_id: number;
+            notes?: string;
+        }) => {
+            return teacherHalaqasService.submitMemorization(halaqaId!, data);
+        },
+        onSuccess: () => {
+            // Invalidate and refetch students data
+            queryClient.invalidateQueries({ queryKey: ['teacher-halaqa-students', halaqaId] });
+            setGradeModal(null);
+            setGradeForm({
+                is_complete: true,
+                grade: '',
+                actual_end_verse_id: '',
+                notes: ''
+            });
         }
     });
 
@@ -114,6 +160,48 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
             student_id: attendanceModal.studentId,
             is_present: attendanceModal.isPresent,
             attendance_type_id: attendanceModal.isPresent ? undefined : selectedAttendanceType!
+        });
+    };
+
+    const handleOpenGradeModal = (studentId: number, studentName: string, activity: string) => {
+        setGradeModal({ studentId, studentName, activity });
+        setGradeForm({
+            is_complete: true,
+            grade: '',
+            actual_end_verse_id: '',
+            notes: ''
+        });
+    };
+
+    const handleCloseGradeModal = () => {
+        setGradeModal(null);
+        setGradeForm({
+            is_complete: true,
+            grade: '',
+            actual_end_verse_id: '',
+            notes: ''
+        });
+    };
+
+    const handleSubmitGrade = () => {
+        if (!gradeModal || !gradePlanData?.plan) return;
+
+        const grade = Number(gradeForm.grade);
+        const actualEndVerseId = Number(gradeForm.actual_end_verse_id);
+
+        if (!grade || !actualEndVerseId) {
+            // Show validation error
+            return;
+        }
+
+        gradeMutation.mutate({
+            student_id: gradeModal.studentId,
+            activity: gradeModal.activity,
+            halaqa_plan_id: gradePlanData.plan.id,
+            is_complete: gradeForm.is_complete,
+            grade: grade,
+            actual_end_verse_id: actualEndVerseId,
+            notes: gradeForm.notes || undefined
         });
     };
 
@@ -259,6 +347,31 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                     <XIcon width={14} height={14} />
                                                     {t('attendance.markAbsent', 'Mark Absent')}
                                                 </Button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Grade Submission - Show for present students */}
+                                    {student.is_present === true && student.activities && student.activities.length > 0 && (
+                                        <div className="pb-3 border-b border-gray-100">
+                                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                                                <ClipboardCheckIcon width={12} height={12} />
+                                                {t('grade.submitGrade', 'Submit Grade')}
+                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {student.activities.map((activity) => (
+                                                    <Button
+                                                        key={activity}
+                                                        type="button"
+                                                        onClick={() => handleOpenGradeModal(student.id, getLocalizedText(student.name) || `Student #${student.id}`, activity)}
+                                                        size="sm"
+                                                        variant="primary"
+                                                        className="flex items-center gap-1.5"
+                                                    >
+                                                        <ClipboardCheckIcon width={14} height={14} />
+                                                        {t(`halaqa.activity.${activity}`, activity)}
+                                                    </Button>
+                                                ))}
                                             </div>
                                         </div>
                                     )}
@@ -550,6 +663,183 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                     {t('attendance.submit', 'Submit')}
                                 </Button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Grade Submission Modal */}
+            {gradeModal && (
+                <div className="fixed inset-0 z-[60] overflow-y-auto">
+                    {/* Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black transition-opacity"
+                        style={{ opacity: 0.5 }}
+                        onClick={handleCloseGradeModal}
+                        aria-hidden="true"
+                    />
+
+                    {/* Modal */}
+                    <div className="relative flex min-h-full items-center justify-center p-4 pt-20 md:pt-24">
+                        <div className="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all z-10 max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)]">
+                            {/* Header */}
+                            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    {t('grade.submitGrade', 'Submit Grade')} - {t(`halaqa.activity.${gradeModal.activity}`, gradeModal.activity)}
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={handleCloseGradeModal}
+                                    className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                                    aria-label="Close"
+                                >
+                                    <XIcon width={20} height={20} />
+                                </button>
+                            </div>
+
+                            {/* Body */}
+                            <div className="px-6 py-4 max-h-[calc(100vh-12rem)] md:max-h-[calc(100vh-14rem)] overflow-y-auto">
+                                {isLoadingGradePlan ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-primary-600" />
+                                            <p className="text-sm text-gray-600">{t('common.loading', 'Loading...')}</p>
+                                        </div>
+                                    </div>
+                                ) : gradePlanData ? (
+                                    <div className="space-y-4">
+                                        {/* Student Info */}
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                            <p className="text-sm font-medium text-gray-900">
+                                                {t('grade.student', 'Student')}: <span className="font-semibold">{gradeModal.studentName}</span>
+                                            </p>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                {t('grade.activity', 'Activity')}: {t(`halaqa.activity.${gradeModal.activity}`, gradeModal.activity)}
+                                            </p>
+                                        </div>
+
+                                        {/* Plan Info Reference */}
+                                        {gradePlanData.today_schedule && (
+                                            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                                <p className="text-xs font-medium text-blue-900 mb-2">
+                                                    {t('grade.expectedRange', 'Expected Verse Range')}
+                                                </p>
+                                                <p className="text-sm text-blue-800">
+                                                    {t('plan.verseRange', 'From verse {{from}} to verse {{to}}', {
+                                                        from: gradePlanData.today_schedule.from_verse_id,
+                                                        to: gradePlanData.today_schedule.to_verse_id
+                                                    })}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Form Fields */}
+                                        <div className="space-y-4">
+                                            {/* Is Complete */}
+                                            <div>
+                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={gradeForm.is_complete}
+                                                        onChange={(e) => setGradeForm({ ...gradeForm, is_complete: e.target.checked })}
+                                                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                                                    />
+                                                    <span className="text-sm font-medium text-gray-700">
+                                                        {t('grade.isComplete', 'Is Complete')}
+                                                    </span>
+                                                </label>
+                                            </div>
+
+                                            {/* Grade */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    {t('grade.grade', 'Grade')} <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max={gradePlanData.total_mark || 100}
+                                                    value={gradeForm.grade}
+                                                    onChange={(e) => setGradeForm({ ...gradeForm, grade: e.target.value })}
+                                                    placeholder={t('grade.gradePlaceholder', 'Enter grade')}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                                />
+                                                {gradePlanData.total_mark && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        {t('grade.maxGrade', 'Maximum grade')}: {gradePlanData.total_mark}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Actual End Verse ID */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    {t('grade.actualEndVerse', 'Actual End Verse ID')} <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={gradeForm.actual_end_verse_id}
+                                                    onChange={(e) => setGradeForm({ ...gradeForm, actual_end_verse_id: e.target.value })}
+                                                    placeholder={t('grade.actualEndVersePlaceholder', 'Enter actual end verse ID')}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                                />
+                                            </div>
+
+                                            {/* Notes */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    {t('grade.notes', 'Notes')}
+                                                </label>
+                                                <textarea
+                                                    value={gradeForm.notes}
+                                                    onChange={(e) => setGradeForm({ ...gradeForm, notes: e.target.value })}
+                                                    placeholder={t('grade.notesPlaceholder', 'Enter notes (optional)')}
+                                                    rows={3}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-right"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-start gap-3 py-4">
+                                        <div className="flex-shrink-0">
+                                            <div className="p-2 bg-red-100 rounded-lg">
+                                                <AlertTriangleIcon width={20} height={20} className="text-red-600" />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="text-sm font-semibold text-red-900 mb-1">
+                                                {t('common.error', 'An error occurred')}
+                                            </h3>
+                                            <p className="text-sm text-red-700">
+                                                {t('plan.loadError', 'Error loading plan')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer */}
+                            {gradePlanData && (
+                                <div className="flex items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleCloseGradeModal}
+                                        disabled={gradeMutation.isPending}
+                                    >
+                                        {t('common.cancel', 'Cancel')}
+                                    </Button>
+                                    <Button
+                                        variant="primary"
+                                        onClick={handleSubmitGrade}
+                                        loading={gradeMutation.isPending}
+                                        disabled={!gradeForm.grade || !gradeForm.actual_end_verse_id}
+                                    >
+                                        {t('grade.submit', 'Submit Grade')}
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

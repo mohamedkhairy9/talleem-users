@@ -64,6 +64,44 @@ export const teacherHalaqasService = {
      */
     getAttendanceTypes: (): Promise<AttendanceTypesResponse> => {
         return axiosInstance.get('/attendance-types');
+    },
+
+    /**
+     * Submit bulk attendance for all students with special reason
+     * POST /teacher/halaqas/:halaqaId/attendance/all
+     * Payload: { special_reason: 'teacher_absence' | 'force_majeure', student_attendances: [{ student_id, is_present }] }
+     */
+    submitBulkAttendance: (
+        halaqaId: number | string,
+        data: {
+            special_reason: 'teacher_absence' | 'force_majeure';
+            student_attendances: Array<{
+                student_id: number;
+                is_present: boolean;
+            }>;
+        }
+    ): Promise<any> => {
+        return axiosInstance.post(`/teacher/halaqas/${halaqaId}/attendance/all`, data);
+    },
+
+    /**
+     * Submit memorization/grade for a student
+     * POST /teacher/halaqas/:halaqaId/memorization
+     * Payload: { student_id, activity, halaqa_plan_id, is_complete, grade, actual_end_verse_id, notes }
+     */
+    submitMemorization: (
+        halaqaId: number | string,
+        data: {
+            student_id: number;
+            activity: string;
+            halaqa_plan_id: number;
+            is_complete: boolean;
+            grade: number;
+            actual_end_verse_id: number;
+            notes?: string;
+        }
+    ): Promise<any> => {
+        return axiosInstance.post(`/teacher/halaqas/${halaqaId}/memorization`, data);
     }
 };
 
