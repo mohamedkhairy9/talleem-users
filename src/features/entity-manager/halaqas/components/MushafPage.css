@@ -1,0 +1,231 @@
+/* MushafPage Component Styles */
+
+.mushaf-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #f5f5f5;
+    direction: rtl;
+}
+
+.mushaf-border {
+    position: relative;
+    width: 600px;
+    min-height: 900px;
+    height: auto;
+    max-width: 90vw;
+    background: #fefefe;
+    background-image: url('/assets/images/mushaf_border.svg');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    overflow: hidden;
+    /* Allow container to expand with content */
+    display: flex;
+    flex-direction: column;
+}
+
+.page-content {
+    position: relative;
+    z-index: 2;
+    padding: 50px 40px;
+    min-height: 900px;
+    direction: rtl;
+    width: 100%;
+    margin: 0 auto;
+    /* Allow content to expand */
+    overflow: visible;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    /* Allow container to grow with scaled text */
+    flex: 1;
+}
+
+/* Font Loading */
+.font-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 900px;
+    gap: 20px;
+    position: relative;
+    z-index: 2;
+}
+
+.font-loading p {
+    color: #666;
+    font-size: 1em;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #4a90e2;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Lines */
+.line {
+    margin: 0;
+    padding: 0;
+    line-height: 1.8;
+    font-size: 1.8em;
+    color: #000;
+}
+
+.line.surah-name {
+    font-family: 'SurahHeaderFont', Arial, sans-serif !important;
+    font-size: 7em;
+    font-weight: 400;
+    padding-top: 18px;
+    position: relative;
+    z-index: -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.5;
+    text-align: center;
+    height: 78px;
+    margin-bottom: 10px;
+}
+
+.line.basmallah {
+    font-family: 'BasmallahFont', Arial, sans-serif !important;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: start;
+    justify-content: center;
+    height: 30px;
+    text-align: center;
+    font-feature-settings: "liga" 1, "calt" 1, "dlig" 1;
+}
+
+.line.ayah {
+    text-align: justify;
+    text-align-last: justify;
+    font-family: inherit !important;
+    /* Allow lines to expand with scaled text */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    width: 100%;
+}
+
+.line.centered {
+    text-align: center !important;
+    text-align-last: center;
+}
+
+/* Words */
+.word {
+    cursor: default;
+    transition: all 0.2s;
+    display: inline;
+    font-family: inherit !important;
+    font-size: inherit !important;
+}
+
+.word.editable {
+    cursor: pointer;
+}
+
+.word.editable:hover {
+    background: rgba(74, 144, 226, 0.2);
+    padding: 1px;
+    border-radius: 2px;
+}
+
+.word.selected {
+    background: rgba(102, 126, 234, 0.5);
+    padding: 2px 4px;
+    border-radius: 3px;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+    /* Allow text to scale naturally */
+    display: inline;
+    box-sizing: border-box;
+}
+
+/* Disabled (already used) words */
+.word.disabled {
+    opacity: 0.4;
+    cursor: not-allowed !important;
+    color: #999;
+    background: rgba(200, 200, 200, 0.1);
+}
+
+.word.disabled:hover {
+    background: rgba(200, 200, 200, 0.15) !important;
+}
+
+/* Don't allow selection of disabled words */
+.word.disabled.editable {
+    cursor: not-allowed !important;
+}
+
+.no-content {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .mushaf-border {
+        width: 100%;
+        max-width: 100%;
+        min-height: auto;
+        /* Maintain aspect ratio: 600:900 = 2:3 */
+        aspect-ratio: 2 / 3;
+        background-size: 100% 100%;
+    }
+    
+    .page-content {
+        /* Scale padding proportionally: 50px -> ~8.3%, 40px -> ~6.7% */
+        padding: 8.3% 6.7%;
+        min-height: auto;
+    }
+    
+    .font-loading {
+        min-height: auto;
+    }
+    
+    .line {
+        font-size: 1.5em;
+    }
+    
+    .line.surah-name {
+        font-size: 5em;
+    }
+}
+
+@media (max-width: 480px) {
+    .mushaf-border {
+        width: 100%;
+        max-width: 100%;
+        aspect-ratio: 2 / 3;
+    }
+    
+    .page-content {
+        /* Further reduced padding for very small screens */
+        padding: 7% 5%;
+    }
+    
+    .line {
+        font-size: 1.3em;
+    }
+    
+    .line.surah-name {
+        font-size: 4em;
+    }
+}
+
+

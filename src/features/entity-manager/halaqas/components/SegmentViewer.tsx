@@ -52,29 +52,6 @@ const SegmentViewer: React.FC<SegmentViewerProps> = ({
                     </div>
                 </div>
             )}
-
-            <div className="verses-container space-y-3">
-                {verses.map((verse, index) => (
-                    <div
-                        key={`${verse.verse_key}-${index}`}
-                        className="verse-item p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors"
-                    >
-                        <div className="flex items-start gap-3">
-                            <div className="verse-number flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-sm font-semibold">
-                                {verse.ayah_number}
-                            </div>
-                            <div className="verse-text flex-1 text-right" dir="rtl">
-                                <p className="text-lg leading-relaxed text-gray-800" style={{ fontFamily: 'Cairo, Arial, sans-serif' }}>
-                                    {verse.text}
-                                </p>
-                                <p className="text-xs text-gray-500 mt-2">
-                                    {verse.verse_key}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
         </div>
     );
 };
