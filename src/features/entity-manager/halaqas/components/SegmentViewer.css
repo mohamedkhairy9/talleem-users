@@ -1,0 +1,58 @@
+/* SegmentViewer Component Styles */
+
+.segment-viewer {
+    width: 100%;
+}
+
+.segment-viewer.empty {
+    padding: 20px;
+    text-align: center;
+}
+
+.segment-header {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.verses-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.verse-item {
+    transition: all 0.2s ease;
+}
+
+.verse-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.verse-number {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.verse-text {
+    direction: rtl;
+    text-align: right;
+}
+
+.verse-text p {
+    margin: 0;
+    line-height: 1.8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .verse-item {
+        padding: 12px;
+    }
+
+    .verse-text p {
+        font-size: 16px;
+    }
+}
+

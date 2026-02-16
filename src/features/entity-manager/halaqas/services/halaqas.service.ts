@@ -63,6 +63,7 @@ export interface CreatePlanPayload {
     start_segment_id?: number; // Required when unit is 'segments'
     start_juz_number?: number; // Required when unit is 'parts'
     start_surah_id?: number; // Required when unit is 'surahs'
+    end_segment_id?: number; // Required when unit is 'segments' and plan_type is 'start_end'
 }
 
 /**
