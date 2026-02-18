@@ -18,7 +18,6 @@ import {
 } from '../config';
 import { createPlanSchema, CreatePlanFormData } from '../schemas/plan.schema';
 import { quranSegmentsService, type QuranSegment, type SegmentAfterResponse } from '../services/quran-segments.service';
-import SegmentViewer from './SegmentViewer';
 import MushafPageModal from './MushafPageModal';
 import { loadSurahData, type SurahDataMap } from '@/utils/helpers/surahHelper';
 import { ChevronRightIcon } from '@/globals/icons';
