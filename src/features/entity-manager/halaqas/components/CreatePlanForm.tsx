@@ -552,13 +552,10 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                                         </span>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-sm font-semibold text-gray-900">
-                                            {t('quran.segment', 'Segment')} {selectedStartSegment.segment_number}
-                                        </p>
-                                        <p className="text-xs text-gray-600">
+                                        {/* <p className="text-xs text-gray-600">
                                             {t('quran.verseKey', 'Verse')}: {selectedStartSegment.first_verse_key}
                                             {selectedStartSegment.first_verse_key !== selectedStartSegment.last_verse_key && ` - ${selectedStartSegment.last_verse_key}`}
-                                        </p>
+                                        </p> */}
                                         <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-gray-200">
                                             <span className="text-xs text-gray-500">
                                                 {t('quran.juz', 'Juz')}: {selectedStartSegment.juz_number}
@@ -616,13 +613,10 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                                             </span>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-sm font-semibold text-gray-900">
-                                                {t('quran.segment', 'Segment')} {endSegmentData.target_segment.segment_number}
-                                            </p>
-                                            <p className="text-xs text-gray-600">
+                                            {/* <p className="text-xs text-gray-600">
                                                 {t('quran.verseKey', 'Verse')}: {endSegmentData.target_segment.first_verse_key}
                                                 {endSegmentData.target_segment.first_verse_key !== endSegmentData.target_segment.last_verse_key && ` - ${endSegmentData.target_segment.last_verse_key}`}
-                                            </p>
+                                            </p> */}
                                             <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-gray-200">
                                                 {endSegmentData.target_segment.juz_number && (
                                                     <>
@@ -655,7 +649,8 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                                         </button>
                                     </div>
                                 )}
-
+                                
+                                {/* End Segment Selection (for start_end plan type) */}
                                 {planType === 'start_end' && (endSegmentViewData || selectedEndSegment) && (
                                     <div className="flex-1 border border-primary-300 rounded-lg p-3 bg-white">
                                         <div className="mb-2">

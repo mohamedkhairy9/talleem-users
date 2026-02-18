@@ -195,6 +195,32 @@
     color: #666;
 }
 
+/* Page number display */
+.page-number-display {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.2em;
+    color: #666;
+    font-weight: 500;
+    z-index: 10;
+    font-family: Arial, sans-serif;
+    direction: ltr;
+    text-align: center;
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Adjust for smaller pages (1 and 2) */
+.mushaf-border-large .page-number-display {
+    font-size: 1em;
+    bottom: 15px;
+    padding: 3px 10px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .mushaf-border {

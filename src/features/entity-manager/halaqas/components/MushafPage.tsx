@@ -237,6 +237,10 @@ const MushafPage: React.FC<MushafPageProps> = ({
                             لا يوجد محتوى
                         </div>
                     )}
+                    {/* Page number display at the bottom */}
+                    <div className="page-number-display">
+                        {currentPage}
+                    </div>
                 </div>
             </div>
         </div>
