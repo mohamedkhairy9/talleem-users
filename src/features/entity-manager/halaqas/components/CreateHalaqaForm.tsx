@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useFormWithValidation } from '@/utils';
 import { FormInput, FormSelect, Button } from '@/globals/components';
 import SelectRFH from '@/globals/components/ui/SelectRFH';
+import Select from 'react-select';
 import { useAuthStore } from '@/stores';
 import { useCreateHalaqa, useCheckAvailability } from '../hooks/useHalaqas';
 import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
@@ -110,6 +111,7 @@ const CreateHalaqaForm: React.FC = () => {
     const endDate = useWatch({ control, name: 'end_date' });
     const period = useWatch({ control, name: 'period' });
     const sessionTime = useWatch({ control, name: 'session_time' });
+    const activities = useWatch({ control, name: 'activities' });
 
     // State for availability check result
     const [availabilityResult, setAvailabilityResult] = useState<CheckAvailabilityResponse | null>(null);
@@ -120,6 +122,24 @@ const CreateHalaqaForm: React.FC = () => {
             setValue('platform_id', undefined);
         }
     }, [teachingMethod, setValue]);
+
+    // Force tasbit to be included when hifz is selected (handled in Controller onChange)
+    // Keeping this as a backup in case the direct onChange doesn't catch all cases
+    useEffect(() => {
+        if (Array.isArray(activities) && activities.length > 0) {
+            const hasHifz = activities.includes('hifz');
+            const hasTasbit = activities.includes('tasbit');
+            
+            if (hasHifz && !hasTasbit) {
+                // If hifz is selected but tasbit is not, add tasbit
+                setValue('activities', [...activities, 'tasbit'], { 
+                    shouldValidate: true,
+                    shouldDirty: true,
+                    shouldTouch: false
+                });
+            }
+        }
+    }, [activities, setValue]);
 
     // Clear availability result when form fields change
     useEffect(() => {
@@ -321,16 +341,107 @@ const CreateHalaqaForm: React.FC = () => {
             </div>
 
             {/* Activities (Multi-select) */}
-            <SelectRFH
-                name="activities"
-                control={control}
-                label={t('halaqa.activities', 'Activities')}
-                required
-                isMulti
-                options={activityOptions}
-                error={errors.activities?.message}
-                placeholder={t('halaqa.selectActivities', 'Select activities')}
-            />
+            <div>
+                <Controller
+                    name="activities"
+                    control={control}
+                    render={({ field, fieldState }) => {
+                        // Intercept onChange to add tasbit when hifz is selected
+                        const handleChange = (selectedOptions: any) => {
+                            // Convert selected options to array of values
+                            let selectedValues: string[] = [];
+                            
+                            if (selectedOptions) {
+                                if (Array.isArray(selectedOptions)) {
+                                    selectedValues = selectedOptions.map((opt: any) => opt.value || opt.id);
+                                } else {
+                                    selectedValues = [selectedOptions.value || selectedOptions.id];
+                                }
+                            }
+                            
+                            // If hifz is selected, ensure tasbit is also included
+                            const hasHifz = selectedValues.includes('hifz');
+                            const hasTasbit = selectedValues.includes('tasbit');
+                            
+                            if (hasHifz && !hasTasbit) {
+                                // Add tasbit immediately before updating the field
+                                selectedValues = [...selectedValues, 'tasbit'];
+                            }
+                            
+                            // Update the field value with the corrected array
+                            field.onChange(selectedValues);
+                        };
+                        
+                        // Get current value as options for react-select
+                        const currentValue = field.value || [];
+                        const selectedOptions = Array.isArray(currentValue)
+                            ? currentValue
+                                .map(val => activityOptions.find(opt => opt.value === val))
+                                .filter(Boolean)
+                            : [];
+                        
+                        return (
+                            <div className="flex flex-col gap-px">
+                                <label
+                                    htmlFor="activities"
+                                    className="flex items-center gap-2 font-medium text-gray-700 mb-1"
+                                >
+                                    <span>
+                                        {t('halaqa.activities', 'Activities')}
+                                        <span className="text-red-500 ml-1">*</span>
+                                    </span>
+                                </label>
+                                <Select
+                                    isMulti
+                                    value={selectedOptions as any}
+                                    options={activityOptions}
+                                    onChange={handleChange}
+                                    onBlur={field.onBlur}
+                                    name={field.name}
+                                    placeholder={t('halaqa.selectActivities', 'Select activities')}
+                                    className="react-select w-full min-w-[300px]"
+                                    classNamePrefix="react-select"
+                                    menuPortalTarget={document.body}
+                                    menuPosition="fixed"
+                                    getOptionValue={(option: any) => String(option.value ?? option.id ?? '')}
+                                    getOptionLabel={(option: any) => option.label ?? option.name ?? ''}
+                                    styles={{
+                                        control: (base: any, state: any) => ({
+                                            ...base,
+                                            padding: '6px 0px 6px 16px',
+                                            minHeight: '44px',
+                                            borderRadius: '8px',
+                                            boxShadow: state.isFocused
+                                                ? (fieldState.error ? '0 0 0 1px #ef4444' : '0 0 0 1px #004247')
+                                                : 'none',
+                                            borderColor: fieldState.error ? '#ef4444' : state.isFocused ? '#004247' : '#d1d5db',
+                                            '&:hover': {
+                                                borderColor: fieldState.error ? '#ef4444' : '#004247'
+                                            }
+                                        }),
+                                        menu: (base: any) => ({
+                                            ...base,
+                                            zIndex: 9999
+                                        }),
+                                        menuPortal: (base: any) => ({
+                                            ...base,
+                                            zIndex: 9999
+                                        })
+                                    }}
+                                />
+                                <p className="mt-1 h-4 text-xs text-red-600" role="alert">
+                                    {(fieldState.error?.message || errors.activities?.message) ?? ''}
+                                </p>
+                                {Array.isArray(field.value) && field.value.includes('hifz') && (
+                                    <p className="mt-1 text-xs text-blue-600">
+                                        {t('halaqa.hifzRequiresTasbit', 'Note: Hifz automatically includes Tasbit')}
+                                    </p>
+                                )}
+                            </div>
+                        );
+                    }}
+                />
+            </div>
 
             {/* Students (Multi-select) */}
             <SelectRFH
