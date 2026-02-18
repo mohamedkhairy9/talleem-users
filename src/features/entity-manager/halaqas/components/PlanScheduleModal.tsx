@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { XIcon } from '@/globals/icons';
-import PlanDailySchedule, { DailyScheduleItem } from './PlanDailySchedule';
+import PlanDailySchedule from './PlanDailySchedule';
+import type { DailyScheduleItem } from '../types/list.types';
 
 interface PlanScheduleModalProps {
     isOpen: boolean;

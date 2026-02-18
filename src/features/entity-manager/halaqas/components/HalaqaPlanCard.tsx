@@ -96,13 +96,13 @@ const HalaqaPlanCard: React.FC<HalaqaPlanCardProps> = ({
                     </div>
 
                     {/* Verse Range Info */}
-                    {(plan.start_verse_id || plan.end_verse_id) && (
+                    {(plan.start_verse_key || plan.end_verse_key) && (
                         <div className="pt-3 border-t border-gray-200">
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                                 {t('plan.verseRange', 'Verse Range')}
                             </p>
                             <p className="text-sm font-semibold text-gray-900">
-                                {plan.start_verse_id || '?'} - {plan.end_verse_id || '?'}
+                                {plan.start_verse_key || '?'} - {plan.end_verse_key || '?'}
                             </p>
                         </div>
                     )}

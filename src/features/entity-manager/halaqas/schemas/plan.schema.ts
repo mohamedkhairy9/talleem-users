@@ -11,9 +11,9 @@ export const createPlanSchema = yup.object({
     direction: yup.string().oneOf(['incremental', 'decremental'], 'Direction must be incremental or decremental').required('Direction is required'),
     daily_amount: yup.number().required('Daily amount is required').positive(),
     // Conditional fields based on unit
-    start_segment_id: yup.number().when('unit', {
+    start_segment_verse_key: yup.string().when('unit', {
         is: 'segments',
-        then: (schema) => schema.required('Start segment ID is required when unit is segments').positive('Start segment ID must be positive'),
+        then: (schema) => schema.required('Start segment verse key is required when unit is segments').matches(/^\d+:\d+$/, 'Verse key must be in format "surah:ayah" (e.g., "1:1")'),
         otherwise: (schema) => schema.notRequired()
     }),
     start_juz_number: yup.number().when('unit', {
@@ -26,10 +26,10 @@ export const createPlanSchema = yup.object({
         then: (schema) => schema.required('Start surah ID is required when unit is surahs').positive('Start surah ID must be positive'),
         otherwise: (schema) => schema.notRequired()
     }),
-    // End segment ID - required when unit is 'segments' and plan_type is 'start_end'
-    end_segment_id: yup.number().when(['unit', 'plan_type'], {
+    // End segment verse key - required when unit is 'segments' and plan_type is 'start_end'
+    end_segment_verse_key: yup.string().when(['unit', 'plan_type'], {
         is: (unit: string, planType: string) => unit === 'segments' && planType === 'start_end',
-        then: (schema) => schema.required('End segment ID is required when plan type is start_end and unit is segments').positive('End segment ID must be positive'),
+        then: (schema) => schema.required('End segment verse key is required when plan type is start_end and unit is segments').matches(/^\d+:\d+$/, 'Verse key must be in format "surah:ayah" (e.g., "1:2")'),
         otherwise: (schema) => schema.notRequired()
     })
 });
@@ -45,10 +45,10 @@ export interface CreatePlanFormData {
     direction: 'incremental' | 'decremental';
     daily_amount: number;
     // Conditional fields based on unit
-    start_segment_id?: number; // Required when unit is 'segments'
+    start_segment_verse_key?: string; // Required when unit is 'segments' (format: "surah:ayah" e.g., "1:1")
     start_juz_number?: number; // Required when unit is 'parts'
     start_surah_id?: number; // Required when unit is 'surahs'
-    end_segment_id?: number; // Required when unit is 'segments' and plan_type is 'start_end'
+    end_segment_verse_key?: string; // Required when unit is 'segments' and plan_type is 'start_end' (format: "surah:ayah" e.g., "1:2")
 }
 
 

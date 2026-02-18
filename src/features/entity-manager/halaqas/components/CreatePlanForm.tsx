@@ -62,7 +62,7 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             plan_type: 'daily_amount',
             unit: 'segments',
             direction: 'incremental',
-            start_segment_id: undefined,
+            start_segment_verse_key: undefined,
             start_juz_number: undefined,
             start_surah_id: undefined,
             daily_amount: 0
@@ -145,6 +145,19 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             });
     }, [surahData, currentLang]);
 
+    // Clear selected segments when page number changes
+    useEffect(() => {
+        if (currentUnit === 'segments') {
+            // Clear all segment-related state when page number changes
+            setSelectedStartSegment(null);
+            setSelectedEndSegment(null);
+            setEndSegmentData(null);
+            setEndSegmentViewData(null);
+            setValue('start_segment_verse_key', undefined);
+            setValue('end_segment_verse_key', undefined);
+        }
+    }, [pageNumber, currentUnit, setValue]);
+
     // Fetch segments when page number is set
     useEffect(() => {
         if (currentUnit === 'segments' && pageNumber && pageNumber >= 1 && pageNumber <= 604) {
@@ -184,8 +197,8 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 .getSegmentAfter(selectedStartSegment.id, segmentsNumber)
                 .then((data) => {
                     setEndSegmentData(data);
-                    // Auto-set the start_segment_id in the form
-                    setValue('start_segment_id', selectedStartSegment.id);
+                    // Auto-set the start_segment_verse_key in the form using first_verse_key from selected segment
+                    setValue('start_segment_verse_key', selectedStartSegment.first_verse_key);
                 })
                 .catch((error) => {
                     console.error('Error fetching end segment:', error);
@@ -209,7 +222,8 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 .getSegmentAfter(selectedEndSegment.id, 1)
                 .then((data) => {
                     setEndSegmentViewData(data);
-                    setValue('end_segment_id', selectedEndSegment.id);
+                    // Set the end_segment_verse_key using first_verse_key from selected segment
+                    setValue('end_segment_verse_key', selectedEndSegment.first_verse_key);
                 })
                 .catch((error) => {
                     console.error('Error fetching end segment details:', error);
@@ -223,10 +237,10 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
     // Clear start fields when unit changes
     useEffect(() => {
         if (currentUnit) {
-            setValue('start_segment_id', undefined);
+            setValue('start_segment_verse_key', undefined);
             setValue('start_juz_number', undefined);
             setValue('start_surah_id', undefined);
-            setValue('end_segment_id', undefined);
+            setValue('end_segment_verse_key', undefined);
             setPageNumber(undefined);
             setSegments([]);
             setSelectedStartSegment(null);
@@ -300,11 +314,11 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             direction: data.direction,
             daily_amount: data.daily_amount,
             // Include only the start field that matches the selected unit
-            ...(data.unit === 'segments' && data.start_segment_id && { start_segment_id: data.start_segment_id }),
+            ...(data.unit === 'segments' && data.start_segment_verse_key && { start_segment_verse_key: data.start_segment_verse_key }),
             ...(data.unit === 'parts' && data.start_juz_number && { start_juz_number: data.start_juz_number }),
             ...(data.unit === 'surahs' && data.start_surah_id && { start_surah_id: data.start_surah_id }),
-            // Include end_segment_id when plan_type is start_end and unit is segments
-            ...(data.unit === 'segments' && data.plan_type === 'start_end' && data.end_segment_id && { end_segment_id: data.end_segment_id })
+            // Include end_segment_verse_key when plan_type is start_end and unit is segments
+            ...(data.unit === 'segments' && data.plan_type === 'start_end' && data.end_segment_verse_key && { end_segment_verse_key: data.end_segment_verse_key })
         };
 
         createPlanMutation.mutate(
@@ -319,7 +333,7 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                         plan_type: 'daily_amount',
                         unit: 'segments',
                         direction: 'incremental',
-                        start_segment_id: undefined,
+                        start_segment_verse_key: undefined,
                         start_juz_number: undefined,
                         start_surah_id: undefined,
                         daily_amount: 0
@@ -417,11 +431,28 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                             min="1"
                             max="604"
                             value={pageNumber || ''}
+                            onFocus={(e) => {
+                                // Clear the input if value is 0 when user focuses
+                                if (e.target.value === '0') {
+                                    e.target.value = '';
+                                    setPageNumber(undefined);
+                                } else {
+                                    // Select all text for easy replacement
+                                    e.target.select();
+                                }
+                            }}
                             onChange={(e) => {
-                                const value = e.target.value ? parseInt(e.target.value) : undefined;
-                                if (value && value >= 1 && value <= 604) {
+                                const inputValue = e.target.value;
+                                // If input is empty or just whitespace, set to undefined
+                                if (!inputValue || inputValue.trim() === '') {
+                                    setPageNumber(undefined);
+                                    return;
+                                }
+                                const value = parseInt(inputValue);
+                                if (!isNaN(value) && value >= 1 && value <= 604) {
                                     setPageNumber(value);
-                                } else if (!value) {
+                                } else if (value === 0) {
+                                    // Allow 0 temporarily while typing, but clear on blur if still 0
                                     setPageNumber(undefined);
                                 }
                             }}
@@ -776,14 +807,14 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                         />
                     )}
 
-                    {/* Hidden inputs for segment IDs */}
+                    {/* Hidden inputs for segment verse keys */}
                     <input
                         type="hidden"
-                        {...control.register('start_segment_id')}
+                        {...control.register('start_segment_verse_key')}
                     />
                     <input
                         type="hidden"
-                        {...control.register('end_segment_id')}
+                        {...control.register('end_segment_verse_key')}
                     />
                 </div>
             )}

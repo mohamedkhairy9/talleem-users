@@ -60,10 +60,10 @@ export interface CreatePlanPayload {
     direction: 'incremental' | 'decremental';
     daily_amount: number;
     // Conditional fields based on unit
-    start_segment_id?: number; // Required when unit is 'segments'
+    start_segment_verse_key?: string; // Required when unit is 'segments' (format: "surah:ayah" e.g., "1:1")
     start_juz_number?: number; // Required when unit is 'parts'
     start_surah_id?: number; // Required when unit is 'surahs'
-    end_segment_id?: number; // Required when unit is 'segments' and plan_type is 'start_end'
+    end_segment_verse_key?: string; // Required when unit is 'segments' and plan_type is 'start_end' (format: "surah:ayah" e.g., "1:2")
 }
 
 /**

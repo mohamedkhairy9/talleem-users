@@ -193,3 +193,4 @@ export function clearSurahDataCache(): void {
     surahDataPromise = null;
 }
 
+
