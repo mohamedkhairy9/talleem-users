@@ -65,6 +65,9 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             start_segment_verse_key: undefined,
             start_juz_number: undefined,
             start_surah_id: undefined,
+            end_segment_verse_key: undefined,
+            end_juz_number: undefined,
+            end_surah_id: undefined,
             daily_amount: 0
         }
     });
@@ -97,8 +100,11 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
     const [isLoadingEndSegment, setIsLoadingEndSegment] = useState(false);
     
     // End segment selection state (for start_end plan type)
+    const [endPageNumber, setEndPageNumber] = useState<number | undefined>(undefined);
+    const [endSegments, setEndSegments] = useState<QuranSegment[]>([]);
     const [selectedEndSegment, setSelectedEndSegment] = useState<QuranSegment | null>(null);
     const [endSegmentViewData, setEndSegmentViewData] = useState<SegmentAfterResponse | null>(null);
+    const [isLoadingEndSegments, setIsLoadingEndSegments] = useState(false);
     
     // Mushaf modal state
     const [showMushafModal, setShowMushafModal] = useState(false);
@@ -160,6 +166,8 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             setEndSegmentViewData(null);
             setValue('start_segment_verse_key', undefined);
             setValue('end_segment_verse_key', undefined);
+            setValue('end_juz_number', undefined);
+            setValue('end_surah_id', undefined);
         }
     }, [pageNumber, currentUnit, setValue]);
 
@@ -187,6 +195,30 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
         }
     }, [pageNumber, currentUnit, t]);
 
+    // Fetch end segments when end page number is set (for start_end plan type)
+    useEffect(() => {
+        if (currentUnit === 'segments' && planType === 'start_end' && endPageNumber && endPageNumber >= 1 && endPageNumber <= 604) {
+            setIsLoadingEndSegments(true);
+            quranSegmentsService
+                .getSegmentsByPage(endPageNumber)
+                .then((data: any) => {
+                    // Handle different response formats
+                    const segs = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+                    setEndSegments(segs);
+                })
+                .catch((error) => {
+                    console.error('Error fetching end segments:', error);
+                    toast.error(t('quran.errorFetchingSegments', 'Error fetching segments'));
+                    setEndSegments([]);
+                })
+                .finally(() => {
+                    setIsLoadingEndSegments(false);
+                });
+        } else {
+            setEndSegments([]);
+        }
+    }, [endPageNumber, currentUnit, planType, t]);
+
     // Calculate segments_number and fetch end segment when start segment is selected (only for daily_amount)
     useEffect(() => {
         if (
@@ -197,9 +229,10 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             durationInDays > 0
         ) {
             const segmentsNumber = dailyAmount * durationInDays;
+            const direction = watch('direction') || 'incremental';
             setIsLoadingEndSegment(true);
             quranSegmentsService
-                .getSegmentAfter(selectedStartSegment.id, segmentsNumber)
+                .getSegmentAfter(selectedStartSegment.id, segmentsNumber, direction)
                 .then((data) => {
                     setEndSegmentData(data);
                     // Auto-set the start_segment_verse_key in the form using first_verse_key from selected segment
@@ -222,9 +255,10 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
     // Fetch end segment details when end segment is selected (for start_end plan type)
     useEffect(() => {
         if (currentUnit === 'segments' && planType === 'start_end' && selectedEndSegment) {
+            const direction = watch('direction') || 'incremental';
             // Fetch the segment details to show the last verse
             quranSegmentsService
-                .getSegmentAfter(selectedEndSegment.id, 1)
+                .getSegmentAfter(selectedEndSegment.id, 1, direction)
                 .then((data) => {
                     setEndSegmentViewData(data);
                     // Set the end_segment_verse_key using first_verse_key from selected segment
@@ -237,7 +271,7 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
         } else {
             setEndSegmentViewData(null);
         }
-    }, [selectedEndSegment, currentUnit, planType, setValue]);
+    }, [selectedEndSegment, currentUnit, planType, setValue, watch]);
 
     // Clear start fields when unit changes
     useEffect(() => {
@@ -246,14 +280,31 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             setValue('start_juz_number', undefined);
             setValue('start_surah_id', undefined);
             setValue('end_segment_verse_key', undefined);
+            setValue('end_juz_number', undefined);
+            setValue('end_surah_id', undefined);
             setPageNumber(undefined);
+            setEndPageNumber(undefined);
             setSegments([]);
+            setEndSegments([]);
             setSelectedStartSegment(null);
             setEndSegmentData(null);
             setSelectedEndSegment(null);
             setEndSegmentViewData(null);
         }
     }, [currentUnit, setValue]);
+
+    // Clear end fields when plan type changes from start_end to daily_amount
+    useEffect(() => {
+        if (planType === 'daily_amount') {
+            setValue('end_segment_verse_key', undefined);
+            setValue('end_juz_number', undefined);
+            setValue('end_surah_id', undefined);
+            setEndPageNumber(undefined);
+            setEndSegments([]);
+            setSelectedEndSegment(null);
+            setEndSegmentViewData(null);
+        }
+    }, [planType, setValue]);
 
     // Update activity if current value is not in halaqa activities
     React.useEffect(() => {
@@ -301,7 +352,8 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
 
     const unitOptions = PLAN_UNITS.map(unit => ({
         value: unit.value,
-        label: t(unit.labelKey, unit.value)
+        // Display "Juz" for parts unit, otherwise use translation
+        label: unit.value === 'parts' ? t('plan.unit.juz', 'Juz') : t(unit.labelKey, unit.value)
     }));
 
     const directionOptions = PLAN_DIRECTIONS.map(direction => ({
@@ -317,13 +369,16 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             plan_type: data.plan_type,
             unit: data.unit,
             direction: data.direction,
-            daily_amount: data.daily_amount,
+            // Only include daily_amount when plan_type is daily_amount
+            ...(data.plan_type === 'daily_amount' && data.daily_amount ? { daily_amount: data.daily_amount } : {}),
             // Include only the start field that matches the selected unit
-            ...(data.unit === 'segments' && data.start_segment_verse_key && { start_segment_verse_key: data.start_segment_verse_key }),
-            ...(data.unit === 'parts' && data.start_juz_number && { start_juz_number: data.start_juz_number }),
-            ...(data.unit === 'surahs' && data.start_surah_id && { start_surah_id: data.start_surah_id }),
-            // Include end_segment_verse_key when plan_type is start_end and unit is segments
-            ...(data.unit === 'segments' && data.plan_type === 'start_end' && data.end_segment_verse_key && { end_segment_verse_key: data.end_segment_verse_key })
+            ...(data.unit === 'segments' && data.start_segment_verse_key ? { start_segment_verse_key: data.start_segment_verse_key } : {}),
+            ...(data.unit === 'parts' && data.start_juz_number ? { start_juz_number: data.start_juz_number } : {}),
+            ...(data.unit === 'surahs' && data.start_surah_id ? { start_surah_id: data.start_surah_id } : {}),
+            // Include end fields when plan_type is start_end
+            ...(data.unit === 'segments' && data.plan_type === 'start_end' && data.end_segment_verse_key ? { end_segment_verse_key: data.end_segment_verse_key } : {}),
+            ...(data.unit === 'parts' && data.plan_type === 'start_end' && data.end_juz_number ? { end_juz_number: data.end_juz_number } : {}),
+            ...(data.unit === 'surahs' && data.plan_type === 'start_end' && data.end_surah_id ? { end_surah_id: data.end_surah_id } : {})
         };
 
         createPlanMutation.mutate(
@@ -341,6 +396,9 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                         start_segment_verse_key: undefined,
                         start_juz_number: undefined,
                         start_surah_id: undefined,
+                        end_segment_verse_key: undefined,
+                        end_juz_number: undefined,
+                        end_surah_id: undefined,
                         daily_amount: 0
                     });
                     // Reset segment selection state
@@ -413,15 +471,17 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 error={errors.direction?.message}
             />
 
-            {/* Daily Amount */}
-            <FormInput
-                name="daily_amount"
-                control={control}
-                label={t('plan.dailyAmount', 'Daily Amount')}
-                required
-                type="number"
-                error={errors.daily_amount?.message}
-            />
+            {/* Daily Amount - only show when plan_type is daily_amount */}
+            {planType === 'daily_amount' && (
+                <FormInput
+                    name="daily_amount"
+                    control={control}
+                    label={t('plan.dailyAmount', 'Daily Amount')}
+                    required
+                    type="number"
+                    error={errors.daily_amount?.message}
+                />
+            )}
 
             {/* Conditional Start Fields based on Unit */}
             {currentUnit === 'segments' && (
@@ -767,7 +827,7 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                             )}
 
                             {/* View Full Plan Button */}
-                            {((planType === 'daily_amount' && endSegmentData) || (planType === 'start_end' && (endSegmentViewData || selectedEndSegment))) && (
+                            {((planType === 'daily_amount' && endSegmentData) || (planType === 'start_end' && selectedStartSegment && selectedEndSegment)) && (
                                 <div className="mt-4 pt-4 border-t border-primary-200">
                                     <button
                                         type="button"
@@ -808,69 +868,121 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                     )}
 
                     {/* End Segment Selection (for start_end plan type) */}
-                    {planType === 'start_end' && pageNumber && segments.length > 0 && (
+                    {planType === 'start_end' && (
                         <div className="space-y-4">
                             <div className="border-t border-gray-200 pt-4">
                                 <h4 className="text-sm font-semibold text-gray-700 mb-3">
                                     {t('quran.selectEndSegment', 'Select End Segment')}
                                 </h4>
 
-                                {/* End Segments List (using same segments from the page) */}
-                                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                                    <h5 className="text-sm font-semibold text-gray-700 mb-3">
-                                        {t('quran.segmentsForPage', 'Segments for Page')} {pageNumber}
-                                    </h5>
-                                    <div className="space-y-2 max-h-60 overflow-y-auto">
-                                        {segments.map((segment) => (
-                                            <button
-                                                key={segment.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    setSelectedEndSegment(segment);
-                                                }}
-                                                className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${
-                                                    selectedEndSegment?.id === segment.id
-                                                        ? 'border-primary-500 bg-primary-50'
-                                                        : 'border-gray-200 bg-white hover:border-primary-300'
-                                                }`}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-semibold text-gray-900 mb-1.5">
-                                                            {t('quran.segment', 'Segment')} {segment.segment_number}
-                                                        </p>
-                                                        <div className="space-y-0.5">
-                                                            <p className="text-xs text-gray-600">
-                                                                {t('quran.firstAyah', 'First Ayah')}: {segment.first_verse_key.split(':')[1]}
-                                                            </p>
-                                                            <p className="text-xs text-gray-500">
-                                                                {segment.first_verse_key.split(':')[1] === segment.last_verse_key.split(':')[1]
-                                                                    ? segment.first_verse_key.split(':')[1]
-                                                                    : `${segment.first_verse_key.split(':')[1]} to ${segment.last_verse_key.split(':')[1]}`
-                                                                }
-                                                            </p>
-                                                            <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-gray-200">
-                                                                <span className="text-xs text-gray-500">
-                                                                    {t('quran.juz', 'Juz')}: {segment.juz_number}
-                                                                </span>
-                                                                <span className="text-xs text-gray-400">•</span>
-                                                                <span className="text-xs text-gray-500">
-                                                                    {t('quran.surah', 'Surah')}: {segment.surah_number}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    {selectedEndSegment?.id === segment.id && (
-                                                        <span className="text-primary-600 text-sm font-semibold ml-2">
-                                                            ✓
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
+                                {/* End Page Number Input */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        {t('quran.endPageNumber', 'End Page Number')}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="604"
+                                        value={endPageNumber || ''}
+                                        onFocus={(e) => {
+                                            if (e.target.value === '0') {
+                                                e.target.value = '';
+                                                setEndPageNumber(undefined);
+                                            } else {
+                                                e.target.select();
+                                            }
+                                        }}
+                                        onChange={(e) => {
+                                            const inputValue = e.target.value;
+                                            if (inputValue === '' || inputValue.trim() === '') {
+                                                setEndPageNumber(undefined);
+                                                setEndSegments([]);
+                                                setSelectedEndSegment(null);
+                                                setValue('end_segment_verse_key', undefined);
+                                            } else {
+                                                const value = parseInt(inputValue, 10);
+                                                if (!isNaN(value) && value >= 1 && value <= 604) {
+                                                    setEndPageNumber(value);
+                                                }
+                                            }
+                                        }}
+                                        placeholder={t('quran.enterPageNumber', 'Enter page number (1-604)')}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                    />
                                 </div>
 
+                                {/* End Segments List */}
+                                {endPageNumber && (
+                                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                        {isLoadingEndSegments ? (
+                                            <div className="text-center py-4">
+                                                <p className="text-sm text-gray-500">{t('common.loading', 'Loading...')}</p>
+                                            </div>
+                                        ) : endSegments.length > 0 ? (
+                                            <>
+                                                <h5 className="text-sm font-semibold text-gray-700 mb-3">
+                                                    {t('quran.segmentsForPage', 'Segments for Page')} {endPageNumber}
+                                                </h5>
+                                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                                    {endSegments.map((segment) => (
+                                                        <button
+                                                            key={segment.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedEndSegment(segment);
+                                                                // Set the end_segment_verse_key when end segment is selected
+                                                                setValue('end_segment_verse_key', segment.first_verse_key);
+                                                            }}
+                                                            className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${
+                                                                selectedEndSegment?.id === segment.id
+                                                                    ? 'border-primary-500 bg-primary-50'
+                                                                    : 'border-gray-200 bg-white hover:border-primary-300'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex-1">
+                                                                    <p className="text-sm font-semibold text-gray-900 mb-1.5">
+                                                                        {t('quran.segment', 'Segment')} {segment.segment_number}
+                                                                    </p>
+                                                                    <div className="space-y-0.5">
+                                                                        <p className="text-xs text-gray-600">
+                                                                            {t('quran.firstAyah', 'First Ayah')}: {segment.first_verse_key.split(':')[1]}
+                                                                        </p>
+                                                                        <p className="text-xs text-gray-500">
+                                                                            {segment.first_verse_key.split(':')[1] === segment.last_verse_key.split(':')[1]
+                                                                                ? segment.first_verse_key.split(':')[1]
+                                                                                : `${segment.first_verse_key.split(':')[1]} to ${segment.last_verse_key.split(':')[1]}`
+                                                                            }
+                                                                        </p>
+                                                                        <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-gray-200">
+                                                                            <span className="text-xs text-gray-500">
+                                                                                {t('quran.juz', 'Juz')}: {segment.juz_number}
+                                                                            </span>
+                                                                            <span className="text-xs text-gray-400">•</span>
+                                                                            <span className="text-xs text-gray-500">
+                                                                                {t('quran.surah', 'Surah')}: {segment.surah_number}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                {selectedEndSegment?.id === segment.id && (
+                                                                    <span className="text-primary-600 text-sm font-semibold ml-2">
+                                                                        ✓
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="text-center py-4">
+                                                <p className="text-sm text-gray-500">{t('quran.noSegmentsFound', 'No segments found for this page')}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -916,25 +1028,50 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 </div>
             )}
             {currentUnit === 'parts' && (
-                <FormInput
-                    name="start_juz_number"
-                    control={control}
-                    label={t('plan.startJuzNumber', 'Start Juz Number')}
-                    required
-                    type="number"
-                    error={errors.start_juz_number?.message}
-                />
+                <>
+                    <FormInput
+                        name="start_juz_number"
+                        control={control}
+                        label={t('plan.startJuzNumber', 'Start Juz Number')}
+                        required
+                        type="number"
+                        error={errors.start_juz_number?.message}
+                    />
+                    {planType === 'start_end' && (
+                        <FormInput
+                            name="end_juz_number"
+                            control={control}
+                            label={t('plan.endJuzNumber', 'End Juz Number')}
+                            required
+                            type="number"
+                            error={errors.end_juz_number?.message}
+                        />
+                    )}
+                </>
             )}
             {currentUnit === 'surahs' && (
-                <FormSelect
-                    name="start_surah_id"
-                    control={control}
-                    label={t('plan.startSurahId', 'Start Surah')}
-                    required
-                    options={surahOptions}
-                    error={errors.start_surah_id?.message}
-                    placeholder={t('plan.selectSurah', 'Select a surah')}
-                />
+                <>
+                    <FormSelect
+                        name="start_surah_id"
+                        control={control}
+                        label={t('plan.startSurahId', 'Start Surah')}
+                        required
+                        options={surahOptions}
+                        error={errors.start_surah_id?.message}
+                        placeholder={t('plan.selectSurah', 'Select a surah')}
+                    />
+                    {planType === 'start_end' && (
+                        <FormSelect
+                            name="end_surah_id"
+                            control={control}
+                            label={t('plan.endSurahId', 'End Surah')}
+                            required
+                            options={surahOptions}
+                            error={errors.end_surah_id?.message}
+                            placeholder={t('plan.selectSurah', 'Select a surah')}
+                        />
+                    )}
+                </>
             )}
 
             {/* Error Message */}

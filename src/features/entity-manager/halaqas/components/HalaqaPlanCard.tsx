@@ -76,7 +76,7 @@ const HalaqaPlanCard: React.FC<HalaqaPlanCardProps> = ({
                                 {t('plan.unit', 'Unit')}
                             </p>
                             <p className="text-sm font-semibold text-gray-900">
-                                {String(t(`plan.unit.${plan.unit}`, plan.unit))}
+                                {plan.unit === 'parts' ? t('plan.unit.juz', 'Juz') : String(t(`plan.unit.${plan.unit}`, plan.unit))}
                             </p>
                         </div>
                         <div>

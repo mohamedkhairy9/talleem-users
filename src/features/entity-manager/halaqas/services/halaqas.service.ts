@@ -58,12 +58,14 @@ export interface CreatePlanPayload {
     plan_type: 'daily_amount' | 'start_end';
     unit: 'segments' | 'parts' | 'surahs';
     direction: 'incremental' | 'decremental';
-    daily_amount: number;
+    daily_amount?: number; // Required when plan_type is 'daily_amount'
     // Conditional fields based on unit
     start_segment_verse_key?: string; // Required when unit is 'segments' (format: "surah:ayah" e.g., "1:1")
     start_juz_number?: number; // Required when unit is 'parts'
     start_surah_id?: number; // Required when unit is 'surahs'
     end_segment_verse_key?: string; // Required when unit is 'segments' and plan_type is 'start_end' (format: "surah:ayah" e.g., "1:2")
+    end_juz_number?: number; // Required when unit is 'parts' and plan_type is 'start_end'
+    end_surah_id?: number; // Required when unit is 'surahs' and plan_type is 'start_end'
 }
 
 /**
