@@ -17,7 +17,8 @@ import {
     HALAQA_TEACHING_METHODS
 } from '../config';
 import { createHalaqaSchema, CreateHalaqaFormData } from '../schemas/halaqa.schema';
-import { AlertTriangleIcon, ClipboardCheckIcon, CircleIcon } from '@/globals/icons';
+import { AlertTriangleIcon, ClipboardCheckIcon, CircleIcon, ChevronRightIcon } from '@/globals/icons';
+import CreatePlanForm from './CreatePlanForm';
 
 /**
  * Normalize date to ISO format (YYYY-MM-DD) - ensures 24-hour system compatibility
@@ -70,6 +71,10 @@ const CreateHalaqaForm: React.FC = () => {
     const queryClient = useQueryClient();
     const createHalaqaMutation = useCreateHalaqa();
     const currentLang = i18n.language || lang || 'en';
+    
+    // Multi-step form state
+    const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+    const [createdHalaqa, setCreatedHalaqa] = useState<any>(null);
 
     const {
         control,
@@ -231,10 +236,14 @@ const CreateHalaqaForm: React.FC = () => {
             ...(data.teaching_method !== 'in_person' && platform_id ? { platform_id } : {})
         };
         createHalaqaMutation.mutate(payload, {
-            onSuccess: () => {
+            onSuccess: (response: any) => {
+                // Extract halaqa data from response (API returns { data: { data: {...} } })
+                const halaqaData = response?.data?.data || response?.data || response;
+                setCreatedHalaqa(halaqaData);
                 toast.success(t('halaqa.createSuccess', 'Halaqa created successfully'));
                 queryClient.invalidateQueries({ queryKey: ['halaqas'] });
-                navigate(`/${lang || 'en'}/halaqas`);
+                // Move to step 2 (plan creation)
+                setCurrentStep(2);
             },
             onError: (error: any) => {
                 toast.error(error?.message || t('halaqa.createError', 'Error creating halaqa. Please try again.'));
@@ -242,7 +251,14 @@ const CreateHalaqaForm: React.FC = () => {
         });
     };
 
-    return (
+    // Handle finish (skip plan creation or finish after creating plans)
+    const handleFinish = () => {
+        queryClient.invalidateQueries({ queryKey: ['halaqas'] });
+        navigate(`/${lang || 'en'}/halaqas`);
+    };
+
+    // Render step 1: Halaqa creation form
+    const renderStep1 = () => (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Name Fields (Arabic and English) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -562,10 +578,95 @@ const CreateHalaqaForm: React.FC = () => {
                     loading={createHalaqaMutation.isPending}
                     disabled={createHalaqaMutation.isPending || !isAvailable}
                 >
-                    {createHalaqaMutation.isPending ? t('common.loading', 'Loading...') : t('halaqa.create', 'Create Halaqa')}
+                    {createHalaqaMutation.isPending ? t('common.loading', 'Loading...') : t('halaqa.createAndContinue', 'Create Halaqa & Continue')}
                 </Button>
             </div>
         </form>
+    );
+
+    // Render step 2: Plan creation for students
+    const renderStep2 = () => {
+        if (!createdHalaqa) return null;
+
+        const students = createdHalaqa.students || [];
+        const activities = createdHalaqa.activities || [];
+
+        return (
+            <div className="space-y-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                        {t('halaqa.createPlans', 'Create Plans for Students')}
+                    </h3>
+                    <p className="text-sm text-blue-700">
+                        {t('halaqa.createPlansDescription', 'You can create plans for one or more students. This step is optional - you can skip it and create plans later.')}
+                    </p>
+                </div>
+
+                {students.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                        <p>{t('halaqa.noStudents', 'No students in this halaqa')}</p>
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        {students.map((student: any) => (
+                            <div key={student.id} className="border border-gray-200 rounded-lg p-6 bg-white">
+                                <h4 className="text-base font-semibold text-gray-900 mb-4">
+                                    {currentLang === 'ar' && student.name?.ar ? student.name.ar : student.name?.en || `Student #${student.id}`}
+                                </h4>
+                                <CreatePlanForm
+                                    halaqaId={createdHalaqa.id}
+                                    students={[student]}
+                                    activities={activities}
+                                    onSuccess={() => {
+                                        // Refresh halaqa data after plan creation
+                                        queryClient.invalidateQueries({ queryKey: ['halaqa', createdHalaqa.id] });
+                                    }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Navigation Buttons */}
+                <div className="flex justify-between gap-4 pt-4 border-t border-gray-200">
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={handleFinish}
+                        >
+                            {t('common.finish', 'Finish')}
+                        </Button>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="space-y-6">
+            {/* Step Indicator */}
+            <div className="flex items-center justify-center gap-4 pb-6 border-b border-gray-200">
+                <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-primary-600' : 'text-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                        currentStep >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                        1
+                    </div>
+                    <span className="text-sm font-medium">{t('halaqa.step1', 'Halaqa Details')}</span>
+                </div>
+                <ChevronRightIcon width={20} height={20} className="text-gray-400" />
+                <div className={`flex items-center gap-2 ${currentStep >= 2 ? 'text-primary-600' : 'text-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                        currentStep >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                        2
+                    </div>
+                    <span className="text-sm font-medium">{t('halaqa.step2', 'Create Plans (Optional)')}</span>
+                </div>
+            </div>
+
+            {/* Step Content */}
+            {currentStep === 1 ? renderStep1() : renderStep2()}
+        </div>
     );
 };
 
