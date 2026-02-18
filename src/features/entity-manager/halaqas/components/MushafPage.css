@@ -1,5 +1,6 @@
 /* MushafPage Component Styles */
 
+
 .mushaf-page {
     display: flex;
     justify-content: center;
@@ -25,6 +26,19 @@
     /* Allow container to expand with content */
     display: flex;
     flex-direction: column;
+    margin: 0 auto;
+}
+
+/* Smaller size for pages 1 and 2 to reduce white space */
+.mushaf-border-large {
+    width: 450px;
+    min-height: 675px;
+    max-width: 85vw;
+}
+
+.mushaf-border-large .page-content {
+    padding: 37px 30px;
+    min-height: 675px;
 }
 
 .page-content {
@@ -53,6 +67,10 @@
     gap: 20px;
     position: relative;
     z-index: 2;
+}
+
+.mushaf-border-large .font-loading {
+    min-height: 675px;
 }
 
 .font-loading p {
@@ -145,10 +163,10 @@
 }
 
 .word.selected {
-    background: rgba(102, 126, 234, 0.5);
-    padding: 2px 4px;
-    border-radius: 3px;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+    background: rgba(102, 126, 234, 0.15);
+    padding: 1px 2px;
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.15);
     /* Allow text to scale naturally */
     display: inline;
     box-sizing: border-box;

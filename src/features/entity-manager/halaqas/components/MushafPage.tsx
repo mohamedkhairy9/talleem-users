@@ -180,9 +180,12 @@ const MushafPage: React.FC<MushafPageProps> = ({
         );
     }
 
+    // Determine if this is page 1 or 2 for larger sizing
+    const isSpecialPage = currentPage === 1 || currentPage === 2;
+    
     return (
         <div className="mushaf-page">
-            <div className="mushaf-border">
+            <div className={`mushaf-border ${isSpecialPage ? 'mushaf-border-large' : ''}`}>
                 <div 
                     className="page-content"
                     ref={el => {

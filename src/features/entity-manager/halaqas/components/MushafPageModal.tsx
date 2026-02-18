@@ -171,7 +171,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
 
             {/* Modal */}
             <div className="relative flex min-h-full items-center justify-center p-4 pt-20 md:pt-24 z-10">
-                <div className="relative bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)] overflow-hidden">
+                <div className="relative bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)] overflow-hidden">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-white">
                         <h3 className="text-lg font-semibold text-gray-900">
