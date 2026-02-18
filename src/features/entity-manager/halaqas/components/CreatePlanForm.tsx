@@ -20,7 +20,7 @@ import { createPlanSchema, CreatePlanFormData } from '../schemas/plan.schema';
 import { quranSegmentsService, type QuranSegment, type SegmentAfterResponse } from '../services/quran-segments.service';
 import MushafPageModal from './MushafPageModal';
 import { loadSurahData, type SurahDataMap } from '@/utils/helpers/surahHelper';
-import { ChevronRightIcon } from '@/globals/icons';
+import { ChevronRightIcon, BookOpenIcon } from '@/globals/icons';
 
 interface CreatePlanFormProps {
     halaqaId: number | string;
@@ -104,6 +104,11 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
     const [showMushafModal, setShowMushafModal] = useState(false);
     const [mushafPageNumber, setMushafPageNumber] = useState<number | undefined>(undefined);
     const [selectedAyahsForMushaf, setSelectedAyahsForMushaf] = useState<Set<string>>(new Set());
+    
+    // Plan mushaf viewer state
+    const [showPlanMushafViewer, setShowPlanMushafViewer] = useState(false);
+    const [planStartVerseKey, setPlanStartVerseKey] = useState<string | undefined>(undefined);
+    const [planEndVerseKey, setPlanEndVerseKey] = useState<string | undefined>(undefined);
     
     // Surah data state
     const [surahData, setSurahData] = useState<SurahDataMap | null>(null);
@@ -765,6 +770,45 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                                     </p>
                                 </div>
                             )}
+
+                            {/* View Full Plan Button */}
+                            {((planType === 'daily_amount' && endSegmentData) || (planType === 'start_end' && (endSegmentViewData || selectedEndSegment))) && (
+                                <div className="mt-4 pt-4 border-t border-primary-200">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            // Use first_verse_key from selected start segment
+                                            const startKey = selectedStartSegment.first_verse_key;
+                                            let endKey: string;
+                                            
+                                            if (planType === 'daily_amount' && endSegmentData) {
+                                                // Use last_verse_key from target_segment in the API response
+                                                endKey = endSegmentData.target_segment.last_verse_key;
+                                            } else if (planType === 'start_end') {
+                                                if (endSegmentViewData) {
+                                                    // Use last_verse_key from target_segment in the API response
+                                                    endKey = endSegmentViewData.target_segment.last_verse_key;
+                                                } else if (selectedEndSegment) {
+                                                    // Fallback: use last_verse_key from selected segment
+                                                    endKey = selectedEndSegment.last_verse_key;
+                                                } else {
+                                                    return;
+                                                }
+                                            } else {
+                                                return;
+                                            }
+                                            
+                                            setPlanStartVerseKey(startKey);
+                                            setPlanEndVerseKey(endKey);
+                                            setShowPlanMushafViewer(true);
+                                        }}
+                                        className="w-full px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <BookOpenIcon width={18} height={18} />
+                                        {t('quran.viewFullPlan', 'View Full Plan in Mushaf')}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -848,6 +892,20 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                             }}
                             pageNumber={mushafPageNumber}
                             selectedAyahs={selectedAyahsForMushaf}
+                        />
+                    )}
+
+                    {/* Plan Mushaf Viewer Modal */}
+                    {showPlanMushafViewer && planStartVerseKey && planEndVerseKey && (
+                        <MushafPageModal
+                            isOpen={showPlanMushafViewer}
+                            onClose={() => {
+                                setShowPlanMushafViewer(false);
+                                setPlanStartVerseKey(undefined);
+                                setPlanEndVerseKey(undefined);
+                            }}
+                            startVerseKey={planStartVerseKey}
+                            endVerseKey={planEndVerseKey}
                         />
                     )}
 
