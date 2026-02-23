@@ -156,10 +156,10 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
         }
     }, [selectedStartSegment, currentUnit, setValue]);
 
-    // Set end_segment_verse_key when end segment is selected (start_end plan type).
+    // Set end_segment_verse_key when end segment is selected (start_end plan type). Use last verse of segment as end.
     useEffect(() => {
         if (currentUnit === 'segments' && planType === 'start_end' && selectedEndSegment) {
-            setValue('end_segment_verse_key', selectedEndSegment.first_verse_key);
+            setValue('end_segment_verse_key', selectedEndSegment.last_verse_key);
         }
     }, [selectedEndSegment, currentUnit, planType, setValue]);
 
@@ -265,7 +265,7 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             start_verse_key: startVerseKey,
             save_or_not: saveOrNot,
             ...(data.plan_type === 'daily_amount' && data.daily_amount ? { daily_amount: data.daily_amount } : {}),
-            ...(data.unit === 'segments' && data.plan_type === 'start_end' && data.end_segment_verse_key ? { end_segment_verse_key: data.end_segment_verse_key } : {}),
+            ...(data.unit === 'segments' && data.plan_type === 'start_end' && data.end_segment_verse_key ? { end_verse_key: data.end_segment_verse_key } : {}),
             ...(data.unit === 'parts' && data.plan_type === 'start_end' && data.end_juz_number ? { end_juz_number: data.end_juz_number } : {}),
             ...(data.unit === 'surahs' && data.plan_type === 'start_end' && data.end_surah_id ? { end_surah_id: data.end_surah_id } : {})
         };
@@ -350,60 +350,103 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Plan preview: data from API with save_or_not: 0 — not created yet; used to show plan and open in Mushaf; user confirms to create with save_or_not: 1 */}
-            {planPreviewData && (
-                <div className="rounded-lg border-2 border-primary-200 bg-primary-50 p-4 space-y-3">
-                    <h3 className="text-sm font-semibold text-primary-900">
-                        {t('plan.previewTitle', 'Plan preview (not created yet)')}
-                    </h3>
-                    <p className="text-sm text-primary-800">
-                        {t('plan.computedEnd', 'Computed end')}: <strong>{planPreviewData.computed_last_verse_key}</strong>
-                    </p>
-                    {planPreviewData.daily_schedule?.length > 0 && (
-                        <div className="text-xs text-primary-700">
-                            <span className="font-medium">{t('plan.dailySchedule', 'Daily schedule')}:</span>{' '}
-                            {planPreviewData.daily_schedule.length} {t('plan.days', 'days')}
-                            {planPreviewData.has_empty_days && (
-                                <span className="ml-2 text-amber-700">({t('plan.hasEmptyDays', 'Has empty days')})</span>
-                            )}
+            {/* Plan preview: data from API with save_or_not: 0 — not created yet. Shown for both daily_amount and start_end. */}
+            {planPreviewData && (() => {
+                const daysNeeded = planPreviewData.days_needed ?? 0;
+                const availableDays = planPreviewData.available_study_days ?? 0;
+                const isOverflow = daysNeeded > availableDays;   // plan doesn't fit → error, disable submit
+                const hasEmptyDays = daysNeeded < availableDays; // empty days → warning, allow submit
+                const canConfirmSave = !isOverflow;
+                return (
+                    <div className="rounded-lg border-2 border-primary-200 bg-primary-50 p-4 space-y-3">
+                        <h3 className="text-sm font-semibold text-primary-900">
+                            {t('plan.previewTitle', 'Plan preview (not created yet)')}
+                        </h3>
+                        {planPreviewData.plan_type === 'start_end' ? (
+                            <>
+                                <p className="text-sm text-primary-800">
+                                    {t('quran.startSegment', 'Start')}: <strong>{planPreviewData.start_verse_key}</strong>
+                                </p>
+                                <p className="text-sm text-primary-800">
+                                    {t('quran.endSegment', 'End')}: <strong>{planPreviewData.end_verse_key ?? planPreviewData.computed_last_verse_key}</strong>
+                                </p>
+                            </>
+                        ) : (
+                            <p className="text-sm text-primary-800">
+                                {t('plan.computedEnd', 'Computed end')}: <strong>{planPreviewData.computed_last_verse_key}</strong>
+                            </p>
+                        )}
+                        {planPreviewData.daily_schedule?.length > 0 && (
+                            <div className="text-xs text-primary-700">
+                                <span className="font-medium">{t('plan.dailySchedule', 'Daily schedule')}:</span>{' '}
+                                {planPreviewData.daily_schedule.length} {t('plan.days', 'days')}
+                                {hasEmptyDays && (
+                                    <span className="ml-2 text-amber-700">({t('plan.hasEmptyDays', 'Has empty days')})</span>
+                                )}
+                            </div>
+                        )}
+                        {/* days_needed > available_study_days: error — plan does not fit; disable submit */}
+                        {isOverflow && (
+                            <div className="rounded-lg border border-red-300 bg-red-50 p-3">
+                                <p className="text-sm font-medium text-red-800">
+                                    {t('plan.errorPlanDoesNotFit', 'This plan does not fit the available study days. Plan needs {daysNeeded} days but only {availableDays} days are available. Please reduce the range or increase daily amount.')
+                                        .replace('{daysNeeded}', String(daysNeeded))
+                                        .replace('{availableDays}', String(availableDays))}
+                                </p>
+                                {planPreviewData.warning && (
+                                    <p className="text-sm text-red-700 mt-1">{planPreviewData.warning}</p>
+                                )}
+                            </div>
+                        )}
+                        {/* days_needed < available_study_days: warning — empty days; allow submit */}
+                        {hasEmptyDays && !isOverflow && (
+                            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
+                                <p className="text-sm font-medium text-amber-800">
+                                    {t('plan.warningEmptyDays', 'There will be empty days. You can still submit the plan.')}
+                                </p>
+                                {planPreviewData.warning && (
+                                    <p className="text-sm text-amber-700 mt-1">{planPreviewData.warning}</p>
+                                )}
+                            </div>
+                        )}
+                        {/* days_needed === available_study_days: only show API warning if present */}
+                        {!isOverflow && !hasEmptyDays && planPreviewData.warning && (
+                            <p className="text-sm text-amber-700">{planPreviewData.warning}</p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2 pt-2">
+                            <Button
+                                type="button"
+                                variant="primary"
+                                loading={createPlanMutation.isPending}
+                                disabled={createPlanMutation.isPending || !canConfirmSave}
+                                onClick={handleConfirmSave}
+                            >
+                                {createPlanMutation.isPending ? t('common.loading', 'Loading...') : t('plan.confirmAndSave', 'Confirm & Save')}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                disabled={createPlanMutation.isPending}
+                                onClick={() => setPlanPreviewData(null)}
+                            >
+                                {t('plan.backToEdit', 'Back to edit')}
+                            </Button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPlanStartVerseKey(planPreviewData.start_verse_key);
+                                    setPlanEndVerseKey(planPreviewData.end_verse_key ?? planPreviewData.computed_last_verse_key);
+                                    setShowPlanMushafViewer(true);
+                                }}
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-700 bg-primary-100 rounded-lg hover:bg-primary-200 transition-colors"
+                            >
+                                <BookOpenIcon width={18} height={18} />
+                                {t('quran.viewFullPlan', 'View Full Plan in Mushaf')}
+                            </button>
                         </div>
-                    )}
-                    {planPreviewData.warning && (
-                        <p className="text-sm text-amber-700">{planPreviewData.warning}</p>
-                    )}
-                    <div className="flex flex-wrap items-center gap-2 pt-2">
-                        <Button
-                            type="button"
-                            variant="primary"
-                            loading={createPlanMutation.isPending}
-                            disabled={createPlanMutation.isPending}
-                            onClick={handleConfirmSave}
-                        >
-                            {createPlanMutation.isPending ? t('common.loading', 'Loading...') : t('plan.confirmAndSave', 'Confirm & Save')}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            disabled={createPlanMutation.isPending}
-                            onClick={() => setPlanPreviewData(null)}
-                        >
-                            {t('plan.backToEdit', 'Back to edit')}
-                        </Button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setPlanStartVerseKey(planPreviewData.start_verse_key);
-                                setPlanEndVerseKey(planPreviewData.computed_last_verse_key);
-                                setShowPlanMushafViewer(true);
-                            }}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-700 bg-primary-100 rounded-lg hover:bg-primary-200 transition-colors"
-                        >
-                            <BookOpenIcon width={18} height={18} />
-                            {t('quran.viewFullPlan', 'View Full Plan in Mushaf')}
-                        </button>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* Activity */}
             <FormSelect
