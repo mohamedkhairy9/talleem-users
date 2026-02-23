@@ -193,3 +193,150 @@ export function clearSurahDataCache(): void {
     surahDataPromise = null;
 }
 
+/**
+ * First verse key for each juz (1–30). Used to send start_verse_key when unit is "parts".
+ * Source: canonical Quran juz divisions (e.g. Juz 1 = 1:1, Juz 2 = 2:142, Juz 3 = 2:253).
+ */
+const JUZ_FIRST_VERSE_KEY: Record<number, string> = {
+    1: '1:1',
+    2: '2:142',
+    3: '2:253',
+    4: '3:93',
+    5: '4:24',
+    6: '4:148',
+    7: '5:82',
+    8: '6:111',
+    9: '7:88',
+    10: '8:41',
+    11: '9:93',
+    12: '11:6',
+    13: '12:53',
+    14: '15:1',
+    15: '17:1',
+    16: '18:75',
+    17: '21:1',
+    18: '23:1',
+    19: '25:21',
+    20: '27:56',
+    21: '29:46',
+    22: '33:31',
+    23: '36:28',
+    24: '39:32',
+    25: '41:47',
+    26: '46:1',
+    27: '51:31',
+    28: '58:1',
+    29: '67:1',
+    30: '78:1'
+};
+
+/**
+ * Get the first verse key of a juz (1–30) from local data.
+ * Used when unit is "parts" to send start_verse_key to the plan API.
+ */
+export function getJuzFirstVerseKey(juzNumber: number): string | null {
+    if (juzNumber >= 1 && juzNumber <= 30) {
+        return JUZ_FIRST_VERSE_KEY[juzNumber] ?? null;
+    }
+    return null;
+}
+
+/**
+ * Get the first verse key of a surah (surah_id:1).
+ * Used when unit is "surahs" to send start_verse_key to the plan API.
+ */
+export function getSurahFirstVerseKey(surahId: number): string {
+    return `${surahId}:1`;
+}
+
+/**
+ * Verse count per surah (1–114), standard Uthmani Quran.
+ * Used for verse-to-page fallback when DB lookup fails.
+ */
+const VERSE_COUNT_PER_SURAH: number[] = [
+    7, 286, 200, 176, 120, 165, 206, 75, 129, 109, 123, 111, 43, 52, 99, 128, 111, 110, 98, 135, 112, 78, 118, 64, 77, 227, 93, 88, 69, 60, 34, 30, 73, 54, 45, 83, 182, 88, 75, 85, 54, 53, 89, 59, 37, 35, 38, 29, 18, 45, 60, 49, 62, 55, 78, 96, 29, 22, 24, 13, 14, 11, 11, 18, 12, 12, 30, 52, 52, 44, 28, 28, 20, 56, 40, 31, 50, 40, 46, 42, 29, 19, 36, 25, 22, 17, 19, 26, 30, 20, 15, 21, 11, 8, 8, 19, 5, 8, 8, 11, 11, 8, 3, 9, 5, 4, 7, 3, 6, 3, 5, 4, 5, 6
+];
+
+/** Juz page ranges (start_page, end_page) for 604-page Mushaf. Fallback when JSON not loaded. */
+/** Verse count per surah (1–114), exported for last-verse check. */
+export const VERSE_COUNT_PER_SURAH_READONLY: readonly number[] = VERSE_COUNT_PER_SURAH;
+
+/** Whether (surah, ayah) is the last verse of that surah (long verses often need an extra page in 604 layout). */
+export function isLastVerseOfSurah(surah: number, ayah: number): boolean {
+    if (surah < 1 || surah > 114) return false;
+    const max = VERSE_COUNT_PER_SURAH[surah - 1];
+    return max != null && ayah === max;
+}
+
+/** Compare two verse keys (e.g. "2:286" vs "3:1"). Returns -1 if a < b, 0 if equal, 1 if a > b. */
+export function compareVerseKeys(a: string, b: string): number {
+    const [as, aa] = a.trim().split(':').map(Number);
+    const [bs, ba] = b.trim().split(':').map(Number);
+    if (as !== bs) return as < bs ? -1 : 1;
+    if (aa !== ba) return aa < ba ? -1 : 1;
+    return 0;
+}
+
+/** One mushaf page entry: start and end verse keys (604-page Madani layout). */
+export interface MushafPageEntry {
+    page: number;
+    start_verse_key: string;
+    end_verse_key: string;
+}
+
+let mushafPagesCache: MushafPageEntry[] | null = null;
+let mushafPagesPromise: Promise<MushafPageEntry[]> | null = null;
+
+/**
+ * Load mushaf page boundaries from /data/mushaf_pages.json.
+ * Format: { "pages": [ { "page": 1, "start_verse_key": "1:1", "end_verse_key": "1:7" }, ... ] } (604 entries).
+ * Cached after first load.
+ */
+export function loadMushafPages(): Promise<MushafPageEntry[]> {
+    if (mushafPagesCache && mushafPagesCache.length === 604) return Promise.resolve(mushafPagesCache);
+    if (mushafPagesPromise) return mushafPagesPromise;
+    mushafPagesPromise = fetch('/data/mushaf_pages.json')
+        .then((r) => {
+            if (!r.ok) throw new Error(`mushaf_pages: ${r.status}`);
+            return r.json();
+        })
+        .then((data: { pages?: MushafPageEntry[] }) => {
+            const pages = Array.isArray(data?.pages) ? data.pages : [];
+            mushafPagesCache = pages.length === 604 ? pages : [];
+            mushafPagesPromise = null;
+            return mushafPagesCache!;
+        })
+        .catch((err) => {
+            mushafPagesPromise = null;
+            console.warn('Failed to load mushaf_pages.json:', err);
+            return [];
+        });
+    return mushafPagesPromise;
+}
+
+/**
+ * Get mushaf page number (1–604) for a verse key using the loaded pages array.
+ * Uses binary search on start_verse_key (pages are ordered), then checks the verse is within that page's end.
+ */
+export function getPageForVerseKey(verseKey: string, pages: MushafPageEntry[]): number {
+    const key = verseKey.trim();
+    if (!pages.length) return 1;
+    if (compareVerseKeys(key, pages[0].start_verse_key) < 0) return 1;
+    if (compareVerseKeys(key, pages[pages.length - 1].end_verse_key) > 0) return 604;
+
+    // Binary search: largest index i where pages[i].start_verse_key <= key
+    let lo = 0;
+    let hi = pages.length - 1;
+    while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1;
+        if (compareVerseKeys(pages[mid].start_verse_key, key) <= 0) lo = mid;
+        else hi = mid - 1;
+    }
+    const entry = pages[lo];
+    if (compareVerseKeys(key, entry.end_verse_key) <= 0) return entry.page;
+    return lo + 1 < pages.length ? pages[lo + 1].page : 604;
+}
+
+
+
+

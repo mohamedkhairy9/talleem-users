@@ -65,18 +65,23 @@ export const quranSegmentsService = {
 
     /**
      * Get segment after a specific segment
-     * GET /segment/after?first_segment_id=10&segments_number=31
+     * GET /segment/after?first_segment_id=10&segments_number=31&direction=incremental
      */
     getSegmentAfter: (
         firstSegmentId: number,
-        segmentsNumber: number
+        segmentsNumber: number,
+        direction?: 'incremental' | 'decremental'
     ): Promise<SegmentAfterResponse> => {
-        return axiosInstance.get('/segment/after', {
-            params: {
-                first_segment_id: firstSegmentId,
-                segments_number: segmentsNumber
-            }
-        });
+        const params: Record<string, string | number> = {
+            first_segment_id: firstSegmentId,
+            segments_number: segmentsNumber
+        };
+        
+        if (direction) {
+            params.direction = direction;
+        }
+        
+        return axiosInstance.get('/segment/after', { params });
     }
 };
 

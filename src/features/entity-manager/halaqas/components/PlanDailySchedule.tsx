@@ -4,18 +4,7 @@ import { CalendarIcon, BookOpenIcon } from '@/globals/icons';
 import MushafPageModal from './MushafPageModal';
 import { toast } from 'react-toastify';
 import { dbLoader } from '@/utils/helpers/databaseLoader';
-
-export interface DailyScheduleItem {
-    day: number;
-    date: string;
-    text: string;
-    to_text: string;
-    day_name: string;
-    from_text: string;
-    to_verse_id: number;
-    from_verse_id: number;
-    juz_numbers?: number[];
-}
+import type { DailyScheduleItem } from '../types/list.types';
 
 interface PlanDailyScheduleProps {
     dailySchedule: DailyScheduleItem[];
@@ -52,38 +41,27 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
         });
     }, []);
     
-    // Helper function to get verse key and page number from verse ID using local database
-    const getVerseInfoFromId = React.useCallback(async (verseId: number): Promise<{ verse_key: string; page_number: number } | null> => {
-        if (!wordsDb || !linesDb) return null;
+    // Helper function to get page number from verse key using local database
+    const getPageNumberFromVerseKey = React.useCallback(async (verseKey: string): Promise<number | null> => {
+        if (!wordsDb || !linesDb || !verseKey) return null;
         
         try {
-            // Step 1: Query the words database to find the verse location
-            const locationQuery = `SELECT DISTINCT location FROM words WHERE id = ${verseId} LIMIT 1`;
-            const locationResult = wordsDb.exec(locationQuery);
+            // verse_key format: "surah:ayah" (e.g., "1:1")
+            const [surah] = verseKey.split(':').map(Number);
             
-            if (!locationResult || locationResult.length === 0 || !locationResult[0].values || locationResult[0].values.length === 0) {
-                return null;
-            }
-            
-            const location = locationResult[0].values[0][0] as string; // verse_key format: "surah:ayah"
-            const [surah] = location.split(':').map(Number);
-            
-            // Step 2: Find word IDs that belong to this verse location
-            const wordsQuery = `SELECT id FROM words WHERE location = '${location}' ORDER BY id LIMIT 1`;
+            // Step 1: Find word IDs that belong to this verse location
+            const wordsQuery = `SELECT id FROM words WHERE location = '${verseKey}' ORDER BY id LIMIT 1`;
             const wordsResult = wordsDb.exec(wordsQuery);
             
             if (!wordsResult || wordsResult.length === 0 || !wordsResult[0].values || wordsResult[0].values.length === 0) {
                 // Fallback: approximate page based on surah
                 const fallbackPage = Math.max(1, Math.min(604, Math.floor((surah - 1) * 2) + 1));
-                return {
-                    verse_key: location,
-                    page_number: fallbackPage
-                };
+                return fallbackPage;
             }
             
             const wordId = wordsResult[0].values[0][0] as number;
             
-            // Step 3: Query lines database to find which page contains this word
+            // Step 2: Query lines database to find which page contains this word
             // Pages table has first_word_id and last_word_id, so we find the page where wordId falls in that range
             const pageQuery = `SELECT DISTINCT page_number FROM pages WHERE first_word_id <= ${wordId} AND last_word_id >= ${wordId} LIMIT 1`;
             const pageResult = linesDb.exec(pageQuery);
@@ -98,12 +76,9 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                 pageNumber = Math.max(1, Math.min(604, Math.floor((surah - 1) * 2) + 1));
             }
             
-            return {
-                verse_key: location,
-                page_number: pageNumber
-            };
+            return pageNumber;
         } catch (error) {
-            console.error('Error querying database for verse:', error);
+            console.error('Error querying database for verse key:', error);
             return null;
         }
     }, [wordsDb, linesDb]);
@@ -168,7 +143,7 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                         </div>
                         <div className="text-sm text-gray-700">
                             <span className="font-medium">
-                                {t('plan.verses', 'Verses')} {todaySchedule.from_verse_id} - {todaySchedule.to_verse_id}
+                                {t('plan.verses', 'Verses')} {todaySchedule.from_verse_key} - {todaySchedule.to_verse_key}
                             </span>
                             {todaySchedule.juz_numbers && todaySchedule.juz_numbers.length > 0 && (
                                 <span className="ml-2 text-primary-600">
@@ -194,22 +169,21 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                                     }
                                     
                                     try {
-                                        // Get verse information from verse IDs using local database
-                                        const fromVerse = await getVerseInfoFromId(todaySchedule.from_verse_id);
-                                        const toVerse = await getVerseInfoFromId(todaySchedule.to_verse_id);
+                                        // Get page number from verse keys using local database
+                                        const fromPage = await getPageNumberFromVerseKey(todaySchedule.from_verse_key);
                                         
-                                        if (!fromVerse || !toVerse) {
+                                        if (!fromPage) {
                                             toast.error(t('quran.verseNotFound', 'Verse information not found'));
                                             return;
                                         }
                                         
                                         // Use the page number from the first verse
-                                        setMushafPageNumber(fromVerse.page_number);
+                                        setMushafPageNumber(fromPage);
                                         
                                         // Create set of ayahs from first to last verse
                                         const ayahs = new Set<string>();
-                                        const [startSurah, startAyah] = fromVerse.verse_key.split(':').map(Number);
-                                        const [endSurah, endAyah] = toVerse.verse_key.split(':').map(Number);
+                                        const [startSurah, startAyah] = todaySchedule.from_verse_key.split(':').map(Number);
+                                        const [endSurah, endAyah] = todaySchedule.to_verse_key.split(':').map(Number);
                                         
                                         for (let s = startSurah; s <= endSurah; s++) {
                                             const startA = (s === startSurah) ? startAyah : 1;
@@ -303,7 +277,7 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                                                 <BookOpenIcon width={14} height={14} className="text-gray-400" />
                                                 <span className="text-gray-700">
                                                     <span className="font-medium">
-                                                        {t('plan.verses', 'Verses')} {item.from_verse_id} - {item.to_verse_id}
+                                                        {t('plan.verses', 'Verses')} {item.from_verse_key} - {item.to_verse_key}
                                                     </span>
                                                     {item.juz_numbers && item.juz_numbers.length > 0 && (
                                                         <span className="ml-2 text-primary-600">
@@ -339,22 +313,21 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                                                 }
                                                 
                                                 try {
-                                                    // Get verse information from verse IDs using local database
-                                                    const fromVerse = await getVerseInfoFromId(item.from_verse_id);
-                                                    const toVerse = await getVerseInfoFromId(item.to_verse_id);
+                                                    // Get page number from verse keys using local database
+                                                    const fromPage = await getPageNumberFromVerseKey(item.from_verse_key);
                                                     
-                                                    if (!fromVerse || !toVerse) {
+                                                    if (!fromPage) {
                                                         toast.error(t('quran.verseNotFound', 'Verse information not found'));
                                                         return;
                                                     }
                                                     
                                                     // Use the page number from the first verse
-                                                    setMushafPageNumber(fromVerse.page_number);
+                                                    setMushafPageNumber(fromPage);
                                                     
                                                     // Create set of ayahs from first to last verse
                                                     const ayahs = new Set<string>();
-                                                    const [startSurah, startAyah] = fromVerse.verse_key.split(':').map(Number);
-                                                    const [endSurah, endAyah] = toVerse.verse_key.split(':').map(Number);
+                                                    const [startSurah, startAyah] = item.from_verse_key.split(':').map(Number);
+                                                    const [endSurah, endAyah] = item.to_verse_key.split(':').map(Number);
                                                     
                                                     for (let s = startSurah; s <= endSurah; s++) {
                                                         const startA = (s === startSurah) ? startAyah : 1;

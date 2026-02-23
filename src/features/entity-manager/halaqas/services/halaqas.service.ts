@@ -51,19 +51,60 @@ export interface UpdateHalaqaPayload {
 /**
  * Create Plan Payload
  * POST /halaqas/:id/plans
+ * All units send start_verse_key (from local: segments = selected verse key, parts = juz first verse, surahs = surah_id:1).
+ * save_or_not: 0 = preview only (200 does NOT mean plan was created; response is used to show plan and open in Mushaf); 1 = actually create plans.
  */
 export interface CreatePlanPayload {
     activity: 'hifz' | 'tasbit' | 'murajaa';
-    student_id: number;
+    student_ids: number[];
     plan_type: 'daily_amount' | 'start_end';
     unit: 'segments' | 'parts' | 'surahs';
     direction: 'incremental' | 'decremental';
-    daily_amount: number;
-    // Conditional fields based on unit
-    start_segment_id?: number; // Required when unit is 'segments'
-    start_juz_number?: number; // Required when unit is 'parts'
-    start_surah_id?: number; // Required when unit is 'surahs'
-    end_segment_id?: number; // Required when unit is 'segments' and plan_type is 'start_end'
+    start_verse_key: string; // All units: "surah:ayah" e.g. "1:1"
+    daily_amount?: number; // Required when plan_type is 'daily_amount'
+    save_or_not: 0 | 1; // 0 = preview, 1 = save
+    // End range only when plan_type is 'start_end' (API may accept end_verse_key or legacy end_* fields)
+    end_verse_key?: string;
+    end_segment_verse_key?: string;
+    end_juz_number?: number;
+    end_surah_id?: number;
+}
+
+/** Daily schedule item from plan preview/save response */
+export interface PlanDailyScheduleItem {
+    day: number;
+    date: string;
+    from_verse_key: string;
+    to_verse_key: string;
+    juz_numbers: number[];
+}
+
+/** Plan preview/save response data */
+export interface CreatePlanResponseData {
+    halaqa_id: number;
+    activity: string;
+    student_ids: number[];
+    plan_type: string;
+    unit: string;
+    direction: string;
+    start_verse_key: string;
+    end_verse_key: string | null;
+    total_segments: number;
+    daily_target_segments: number;
+    days_needed: number;
+    available_study_days: number;
+    has_empty_days: boolean;
+    warning: string | null;
+    computed_last_verse_key: string;
+    daily_schedule: PlanDailyScheduleItem[];
+    students_missing_activity: unknown[];
+}
+
+/** Plan API response: preview (save_or_not=0) or save (save_or_not=1) */
+export interface CreatePlanResponse {
+    preview_only: boolean;
+    created_plans_count?: number;
+    data: CreatePlanResponseData;
 }
 
 /**
@@ -141,7 +182,7 @@ export const halaqasService = {
      * Create plan for a halaqa
      * POST /halaqas/:id/plans
      */
-    createPlan: (halaqaId: number | string, data: CreatePlanPayload): Promise<any> => {
+    createPlan: (halaqaId: number | string, data: CreatePlanPayload): Promise<{ data: CreatePlanResponse }> => {
         return axiosInstance.post(`/halaqas/${halaqaId}/plans`, data);
     },
 

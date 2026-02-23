@@ -482,7 +482,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                         {t('plan.dailyAmount', 'Daily Amount')}
                                                     </dt>
                                                     <dd className="mt-1 text-sm text-gray-900">
-                                                        {planData.plan.daily_amount} {t(`plan.unit.${planData.plan.unit}`, planData.plan.unit)}
+                                                        {planData.plan.daily_amount} {planData.plan.unit === 'parts' ? t('plan.unit.juz', 'Juz') : t(`plan.unit.${planData.plan.unit}`, planData.plan.unit)}
                                                     </dd>
                                                 </div>
                                                 <div>
@@ -490,7 +490,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                         {t('plan.unit', 'Unit')}
                                                     </dt>
                                                     <dd className="mt-1 text-sm text-gray-900">
-                                                        {t(`plan.unit.${planData.plan.unit}`, planData.plan.unit)}
+                                                        {planData.plan.unit === 'parts' ? t('plan.unit.juz', 'Juz') : t(`plan.unit.${planData.plan.unit}`, planData.plan.unit)}
                                                     </dd>
                                                 </div>
                                                 <div>

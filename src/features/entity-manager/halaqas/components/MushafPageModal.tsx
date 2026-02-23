@@ -1,16 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XIcon } from '@/globals/icons';
+import { XIcon, ChevronRightIcon } from '@/globals/icons';
 import MushafPage from './MushafPage';
 import { dbLoader } from '@/utils/helpers/databaseLoader';
 import { fontLoader } from '@/utils/helpers/fontLoader';
+import { loadMushafPages, getPageForVerseKey } from '@/utils/helpers/surahHelper';
 import type { Database } from 'sql.js';
 
 interface MushafPageModalProps {
     isOpen: boolean;
     onClose: () => void;
-    pageNumber: number;
+    pageNumber?: number; // Optional for single page view
     selectedAyahs?: Set<string>;
+    // Plan view mode
+    startVerseKey?: string; // Format: "surah:ayah" (e.g., "1:1")
+    endVerseKey?: string; // Format: "surah:ayah" (e.g., "1:7")
 }
 
 /**
@@ -21,7 +25,9 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     isOpen,
     onClose,
     pageNumber,
-    selectedAyahs = new Set()
+    selectedAyahs = new Set(),
+    startVerseKey,
+    endVerseKey
 }) => {
     const { t } = useTranslation();
     const [pageLines, setPageLines] = useState<any[]>([]);
@@ -31,6 +37,38 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     const [isLoading, setIsLoading] = useState(true);
     const [isFontLoading, setIsFontLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    
+    // Plan view mode state
+    const [planPages, setPlanPages] = useState<number[]>([]);
+    const [currentPageIndex, setCurrentPageIndex] = useState(0);
+    const [isLoadingPlanPages, setIsLoadingPlanPages] = useState(false);
+    
+    // Determine if we're in plan view mode
+    const isPlanView = !!startVerseKey && !!endVerseKey;
+    const currentPage = isPlanView && planPages.length > 0 
+        ? planPages[currentPageIndex] 
+        : (pageNumber || 1);
+    
+    // Generate selected ayahs for plan view (all verses between start and end)
+    const planSelectedAyahs = useMemo(() => {
+        if (!isPlanView || !startVerseKey || !endVerseKey) return new Set<string>();
+        
+        const ayahs = new Set<string>();
+        const [startSurah, startAyah] = startVerseKey.split(':').map(Number);
+        const [endSurah, endAyah] = endVerseKey.split(':').map(Number);
+        
+        for (let s = startSurah; s <= endSurah; s++) {
+            const startA = (s === startSurah) ? startAyah : 1;
+            const endA = (s === endSurah) ? endAyah : 999;
+            for (let a = startA; a <= endA; a++) {
+                ayahs.add(`${s}:${a}`);
+            }
+        }
+        
+        return ayahs;
+    }, [isPlanView, startVerseKey, endVerseKey]);
+    
+    const displaySelectedAyahs = isPlanView ? planSelectedAyahs : selectedAyahs;
 
     // Initialize databases on mount
     useEffect(() => {
@@ -65,31 +103,63 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
         };
     }, [isOpen]);
 
+    // Build full page list from start page to end page (inclusive)
+    const buildPageRange = React.useCallback((startPage: number, endPage: number): number[] => {
+        const low = Math.max(1, Math.min(startPage, endPage));
+        const high = Math.min(604, Math.max(startPage, endPage));
+        const pages: number[] = [];
+        for (let p = low; p <= high; p++) pages.push(p);
+        return pages;
+    }, []);
+
+    // Get all mushaf pages for a verse range using global mushaf_pages.json (start/end verse key per page)
+    const getAllPagesInRange = React.useCallback(async (startKey: string, endKey: string): Promise<number[]> => {
+        const pages = await loadMushafPages();
+        if (!pages.length) return [];
+        const startPage = getPageForVerseKey(startKey.trim(), pages);
+        const endPage = getPageForVerseKey(endKey.trim(), pages);
+        return buildPageRange(startPage, endPage);
+    }, [buildPageRange]);
+
+    // Load plan pages when in plan view (from mushaf_pages.json)
+    useEffect(() => {
+        if (!isOpen || !isPlanView || !startVerseKey || !endVerseKey) return;
+
+        setIsLoadingPlanPages(true);
+        getAllPagesInRange(startVerseKey, endVerseKey)
+            .then((pages) => {
+                setPlanPages(pages);
+                setCurrentPageIndex(0);
+            })
+            .catch((err) => console.error('Error loading plan pages:', err))
+            .finally(() => setIsLoadingPlanPages(false));
+    }, [isOpen, isPlanView, startVerseKey, endVerseKey, getAllPagesInRange]);
+
     // Load page data when page number or databases change
     useEffect(() => {
-        if (!isOpen || !linesDb || pageNumber < 1 || pageNumber > 604) return;
+        if (!isOpen || !linesDb || currentPage < 1 || currentPage > 604) return;
 
         const loadPageWithFont = async () => {
             try {
                 setIsFontLoading(true);
                 
                 // Load font for the page
-                fontLoader.loadPageFont(pageNumber);
+                fontLoader.loadPageFont(currentPage);
                 
                 // Wait for font to load
                 if (document.fonts) {
-                    await document.fonts.load(`1em QuranicFont-${pageNumber}`);
+                    await document.fonts.load(`1em QuranicFont-${currentPage}`);
                     await new Promise(resolve => setTimeout(resolve, 100));
                 } else {
                     await new Promise(resolve => setTimeout(resolve, 300));
                 }
                 
                 // Load page lines
-                loadPage(pageNumber);
+                loadPage(currentPage);
                 setIsFontLoading(false);
             } catch (error) {
                 console.error('Error loading font:', error);
-                loadPage(pageNumber);
+                loadPage(currentPage);
                 setIsFontLoading(false);
             }
         };
@@ -155,7 +225,20 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
         };
 
         loadPageWithFont();
-    }, [pageNumber, linesDb, isOpen]);
+    }, [currentPage, linesDb, isOpen]);
+
+    // Navigation handlers
+    const goToNextPage = () => {
+        if (isPlanView && currentPageIndex < planPages.length - 1) {
+            setCurrentPageIndex(currentPageIndex + 1);
+        }
+    };
+
+    const goToPrevPage = () => {
+        if (isPlanView && currentPageIndex > 0) {
+            setCurrentPageIndex(currentPageIndex - 1);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -171,12 +254,22 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
 
             {/* Modal */}
             <div className="relative flex min-h-full items-center justify-center p-4 pt-20 md:pt-24 z-10">
-                <div className="relative bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)] overflow-hidden">
+                <div className="relative bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)] overflow-hidden">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-white">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                            {t('quran.mushafPage', 'Mushaf Page')} - {t('quran.page', 'Page')} {pageNumber}
-                        </h3>
+                        <div className="flex items-center gap-4">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                                {isPlanView 
+                                    ? t('quran.planView', 'Plan View')
+                                    : `${t('quran.mushafPage', 'Mushaf Page')} - ${t('quran.page', 'Page')} ${currentPage}`
+                                }
+                            </h3>
+                            {isPlanView && planPages.length > 0 && (
+                                <span className="text-sm text-gray-500">
+                                    {t('quran.page', 'Page')} {currentPage} {t('quran.of', 'of')} {planPages.length}
+                                </span>
+                            )}
+                        </div>
                         <button
                             type="button"
                             onClick={onClose}
@@ -188,8 +281,48 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                     </div>
 
                     {/* Body */}
-                    <div className="px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
-                        {isLoading ? (
+                    <div className="relative px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
+                        {/* Navigation buttons for plan view */}
+                        {isPlanView && planPages.length > 1 && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={goToPrevPage}
+                                    disabled={currentPageIndex === 0}
+                                    className={`absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white shadow-lg border border-gray-300 transition-all ${
+                                        currentPageIndex === 0
+                                            ? 'opacity-50 cursor-not-allowed'
+                                            : 'hover:bg-gray-50 hover:shadow-xl'
+                                    }`}
+                                    aria-label={t('quran.previousPage', 'Previous Page')}
+                                >
+                                    <ChevronRightIcon 
+                                        width={24} 
+                                        height={24} 
+                                        className="text-gray-700 rotate-180" 
+                                    />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={goToNextPage}
+                                    disabled={currentPageIndex === planPages.length - 1}
+                                    className={`absolute right-4 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white shadow-lg border border-gray-300 transition-all ${
+                                        currentPageIndex === planPages.length - 1
+                                            ? 'opacity-50 cursor-not-allowed'
+                                            : 'hover:bg-gray-50 hover:shadow-xl'
+                                    }`}
+                                    aria-label={t('quran.nextPage', 'Next Page')}
+                                >
+                                    <ChevronRightIcon 
+                                        width={24} 
+                                        height={24} 
+                                        className="text-gray-700" 
+                                    />
+                                </button>
+                            </>
+                        )}
+                        
+                        {isLoading || isLoadingPlanPages ? (
                             <div className="flex items-center justify-center py-20">
                                 <div className="text-center">
                                     <div className="spinner mx-auto mb-4"></div>
@@ -211,10 +344,10 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                         ) : (
                             <MushafPage
                                 pageLines={pageLines}
-                                currentPage={pageNumber}
+                                currentPage={currentPage}
                                 wordsDb={wordsDb}
                                 surahData={surahData}
-                                selectedAyahs={selectedAyahs}
+                                selectedAyahs={displaySelectedAyahs}
                                 isFontLoading={isFontLoading}
                             />
                         )}

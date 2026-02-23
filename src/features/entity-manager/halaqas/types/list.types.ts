@@ -56,8 +56,8 @@ export interface DailyScheduleItem {
     to_text: string;
     day_name: string;
     from_text: string;
-    to_verse_id: number;
-    from_verse_id: number;
+    to_verse_key: string; // Format: "surah:ayah" (e.g., "1:2")
+    from_verse_key: string; // Format: "surah:ayah" (e.g., "1:1")
     juz_numbers?: number[];
 }
 
@@ -74,8 +74,8 @@ export interface Plan {
     unit: string;
     direction: string;
     daily_amount?: number;
-    start_verse_id?: number;
-    end_verse_id?: number;
+    start_verse_key?: string; // Format: "surah:ayah" (e.g., "1:1")
+    end_verse_key?: string; // Format: "surah:ayah" (e.g., "1:2")
     daily_schedule?: DailyScheduleItem[];
 }
 

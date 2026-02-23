@@ -27,7 +27,7 @@ export const PLAN_TYPES = [
 
 export const PLAN_UNITS = [
     { value: 'segments', labelKey: 'plan.unit.segments' },
-    { value: 'parts', labelKey: 'plan.unit.parts' },
+    { value: 'parts', labelKey: 'plan.unit.juz' }, // Display as "juz" to user, but API uses "parts"
     { value: 'surahs', labelKey: 'plan.unit.surahs' }
 ] as const;
 
