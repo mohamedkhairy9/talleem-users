@@ -277,6 +277,34 @@ export function compareVerseKeys(a: string, b: string): number {
     return 0;
 }
 
+/**
+ * Returns all verse keys between startKey and endKey (inclusive).
+ * If clipEnd is provided, only keys <= clipEnd are returned.
+ * If clipStart is provided, only keys >= clipStart are returned.
+ */
+export function verseKeysBetween(
+    startKey: string,
+    endKey: string,
+    clipStart?: string,
+    clipEnd?: string
+): string[] {
+    const [startSurah, startAyah] = startKey.trim().split(':').map(Number);
+    const [endSurah, endAyah] = endKey.trim().split(':').map(Number);
+    const keys: string[] = [];
+    for (let s = startSurah; s <= endSurah; s++) {
+        const maxAyah = VERSE_COUNT_PER_SURAH[s - 1] ?? 0;
+        const firstAyah = s === startSurah ? startAyah : 1;
+        const lastAyah = s === endSurah ? endAyah : maxAyah;
+        for (let a = firstAyah; a <= lastAyah; a++) {
+            const key = `${s}:${a}`;
+            if (clipStart && compareVerseKeys(key, clipStart) < 0) continue;
+            if (clipEnd && compareVerseKeys(key, clipEnd) > 0) continue;
+            keys.push(key);
+        }
+    }
+    return keys;
+}
+
 /** One mushaf page entry: start and end verse keys (604-page Madani layout). */
 export interface MushafPageEntry {
     page: number;

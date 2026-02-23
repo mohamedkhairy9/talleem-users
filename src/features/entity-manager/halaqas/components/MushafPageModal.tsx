@@ -4,7 +4,8 @@ import { XIcon, ChevronRightIcon } from '@/globals/icons';
 import MushafPage from './MushafPage';
 import { dbLoader } from '@/utils/helpers/databaseLoader';
 import { fontLoader } from '@/utils/helpers/fontLoader';
-import { loadMushafPages, getPageForVerseKey } from '@/utils/helpers/surahHelper';
+import { loadMushafPages, getPageForVerseKey, verseKeysBetween, compareVerseKeys } from '@/utils/helpers/surahHelper';
+import { quranSegmentsService, type QuranSegment } from '../services/quran-segments.service';
 import type { Database } from 'sql.js';
 
 interface MushafPageModalProps {
@@ -42,6 +43,10 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     const [planPages, setPlanPages] = useState<number[]>([]);
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
     const [isLoadingPlanPages, setIsLoadingPlanPages] = useState(false);
+    // Verse keys to highlight from API segments only (per plan range)
+    const [planSegmentVerseKeys, setPlanSegmentVerseKeys] = useState<Set<string>>(new Set());
+    // Memoized segments per page (pageNumber -> segments) to avoid re-requesting when navigating
+    const [segmentsByPageCache, setSegmentsByPageCache] = useState<Record<number, QuranSegment[]>>({});
     
     // Determine if we're in plan view mode
     const isPlanView = !!startVerseKey && !!endVerseKey;
@@ -49,24 +54,8 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
         ? planPages[currentPageIndex] 
         : (pageNumber || 1);
     
-    // Generate selected ayahs for plan view (all verses between start and end)
-    const planSelectedAyahs = useMemo(() => {
-        if (!isPlanView || !startVerseKey || !endVerseKey) return new Set<string>();
-        
-        const ayahs = new Set<string>();
-        const [startSurah, startAyah] = startVerseKey.split(':').map(Number);
-        const [endSurah, endAyah] = endVerseKey.split(':').map(Number);
-        
-        for (let s = startSurah; s <= endSurah; s++) {
-            const startA = (s === startSurah) ? startAyah : 1;
-            const endA = (s === endSurah) ? endAyah : 999;
-            for (let a = startA; a <= endA; a++) {
-                ayahs.add(`${s}:${a}`);
-            }
-        }
-        
-        return ayahs;
-    }, [isPlanView, startVerseKey, endVerseKey]);
+    // Plan view: highlight only verses that belong to segments from the API (not all verses in range)
+    const planSelectedAyahs = useMemo(() => planSegmentVerseKeys, [planSegmentVerseKeys]);
     
     const displaySelectedAyahs = isPlanView ? planSelectedAyahs : selectedAyahs;
 
@@ -121,11 +110,31 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
         return buildPageRange(startPage, endPage);
     }, [buildPageRange]);
 
-    // Load plan pages when in plan view (from mushaf_pages.json)
+    // Build verse keys set from segments clipped to plan range (shared for fetch and cache)
+    const buildVerseKeysFromSegments = React.useCallback(
+        (segs: QuranSegment[]) => {
+            if (!startVerseKey || !endVerseKey) return new Set<string>();
+            const verseKeys = new Set<string>();
+            for (const seg of segs) {
+                const segLast = seg.last_verse_key.trim();
+                const segFirst = seg.first_verse_key.trim();
+                if (compareVerseKeys(segLast, startVerseKey) < 0 || compareVerseKeys(segFirst, endVerseKey) > 0) continue;
+                const keys = verseKeysBetween(segFirst, segLast, startVerseKey, endVerseKey);
+                keys.forEach((k) => verseKeys.add(k));
+            }
+            return verseKeys;
+        },
+        [startVerseKey, endVerseKey]
+    );
+
+    // Load plan pages only when in plan view; clear segments cache for new plan
     useEffect(() => {
         if (!isOpen || !isPlanView || !startVerseKey || !endVerseKey) return;
 
         setIsLoadingPlanPages(true);
+        setPlanSegmentVerseKeys(new Set());
+        setSegmentsByPageCache({});
+
         getAllPagesInRange(startVerseKey, endVerseKey)
             .then((pages) => {
                 setPlanPages(pages);
@@ -134,6 +143,36 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
             .catch((err) => console.error('Error loading plan pages:', err))
             .finally(() => setIsLoadingPlanPages(false));
     }, [isOpen, isPlanView, startVerseKey, endVerseKey, getAllPagesInRange]);
+
+    // Fetch segments for the current page when in plan view; use cache if already loaded
+    useEffect(() => {
+        if (!isOpen || !isPlanView || !startVerseKey || !endVerseKey || currentPage < 1 || currentPage > 604) {
+            return;
+        }
+
+        const cached = segmentsByPageCache[currentPage];
+        if (cached !== undefined) {
+            setPlanSegmentVerseKeys(buildVerseKeysFromSegments(cached));
+            return;
+        }
+
+        let cancelled = false;
+        setPlanSegmentVerseKeys(new Set());
+
+        quranSegmentsService
+            .getSegmentsByPage(currentPage)
+            .then((data: any) => {
+                if (cancelled) return;
+                const segs: QuranSegment[] = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+                setSegmentsByPageCache((prev) => ({ ...prev, [currentPage]: segs }));
+                setPlanSegmentVerseKeys(buildVerseKeysFromSegments(segs));
+            })
+            .catch((err) => {
+                if (!cancelled) console.error('Error loading segments for page:', currentPage, err);
+            });
+
+        return () => { cancelled = true; };
+    }, [isOpen, isPlanView, startVerseKey, endVerseKey, currentPage, segmentsByPageCache, buildVerseKeysFromSegments]);
 
     // Load page data when page number or databases change
     useEffect(() => {
