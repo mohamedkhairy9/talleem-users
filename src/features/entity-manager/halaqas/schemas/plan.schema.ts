@@ -5,7 +5,7 @@ import * as yup from 'yup';
  */
 export const createPlanSchema = yup.object({
     activity: yup.string().oneOf(['hifz', 'tasbit', 'murajaa'], 'Activity must be hifz, tasbit, or murajaa').required('Activity is required'),
-    student_id: yup.number().required('Student is required').positive(),
+    student_ids: yup.array().of(yup.number().positive()).min(1, 'Select at least one student').required('At least one student is required'),
     plan_type: yup.string().oneOf(['daily_amount', 'start_end'], 'Plan type must be daily_amount or start_end').required('Plan type is required'),
     unit: yup.string().oneOf(['segments', 'parts', 'surahs'], 'Unit must be segments, parts, or surahs').required('Unit is required'),
     direction: yup.string().oneOf(['incremental', 'decremental'], 'Direction must be incremental or decremental').required('Direction is required'),
@@ -22,7 +22,7 @@ export const createPlanSchema = yup.object({
     }),
     start_juz_number: yup.number().when('unit', {
         is: 'parts',
-        then: (schema) => schema.required('Start juz number is required when unit is parts').positive('Start juz number must be positive'),
+        then: (schema) => schema.required('Start juz number is required when unit is parts').positive('Start juz number must be positive').max(30, 'Juz must be 1–30'),
         otherwise: (schema) => schema.notRequired()
     }),
     start_surah_id: yup.number().when('unit', {
@@ -53,7 +53,7 @@ export const createPlanSchema = yup.object({
  */
 export interface CreatePlanFormData {
     activity: 'hifz' | 'tasbit' | 'murajaa';
-    student_id: number;
+    student_ids: number[];
     plan_type: 'daily_amount' | 'start_end';
     unit: 'segments' | 'parts' | 'surahs';
     direction: 'incremental' | 'decremental';

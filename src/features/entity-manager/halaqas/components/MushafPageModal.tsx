@@ -4,6 +4,7 @@ import { XIcon, ChevronRightIcon } from '@/globals/icons';
 import MushafPage from './MushafPage';
 import { dbLoader } from '@/utils/helpers/databaseLoader';
 import { fontLoader } from '@/utils/helpers/fontLoader';
+import { loadMushafPages, getPageForVerseKey } from '@/utils/helpers/surahHelper';
 import type { Database } from 'sql.js';
 
 interface MushafPageModalProps {
@@ -102,139 +103,37 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
         };
     }, [isOpen]);
 
-    // Helper function to get page number from verse key
-    const getPageNumberFromVerseKey = React.useCallback((verseKey: string): number | null => {
-        if (!wordsDb || !linesDb || !verseKey) return null;
-        
-        try {
-            const [surah] = verseKey.split(':').map(Number);
-            const wordsQuery = `SELECT id FROM words WHERE location = '${verseKey}' ORDER BY id LIMIT 1`;
-            const wordsResult = wordsDb.exec(wordsQuery);
-            
-            if (!wordsResult || wordsResult.length === 0 || !wordsResult[0].values || wordsResult[0].values.length === 0) {
-                return Math.max(1, Math.min(604, Math.floor((surah - 1) * 2) + 1));
-            }
-            
-            const wordId = wordsResult[0].values[0][0] as number;
-            const pageQuery = `SELECT DISTINCT page_number FROM pages WHERE first_word_id <= ${wordId} AND last_word_id >= ${wordId} LIMIT 1`;
-            const pageResult = linesDb.exec(pageQuery);
-            
-            if (pageResult && pageResult.length > 0 && pageResult[0].values && pageResult[0].values.length > 0) {
-                const columns = pageResult[0].columns;
-                const pageIndex = columns && Array.isArray(columns) ? columns.indexOf('page_number') : 0;
-                return pageResult[0].values[0][pageIndex] as number;
-            }
-            
-            return Math.max(1, Math.min(604, Math.floor((surah - 1) * 2) + 1));
-        } catch (error) {
-            console.error('Error querying database for verse key:', error);
-            return null;
-        }
-    }, [wordsDb, linesDb]);
+    // Build full page list from start page to end page (inclusive)
+    const buildPageRange = React.useCallback((startPage: number, endPage: number): number[] => {
+        const low = Math.max(1, Math.min(startPage, endPage));
+        const high = Math.min(604, Math.max(startPage, endPage));
+        const pages: number[] = [];
+        for (let p = low; p <= high; p++) pages.push(p);
+        return pages;
+    }, []);
 
-    // Get all pages between start and end verse keys using word IDs (more efficient)
+    // Get all mushaf pages for a verse range using global mushaf_pages.json (start/end verse key per page)
     const getAllPagesInRange = React.useCallback(async (startKey: string, endKey: string): Promise<number[]> => {
-        if (!wordsDb || !linesDb) return [];
-        
-        try {
-            // Get first word ID from start verse key
-            const startWordsQuery = `SELECT MIN(id) as first_word_id FROM words WHERE location = '${startKey}'`;
-            const startWordsResult = wordsDb.exec(startWordsQuery);
-            let firstWordId: number | null = null;
-            
-            if (startWordsResult && startWordsResult.length > 0 && startWordsResult[0].values && startWordsResult[0].values.length > 0) {
-                firstWordId = startWordsResult[0].values[0][0] as number;
-            }
-            
-            // Get last word ID from end verse key
-            const endWordsQuery = `SELECT MAX(id) as last_word_id FROM words WHERE location = '${endKey}'`;
-            const endWordsResult = wordsDb.exec(endWordsQuery);
-            let lastWordId: number | null = null;
-            
-            if (endWordsResult && endWordsResult.length > 0 && endWordsResult[0].values && endWordsResult[0].values.length > 0) {
-                lastWordId = endWordsResult[0].values[0][0] as number;
-            }
-            
-            // If we can't find word IDs, fallback to getting pages from verse keys
-            if (!firstWordId || !lastWordId) {
-                const startPage = getPageNumberFromVerseKey(startKey);
-                const endPage = getPageNumberFromVerseKey(endKey);
-                
-                if (startPage && endPage) {
-                    // Return all pages between start and end (inclusive)
-                    const pages: number[] = [];
-                    for (let p = Math.min(startPage, endPage); p <= Math.max(startPage, endPage); p++) {
-                        pages.push(p);
-                    }
-                    return pages;
-                }
-                return [];
-            }
-            
-            // Query all pages that contain words in the range
-            // A page contains words in range if:
-            // - page's first_word_id <= lastWordId AND page's last_word_id >= firstWordId
-            const pagesQuery = `SELECT DISTINCT page_number FROM pages 
-                WHERE (first_word_id <= ${lastWordId} AND last_word_id >= ${firstWordId})
-                ORDER BY page_number`;
-            const pagesResult = linesDb.exec(pagesQuery);
-            
-            if (pagesResult && pagesResult.length > 0 && pagesResult[0].values && pagesResult[0].values.length > 0) {
-                const columns = pagesResult[0].columns;
-                const pageIndex = columns && Array.isArray(columns) ? columns.indexOf('page_number') : 0;
-                return pagesResult[0].values.map((row: any) => row[pageIndex] as number);
-            }
-            
-            // Fallback: if query fails, get start and end pages and return range
-            const startPage = getPageNumberFromVerseKey(startKey);
-            const endPage = getPageNumberFromVerseKey(endKey);
-            
-            if (startPage && endPage) {
-                const pages: number[] = [];
-                for (let p = Math.min(startPage, endPage); p <= Math.max(startPage, endPage); p++) {
-                    pages.push(p);
-                }
-                return pages;
-            }
-            
-            return [];
-        } catch (error) {
-            console.error('Error getting pages in range:', error);
-            // Fallback: try to get at least start and end pages
-            try {
-                const startPage = getPageNumberFromVerseKey(startKey);
-                const endPage = getPageNumberFromVerseKey(endKey);
-                
-                if (startPage && endPage) {
-                    const pages: number[] = [];
-                    for (let p = Math.min(startPage, endPage); p <= Math.max(startPage, endPage); p++) {
-                        pages.push(p);
-                    }
-                    return pages;
-                }
-            } catch (fallbackError) {
-                console.error('Fallback error:', fallbackError);
-            }
-            return [];
-        }
-    }, [wordsDb, linesDb, getPageNumberFromVerseKey]);
+        const pages = await loadMushafPages();
+        if (!pages.length) return [];
+        const startPage = getPageForVerseKey(startKey.trim(), pages);
+        const endPage = getPageForVerseKey(endKey.trim(), pages);
+        return buildPageRange(startPage, endPage);
+    }, [buildPageRange]);
 
-    // Load plan pages when in plan view mode
+    // Load plan pages when in plan view (from mushaf_pages.json)
     useEffect(() => {
-        if (!isOpen || !isPlanView || !wordsDb || !linesDb || !startVerseKey || !endVerseKey) return;
-        
+        if (!isOpen || !isPlanView || !startVerseKey || !endVerseKey) return;
+
         setIsLoadingPlanPages(true);
         getAllPagesInRange(startVerseKey, endVerseKey)
             .then((pages) => {
                 setPlanPages(pages);
                 setCurrentPageIndex(0);
-                setIsLoadingPlanPages(false);
             })
-            .catch((error) => {
-                console.error('Error loading plan pages:', error);
-                setIsLoadingPlanPages(false);
-            });
-    }, [isOpen, isPlanView, wordsDb, linesDb, startVerseKey, endVerseKey, getAllPagesInRange]);
+            .catch((err) => console.error('Error loading plan pages:', err))
+            .finally(() => setIsLoadingPlanPages(false));
+    }, [isOpen, isPlanView, startVerseKey, endVerseKey, getAllPagesInRange]);
 
     // Load page data when page number or databases change
     useEffect(() => {
