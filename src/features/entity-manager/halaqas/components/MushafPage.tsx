@@ -177,7 +177,7 @@ const MushafPage: React.FC<MushafPageProps> = ({
                                         }
                                     }}
                                     style={{ 
-                                        cursor: isUsed ? 'not-allowed' : (isEditable ? 'pointer' : 'default') 
+                                        cursor: isUsed ? 'not-allowed' : (onWordClick || isEditable ? 'pointer' : 'default') 
                                     }}
                                     ref={el => {
                                         if (el) {
