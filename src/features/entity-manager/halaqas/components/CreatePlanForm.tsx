@@ -446,17 +446,53 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 );
             })()}
 
-            {/* Activity */}
-            <FormSelect
-                name="activity"
-                control={control}
-                label={t('plan.activity', 'Activity')}
-                required
-                options={activityOptions}
-                error={errors.activity?.message}
-            />
+            {/* From medium screens: 2 columns for Activity, Plan Type, Unit, Direction, Daily amount */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormSelect
+                    name="activity"
+                    control={control}
+                    label={t('plan.activity', 'Activity')}
+                    required
+                    options={activityOptions}
+                    error={errors.activity?.message}
+                />
+                <FormSelect
+                    name="plan_type"
+                    control={control}
+                    label={t('plan.planType', 'Plan Type')}
+                    required
+                    options={planTypeOptions}
+                    error={errors.plan_type?.message}
+                />
+                <FormSelect
+                    name="unit"
+                    control={control}
+                    label={t('plan.unit', 'Unit')}
+                    required
+                    options={unitOptions}
+                    error={errors.unit?.message}
+                />
+                <FormSelect
+                    name="direction"
+                    control={control}
+                    label={t('plan.direction', 'Direction')}
+                    required
+                    options={directionOptions}
+                    error={errors.direction?.message}
+                />
+                {planType === 'daily_amount' && (
+                    <FormInput
+                        name="daily_amount"
+                        control={control}
+                        label={t('plan.dailyAmount', 'Daily Amount')}
+                        required
+                        type="number"
+                        error={errors.daily_amount?.message}
+                    />
+                )}
+            </div>
 
-            {/* Students (multi-select) */}
+            {/* Students (multi-select) - full width */}
             <SelectRFH
                 name="student_ids"
                 control={control}
@@ -468,48 +504,6 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 error={errors.student_ids?.message}
                 placeholder={t('plan.selectStudents', 'Select one or more students')}
             />
-
-            {/* Plan Type */}
-            <FormSelect
-                name="plan_type"
-                control={control}
-                label={t('plan.planType', 'Plan Type')}
-                required
-                options={planTypeOptions}
-                error={errors.plan_type?.message}
-            />
-
-            {/* Unit */}
-            <FormSelect
-                name="unit"
-                control={control}
-                label={t('plan.unit', 'Unit')}
-                required
-                options={unitOptions}
-                error={errors.unit?.message}
-            />
-
-            {/* Direction */}
-            <FormSelect
-                name="direction"
-                control={control}
-                label={t('plan.direction', 'Direction')}
-                required
-                options={directionOptions}
-                error={errors.direction?.message}
-            />
-
-            {/* Daily Amount - only show when plan_type is daily_amount */}
-            {planType === 'daily_amount' && (
-                <FormInput
-                    name="daily_amount"
-                    control={control}
-                    label={t('plan.dailyAmount', 'Daily Amount')}
-                    required
-                    type="number"
-                    error={errors.daily_amount?.message}
-                />
-            )}
 
             {/* Conditional Start Fields based on Unit */}
             {currentUnit === 'segments' && (
