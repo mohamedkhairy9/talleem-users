@@ -205,7 +205,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
         });
     };
 
-    const currentLang = i18n.language || 'en';
+    const currentLang = i18n.language || 'ar';
 
     // Extract error message
     const errorMessage = error

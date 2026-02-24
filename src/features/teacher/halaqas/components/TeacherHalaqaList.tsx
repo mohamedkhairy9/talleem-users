@@ -15,7 +15,7 @@ const TeacherHalaqaList: React.FC = () => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { lang } = useParams<{ lang: string }>();
-    const currentLang = i18n.language || lang || 'en';
+    const currentLang = i18n.language || lang || 'ar';
 
     const { list, isLoading, error } = useTeacherHalaqas();
 

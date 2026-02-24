@@ -57,7 +57,7 @@ const HalaqaStudents: React.FC<HalaqaStudentsProps> = ({
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold text-gray-900 truncate">
-                                    {getLocalizedText(student.name) || `Student #${student.id}`}
+                                    {getLocalizedText(student.name) || t('plan.studentId', { id: student.id })}
                                 </p>
                                 {student.joined_at && (
                                     <p className="text-xs text-gray-500 mt-0.5">

@@ -2,7 +2,7 @@ import axios, { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'ax
 import { API_CONFIG } from './config';
 import { cookieService } from '@/utils/cookies';
 import { useAuthStore } from '@/stores';
-import i18n from '@/i18n';
+import i18n, { DEFAULT_LANG } from '@/i18n';
 import { ApiError } from '@/globals/types';
 
 /**
@@ -31,7 +31,7 @@ axiosInstance.interceptors.request.use(
         }
 
         // Set Accept-Language header based on current i18n language
-        const currentLanguage = i18n.language || 'en';
+        const currentLanguage = i18n.language || DEFAULT_LANG;
         if (config.headers) {
             config.headers['Accept-Language'] = currentLanguage;
         }
@@ -88,9 +88,9 @@ axiosInstance.interceptors.response.use(
             const authStore = useAuthStore.getState();
             authStore.logout();
             
-            // Redirect to login with current language (or default to en)
+            // Redirect to login with current language (or default to Arabic)
             const currentPath = window.location.pathname;
-            const lang = currentPath.split('/')[1] || 'en';
+            const lang = currentPath.split('/')[1] || DEFAULT_LANG;
             const loginPath = `/${lang}/login`;
             
             if (!currentPath.includes('/login')) {
@@ -102,7 +102,7 @@ axiosInstance.interceptors.response.use(
         if (error.response?.status === 403) {
             // Redirect to unauthorized page with current language
             const currentPath = window.location.pathname;
-            const lang = currentPath.split('/')[1] || 'en';
+            const lang = currentPath.split('/')[1] || DEFAULT_LANG;
             const unauthorizedPath = `/${lang}/unauthorized`;
             
             // Only redirect if not already on unauthorized page

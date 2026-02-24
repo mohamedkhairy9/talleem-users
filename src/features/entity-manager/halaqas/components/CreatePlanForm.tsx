@@ -38,7 +38,7 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
     const { t, i18n } = useTranslation();
     const queryClient = useQueryClient();
     const createPlanMutation = useCreatePlan();
-    const currentLang = i18n.language || 'en';
+    const currentLang = i18n.language || 'ar';
 
     // Get default activity from halaqa activities or fallback to 'hifz'
     const defaultActivity = React.useMemo(() => {
@@ -205,8 +205,8 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             return students.map(student => ({
                 value: student.id,
                 label: typeof student.name === 'object' && student.name
-                    ? (currentLang === 'ar' && student.name.ar ? student.name.ar : student.name.en) || `Student #${student.id}`
-                    : `Student #${student.id}`
+                    ? (currentLang === 'ar' && student.name.ar ? student.name.ar : student.name.en) || t('plan.studentId', { id: student.id })
+                    : t('plan.studentId', { id: student.id })
             }));
         }
         return allStudentsOptions;
@@ -389,9 +389,7 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                         {isOverflow && (
                             <div className="rounded-lg border border-red-300 bg-red-50 p-3">
                                 <p className="text-sm font-medium text-red-800">
-                                    {t('plan.errorPlanDoesNotFit', 'This plan does not fit the available study days. Plan needs {daysNeeded} days but only {availableDays} days are available. Please reduce the range or increase daily amount.')
-                                        .replace('{daysNeeded}', String(daysNeeded))
-                                        .replace('{availableDays}', String(availableDays))}
+                                    {t('plan.errorPlanDoesNotFit', { daysNeeded, availableDays })}
                                 </p>
                                 {planPreviewData.warning && (
                                     <p className="text-sm text-red-700 mt-1">{planPreviewData.warning}</p>

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores';
 import { cookieService } from '@/utils/cookies';
 import { Loader } from '@/globals/components';
 import { ROUTE_PATHS } from '@/config';
+import { DEFAULT_LANG } from '@/i18n';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -37,7 +38,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles = [], p
 
     if (!isAuthenticated || !cookieService.hasToken()) {
         // Redirect to login with current language
-        const lang = location.pathname.split('/')[1] || 'en';
+        const lang = location.pathname.split('/')[1] || DEFAULT_LANG;
         return <Navigate to={`/${lang}/${ROUTE_PATHS.LOGIN}`} state={{ from: location }} replace />;
     }
 
@@ -48,7 +49,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles = [], p
         );
         if (!hasRequiredRole) {
             // Redirect to unauthorized with current language
-            const lang = location.pathname.split('/')[1] || 'en';
+            const lang = location.pathname.split('/')[1] || DEFAULT_LANG;
             return <Navigate to={`/${lang}/${ROUTE_PATHS.UNAUTHORIZED}`} replace />;
         }
     }
@@ -60,7 +61,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles = [], p
         );
         if (!hasRequiredPermission) {
             // Redirect to unauthorized with current language
-            const lang = location.pathname.split('/')[1] || 'en';
+            const lang = location.pathname.split('/')[1] || DEFAULT_LANG;
             return <Navigate to={`/${lang}/${ROUTE_PATHS.UNAUTHORIZED}`} replace />;
         }
     }

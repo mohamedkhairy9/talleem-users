@@ -55,8 +55,8 @@ const HalaqaPlanCard: React.FC<HalaqaPlanCardProps> = ({
                                 className="text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline text-left"
                             >
                                 {planStudents.length === 1
-                                    ? getLocalizedText(planStudents[0]?.name) || `Student #${plan.student_id}`
-                                    : String(t('plan.studentCount', '{{count}} students', { count: planStudents.length }))}
+                                    ? getLocalizedText(planStudents[0]?.name) || t('plan.studentId', { id: plan.student_id })
+                                    : t('plan.studentCount', { count: planStudents.length })}
                             </button>
                         ) : (
                             <p className="text-sm font-medium text-gray-400">-</p>

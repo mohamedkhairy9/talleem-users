@@ -71,7 +71,7 @@ const CreateHalaqaForm: React.FC = () => {
     const { lang } = useParams<{ lang: string }>();
     const queryClient = useQueryClient();
     const createHalaqaMutation = useCreateHalaqa();
-    const currentLang = i18n.language || lang || 'en';
+    const currentLang = i18n.language || lang || 'ar';
     
     // Multi-step form state
     const [currentStep, setCurrentStep] = useState<1 | 2>(1);
@@ -274,7 +274,7 @@ const CreateHalaqaForm: React.FC = () => {
     // Handle finish (skip plan creation or finish after creating plans)
     const handleFinish = () => {
         queryClient.invalidateQueries({ queryKey: ['halaqas'] });
-        navigate(`/${lang || 'en'}/halaqas`);
+        navigate(`/${lang || 'ar'}/halaqas`);
     };
 
     // Render step 1: Halaqa creation form

@@ -16,7 +16,7 @@ import { createWarningsListColumns, WARNING_TYPES, WARNING_STATUS_OPTIONS } from
  */
 const WarningsList: React.FC = () => {
     const { t, i18n } = useTranslation();
-    const currentLang = i18n.language || 'en';
+    const currentLang = i18n.language || 'ar';
     
     const listState = useWarningsListState();
     const { params, page, perPage, search, warningType, status, setPage, setSearch, setWarningType, setStatus, resetFilters } = listState;
@@ -73,14 +73,14 @@ const WarningsList: React.FC = () => {
         
         deleteWarningMutation.mutate(deleteWarningId, {
             onSuccess: () => {
-                toast.success(t('warning.deleteSuccess', 'Warning deleted successfully'));
+                toast.success(t('warning.deleteSuccess'));
                 setIsDeleteModalOpen(false);
                 setDeleteWarningId(null);
             },
             onError: (error: any) => {
                 const errorMessage = error?.response?.data?.message ||
                                    error?.message ||
-                                   t('warning.deleteError', 'Error deleting warning');
+                                   t('warning.deleteError');
                 toast.error(errorMessage);
             }
         });
@@ -272,10 +272,10 @@ const WarningsList: React.FC = () => {
             {/* Delete Confirmation Modal */}
             <ConfirmationModal
                 isOpen={isDeleteModalOpen}
-                title={t('warning.deleteTitle', 'Delete Warning')}
-                message={t('warning.deleteMessage', 'Are you sure you want to delete this warning? This action cannot be undone.')}
-                confirmText={t('common.delete', 'Delete')}
-                cancelText={t('common.cancel', 'Cancel')}
+                title={t('warning.deleteTitle')}
+                message={t('warning.deleteMessage')}
+                confirmText={t('common.delete')}
+                cancelText={t('common.cancel')}
                 variant="danger"
                 onConfirm={confirmDelete}
                 onCancel={() => {

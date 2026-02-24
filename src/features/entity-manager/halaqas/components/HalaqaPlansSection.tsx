@@ -42,7 +42,7 @@ const HalaqaPlansSection: React.FC<HalaqaPlansSectionProps> = ({
                         <BookOpenIcon width={20} height={20} className="text-indigo-600" />
                     </div>
                     <h2 className="text-xl font-semibold text-gray-900">
-                        {t('plan.plans', 'Plans')}
+                        {t('plan.plans')}
                         {plans && plans.length > 0 && (
                             <span className="ml-2 text-sm font-normal text-gray-500">({plans.length})</span>
                         )}
@@ -71,7 +71,7 @@ const HalaqaPlansSection: React.FC<HalaqaPlansSectionProps> = ({
                             type="button"
                             onClick={onTogglePlanForm}
                             className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-colors"
-                            aria-label="Close"
+                            aria-label={t('common.close')}
                         >
                             <XIcon width={20} height={20} />
                         </button>

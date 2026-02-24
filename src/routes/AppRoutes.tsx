@@ -8,6 +8,7 @@ import UnauthorizedPage from '@/pages/UnauthorizedPage';
 import { Layout } from '@/globals/components';
 import { ROUTE_PATHS } from '@/config';
 import LanguageRouteWrapper from '@/utils/components/LanguageRouteWrapper';
+import { DEFAULT_LANG } from '@/i18n';
 import { useAuthStore } from '@/stores';
 
 /**
@@ -36,11 +37,11 @@ const AppRoutes: React.FC = () => {
 
     return (
         <Routes>
-            {/* Default redirect - redirect root to default language */}
-            <Route path="/" element={<Navigate to="/en" replace />} />
+            {/* Default redirect - redirect root to default language (Arabic) */}
+            <Route path="/" element={<Navigate to={`/${DEFAULT_LANG}`} replace />} />
             
-            {/* Redirect old /login to /en/login for backward compatibility */}
-            <Route path="/login" element={<Navigate to="/en/login" replace />} />
+            {/* Redirect old /login to default language login for backward compatibility */}
+            <Route path="/login" element={<Navigate to={`/${DEFAULT_LANG}/login`} replace />} />
             
             {/* Language-based routes */}
             <Route path="/:lang" element={<LanguageRouteWrapper />}>
@@ -89,8 +90,8 @@ const AppRoutes: React.FC = () => {
                 </Route>
             </Route>
 
-            {/* Catch all - redirect to default language */}
-            <Route path="*" element={<Navigate to="/en" replace />} />
+            {/* Catch all - redirect to default language (Arabic) */}
+            <Route path="*" element={<Navigate to={`/${DEFAULT_LANG}`} replace />} />
         </Routes>
     );
 };

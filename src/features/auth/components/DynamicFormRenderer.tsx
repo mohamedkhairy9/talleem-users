@@ -25,7 +25,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     setValue
 }: DynamicFormRendererProps<T>) => {
     const { t, i18n } = useTranslation();
-    const currentLang = i18n.language || 'en';
+    const currentLang = i18n.language || 'ar';
     
     // Use setValue prop or fallback to any type for dynamic field names
     const setValueFn = (setValue as any) || (() => {});

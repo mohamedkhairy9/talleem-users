@@ -26,7 +26,7 @@ const HalaqaList: React.FC = () => {
     const navigate = useNavigate();
     const { lang } = useParams<{ lang: string }>();
     const queryClient = useQueryClient();
-    const currentLang = i18n.language || lang || 'en';
+    const currentLang = i18n.language || lang || 'ar';
     const { showConfirmation } = useConfirmationModal();
 
     const listState = useHalaqasListState();

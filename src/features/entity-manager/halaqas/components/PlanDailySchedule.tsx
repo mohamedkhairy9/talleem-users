@@ -223,8 +223,8 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                             className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                         >
                             {showAll
-                                ? t('plan.showLess', 'Show Less')
-                                : t('plan.showAll', `Show All (${dailySchedule.length})`)}
+                                ? t('plan.showLess')
+                                : t('plan.showAll', { count: dailySchedule.length })}
                         </button>
                     )}
                 </div>

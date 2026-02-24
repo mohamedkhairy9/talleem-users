@@ -24,7 +24,7 @@ const HalaqaDetailPage: React.FC = () => {
     const { t, i18n } = useTranslation();
     const { id, lang } = useParams<{ id: string; lang: string }>();
     const navigate = useNavigate();
-    const currentLang = i18n.language || lang || 'en';
+    const currentLang = i18n.language || lang || 'ar';
     const [showPlanForm, setShowPlanForm] = useState(false);
 
     const { data, isLoading, error } = useHalaqa(id || '');
@@ -145,7 +145,7 @@ const HalaqaDetailPage: React.FC = () => {
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="flex flex-col items-center gap-4">
                     <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-200 border-t-primary-600"></div>
-                    <p className="text-gray-600 text-sm">{t('common.loading', 'Loading...')}</p>
+                    <p className="text-gray-600 text-sm">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -156,11 +156,11 @@ const HalaqaDetailPage: React.FC = () => {
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
                 <div className="text-center">
                     <AlertTriangleIcon width={64} height={64} className="mx-auto text-red-500 mb-4" />
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('halaqa.notFound', 'Halaqa not found')}</h2>
-                    <p className="text-gray-600">{t('halaqa.notFoundDescription', 'The halaqa you are looking for does not exist or has been removed.')}</p>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('halaqa.notFound')}</h2>
+                    <p className="text-gray-600">{t('halaqa.notFoundDescription')}</p>
                 </div>
                 <Button type="button" variant="primary" onClick={handleBack}>
-                    {t('common.back', 'Back to Halaqas')}
+                    {t('halaqa.backToHalaqas')}
                 </Button>
             </div>
         );
@@ -177,13 +177,13 @@ const HalaqaDetailPage: React.FC = () => {
                 <PageHeader
                     title={getLocalizedText(halaqa.name)}
                     breadcrumb={{
-                        label: t('halaqa.backToHalaqas', 'Back to Halaqas'),
+                        label: t('halaqa.backToHalaqas'),
                         onClick: handleBack
                     }}
                     badges={headerBadges}
                     actions={[
                         {
-                            label: t('common.edit', 'Edit'),
+                            label: t('common.edit'),
                             onClick: handleEdit,
                             variant: 'primary',
                             icon: <EditIcon width={16} height={16} className="me-2" />
@@ -254,20 +254,20 @@ const HalaqaDetailPage: React.FC = () => {
                                     <AlertTriangleIcon width={24} height={24} className="text-amber-600" />
                                 </div>
                                 <h3 className="text-lg font-semibold text-gray-900">
-                                    {t('plan.studentsWithMissingPlans', 'Students with missing plans')}
+                                    {t('plan.studentsWithMissingPlans')}
                                 </h3>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setShowMissingPlansModal(false)}
                                 className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg"
-                                aria-label="Close"
+                                aria-label={t('common.close')}
                             >
                                 <XIcon width={20} height={20} />
                             </button>
                         </div>
                         <p className="text-sm text-gray-600 mb-4">
-                            {t('plan.missingPlansDescription', 'The following students do not have plans for some activities. Add plans for them in the Plans section below.')}
+                            {t('plan.missingPlansDescription')}
                         </p>
                         <ul className="space-y-3 mb-6 max-h-48 overflow-y-auto">
                             {studentsWithMissingPlans.map((item) => (
@@ -276,17 +276,17 @@ const HalaqaDetailPage: React.FC = () => {
                                         {getLocalizedText(item.student_name)}
                                     </span>
                                     <span className="text-gray-500 ml-1">
-                                        — {t('plan.missingActivities', 'Missing')}: {item.missing_activities.join(', ')}
+                                        — {t('plan.missingActivities')}: {item.missing_activities.join(', ')}
                                     </span>
                                 </li>
                             ))}
                         </ul>
                         <div className="flex justify-end gap-2">
                             <Button type="button" variant="secondary" onClick={() => setShowMissingPlansModal(false)}>
-                                {t('common.close', 'Close')}
+                                {t('common.close')}
                             </Button>
                             <Button type="button" variant="primary" onClick={handleCloseMissingPlansModalAndScrollToPlans}>
-                                {t('plan.goToPlansSection', 'Go to Plans section')}
+                                {t('plan.goToPlansSection')}
                             </Button>
                         </div>
                     </div>

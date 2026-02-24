@@ -37,7 +37,7 @@ const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack })
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { lang } = useParams<{ lang: string }>();
-    const currentLang = lang || 'en';
+    const currentLang = lang || 'ar';
     const statusMutation = useCheckJoinRequestStatus();
     const [statusData, setStatusData] = useState<any>(null);
 

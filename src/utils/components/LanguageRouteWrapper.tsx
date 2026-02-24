@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useParams, Navigate, Outlet } from 'react-router-dom';
-import i18n from '@/i18n';
+import i18n, { DEFAULT_LANG } from '@/i18n';
 
 /**
  * LanguageRouteWrapper Component
@@ -17,9 +17,9 @@ const LanguageRouteWrapper: React.FC = () => {
 
     // Validate language parameter
     if (lang && !['en', 'ar'].includes(lang)) {
-        // Redirect to default language (en) if invalid language
+        // Redirect to default language (Arabic) if invalid language
         const currentPath = window.location.pathname.replace(`/${lang}`, '');
-        return <Navigate to={`/en${currentPath}`} replace />;
+        return <Navigate to={`/${DEFAULT_LANG}${currentPath}`} replace />;
     }
 
     return <Outlet />;

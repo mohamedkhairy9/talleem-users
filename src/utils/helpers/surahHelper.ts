@@ -126,7 +126,7 @@ export async function getSurahName(
  */
 export async function getSurahDisplayName(
     surahNumber: number | string,
-    locale: 'ar' | 'en' = 'en',
+    locale: 'ar' | 'en' = 'ar',
     surahData?: SurahDataMap
 ): Promise<string> {
     if (locale === 'ar') {
@@ -158,7 +158,7 @@ export async function getSurahGlyph(
  */
 export async function getSurahInfo(
     surahNumber: number | string,
-    locale: 'ar' | 'en' = 'en',
+    locale: 'ar' | 'en' = 'ar',
     surahData?: SurahDataMap
 ): Promise<{
     id: number;
@@ -365,6 +365,78 @@ export function getPageForVerseKey(verseKey: string, pages: MushafPageEntry[]): 
     return lo + 1 < pages.length ? pages[lo + 1].page : 604;
 }
 
+/** Juz page range (from juz_pages.json). */
+export interface JuzPageEntry {
+    juz: number;
+    start_page: number;
+    end_page: number;
+}
+
+let juzPagesCache: JuzPageEntry[] | null = null;
+let juzPagesPromise: Promise<JuzPageEntry[]> | null = null;
+
+/**
+ * Load juz page ranges from /data/juz_pages.json.
+ * Cached after first load.
+ */
+export function loadJuzPages(): Promise<JuzPageEntry[]> {
+    if (juzPagesCache && juzPagesCache.length === 30) return Promise.resolve(juzPagesCache);
+    if (juzPagesPromise) return juzPagesPromise;
+    juzPagesPromise = fetch('/data/juz_pages.json')
+        .then((r) => {
+            if (!r.ok) throw new Error(`juz_pages: ${r.status}`);
+            return r.json();
+        })
+        .then((data: JuzPageEntry[] | { [key: string]: unknown }[]) => {
+            const arr = Array.isArray(data) ? data : [];
+            juzPagesCache = arr.length === 30 ? (arr as JuzPageEntry[]) : [];
+            juzPagesPromise = null;
+            return juzPagesCache!;
+        })
+        .catch((err) => {
+            juzPagesPromise = null;
+            console.warn('Failed to load juz_pages.json:', err);
+            return [];
+        });
+    return juzPagesPromise;
+}
+
+/**
+ * Get juz number (1–30) for a mushaf page number.
+ * Requires juz pages to be loaded (e.g. from loadJuzPages()).
+ */
+export function getJuzForPage(pageNum: number, juzPages: JuzPageEntry[]): number {
+    if (!juzPages.length || pageNum < 1 || pageNum > 604) return 1;
+    const entry = juzPages.find((j) => pageNum >= j.start_page && pageNum <= j.end_page);
+    return entry ? entry.juz : 1;
+}
+
+/**
+ * Get surah number (1–114) for the first verse on a mushaf page.
+ * Requires mushaf pages to be loaded (e.g. from loadMushafPages()).
+ */
+export function getSurahNumberForPage(pageNum: number, mushafPages: MushafPageEntry[]): number {
+    if (!mushafPages.length || pageNum < 1 || pageNum > 604) return 1;
+    const index = pageNum - 1;
+    if (index >= mushafPages.length) return 114;
+    const startKey = mushafPages[index]?.start_verse_key;
+    if (!startKey) return 1;
+    const surah = parseInt(startKey.split(':')[0], 10);
+    return Number.isNaN(surah) ? 1 : Math.max(1, Math.min(114, surah));
+}
+
+/**
+ * Get localized surah name for a surah number.
+ * @param surahNumber 1–114
+ * @param surahData from loadSurahData()
+ * @param lang 'en' | 'ar'
+ */
+export function getSurahNameForPage(surahNumber: number, surahData: SurahDataMap | null, lang: string): string {
+    if (!surahData || surahNumber < 1 || surahNumber > 114) return String(surahNumber);
+    const surah = surahData[String(surahNumber)];
+    if (!surah) return String(surahNumber);
+    return lang === 'ar' ? (surah.name_arabic || surah.name_simple || surah.name || '') : (surah.name_simple || surah.name || surah.name_arabic || '');
+}
 
 
 

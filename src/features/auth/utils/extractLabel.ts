@@ -1,4 +1,4 @@
-import i18n from '@/i18n';
+import i18n, { DEFAULT_LANG } from '@/i18n';
 
 /**
  * Extract label based on current language from bilingual format
@@ -9,7 +9,7 @@ import i18n from '@/i18n';
 export const extractLabel = (label: string | undefined | null): string => {
     if (!label) return '';
     
-    const currentLang = i18n.language || 'en';
+    const currentLang = i18n.language || DEFAULT_LANG;
     
     // Check if label contains the separator pattern (Arabic / English or Arabic/English)
     // Pattern: Arabic text followed by optional spaces, slash, optional spaces, English text

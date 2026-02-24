@@ -13,7 +13,7 @@ const EditHalaqaPage: React.FC = () => {
     const navigate = useNavigate();
 
     const handleBack = () => {
-        navigate(`/${lang || 'en'}/halaqas/${id}`);
+        navigate(`/${lang || 'ar'}/halaqas/${id}`);
     };
 
     return (

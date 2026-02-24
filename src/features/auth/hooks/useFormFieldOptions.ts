@@ -39,7 +39,7 @@ export const useFormFieldOptions = (
     params?: { city_id?: number | string }
 ) => {
     const { i18n } = useTranslation();
-    const currentLang = i18n.language || 'en';
+    const currentLang = i18n.language || 'ar';
 
     const query = useQuery({
         queryKey: ['formFieldOptions', fieldKey, params],

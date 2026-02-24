@@ -13,7 +13,7 @@ const CreateHalaqaPage: React.FC = () => {
     const navigate = useNavigate();
 
     const handleBack = () => {
-        navigate(`/${lang || 'en'}/halaqas`);
+        navigate(`/${lang || 'ar'}/halaqas`);
     };
 
     return (

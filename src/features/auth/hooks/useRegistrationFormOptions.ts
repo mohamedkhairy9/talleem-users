@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
  */
 export const useRegistrationFormOptions = () => {
     const { i18n } = useTranslation();
-    const currentLang = i18n.language || 'en';
+    const currentLang = i18n.language || 'ar';
 
     // Fetch all options in parallel
     const branchesQuery = useQuery({
@@ -103,7 +103,7 @@ export const useRegistrationFormOptions = () => {
  */
 export const useNeighborhoodsOptions = (cityId: number | string | null | undefined) => {
     const { i18n } = useTranslation();
-    const currentLang = i18n.language || 'en';
+    const currentLang = i18n.language || 'ar';
 
     const query = useQuery({
         queryKey: ['formOptions', 'neighborhoods', cityId],

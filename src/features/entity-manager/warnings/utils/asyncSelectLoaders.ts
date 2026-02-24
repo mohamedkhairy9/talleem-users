@@ -32,7 +32,7 @@ function debounce<T extends (...args: any[]) => Promise<any>>(
  * Transform API response to SelectRFHOption format
  */
 function transformToOptions(items: any[] = []): SelectRFHOption[] {
-    const currentLang = i18n.language || 'en';
+    const currentLang = i18n.language || 'ar';
     return items.map((item) => {
         const id = item.id || item.value;
         let label = '';
