@@ -695,7 +695,10 @@ const CreateHalaqaForm: React.FC = () => {
         </form>
     );
 
-    // Render step 2: Plan creation for students
+    // Step 2: number of plan form slots (user can add another plan)
+    const [planFormCount, setPlanFormCount] = useState(1);
+
+    // Render step 2: Plan creation for students (multi-student per plan; multiple plans via "Add another plan")
     const renderStep2 = () => {
         if (!createdHalaqa) return null;
 
@@ -719,34 +722,52 @@ const CreateHalaqaForm: React.FC = () => {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {students.map((student: any) => (
-                            <div key={student.id} className="border border-gray-200 rounded-lg p-6 bg-white">
-                                <h4 className="text-base font-semibold text-gray-900 mb-4">
-                                    {currentLang === 'ar' && student.name?.ar ? student.name.ar : student.name?.en || `Student #${student.id}`}
-                                </h4>
+                        {Array.from({ length: planFormCount }, (_, index) => (
+                            <div key={index} className="border border-gray-200 rounded-lg p-6 bg-white">
+                                {planFormCount > 1 && (
+                                    <div className="flex items-center justify-between mb-4">
+                                        <span className="text-sm font-medium text-gray-500">
+                                            {t('plan.planNumber', 'Plan')} {index + 1}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPlanFormCount((c) => Math.max(1, c - 1))}
+                                            className="text-sm text-red-600 hover:text-red-700"
+                                        >
+                                            {t('plan.removePlan', 'Remove this plan')}
+                                        </button>
+                                    </div>
+                                )}
                                 <CreatePlanForm
                                     halaqaId={createdHalaqa.id}
-                                    students={[student]}
+                                    students={students}
                                     activities={activities}
                                     onSuccess={() => {
-                                        // Refresh halaqa data after plan creation
                                         queryClient.invalidateQueries({ queryKey: ['halaqa', createdHalaqa.id] });
                                     }}
                                 />
                             </div>
                         ))}
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setPlanFormCount((c) => c + 1)}
+                        >
+                            <ClipboardCheckIcon width={16} height={16} className="me-2" />
+                            {t('plan.addAnotherPlan', 'Add another plan')}
+                        </Button>
                     </div>
                 )}
 
                 {/* Navigation Buttons */}
                 <div className="flex justify-between gap-4 pt-4 border-t border-gray-200">
-                        <Button
-                            type="button"
-                            variant="primary"
-                            onClick={handleFinish}
-                        >
-                            {t('common.finish', 'Finish')}
-                        </Button>
+                    <Button
+                        type="button"
+                        variant="primary"
+                        onClick={handleFinish}
+                    >
+                        {t('common.finish', 'Finish')}
+                    </Button>
                 </div>
             </div>
         );

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useHalaqa } from '@/features/entity-manager/halaqas/hooks/useHalaqas';
@@ -6,16 +6,15 @@ import { PageHeader, Button } from '@/globals/components';
 import type { PageHeaderBadge } from '@/globals/components';
 import PlanStudentsModal from '@/features/entity-manager/halaqas/components/PlanStudentsModal';
 import HalaqaQuickStats from '@/features/entity-manager/halaqas/components/HalaqaQuickStats';
-import { CalendarIcon, CircleIcon, EditIcon } from '@/globals/icons';
+import { CalendarIcon, CircleIcon, EditIcon, AlertTriangleIcon, XIcon } from '@/globals/icons';
 import HalaqaBasicInfo from '@/features/entity-manager/halaqas/components/HalaqaBasicInfo';
 import HalaqaDatesSchedule from '@/features/entity-manager/halaqas/components/HalaqaDatesSchedule';
 import HalaqaActivities from '@/features/entity-manager/halaqas/components/HalaqaActivities';
 import HalaqaStudents from '@/features/entity-manager/halaqas/components/HalaqaStudents';
 import HalaqaAdditionalInfo from '@/features/entity-manager/halaqas/components/HalaqaAdditionalInfo';
 import HalaqaPlansSection from '@/features/entity-manager/halaqas/components/HalaqaPlansSection';
-import { AlertTriangleIcon } from '@/globals/icons';
 import type { HalaqaActivity } from '@/features/entity-manager/halaqas/config';
-import type { Student, Plan } from '@/features/entity-manager/halaqas/types';
+import type { Student, Plan, StudentWithMissingPlans } from '@/features/entity-manager/halaqas/types';
 
 /**
  * Halaqa Detail Page
@@ -31,10 +30,21 @@ const HalaqaDetailPage: React.FC = () => {
     const { data, isLoading, error } = useHalaqa(id || '');
     const [selectedPlanStudents, setSelectedPlanStudents] = useState<Student[]>([]);
     const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
+    const [showMissingPlansModal, setShowMissingPlansModal] = useState(false);
+    const plansSectionRef = useRef<HTMLDivElement>(null);
 
     // API returns { data: { id, name, ... } }; axios puts body in response.data
     const raw = data?.data;
     const halaqa = raw && typeof raw === 'object' && 'data' in raw ? (raw as { data: any }).data : raw;
+
+    const studentsWithMissingPlans: StudentWithMissingPlans[] = halaqa?.students_with_missing_plans ?? [];
+
+    // When halaqa has students_with_missing_plans, show warning modal once
+    useEffect(() => {
+        if (halaqa && studentsWithMissingPlans.length > 0) {
+            setShowMissingPlansModal(true);
+        }
+    }, [halaqa?.id, studentsWithMissingPlans.length]);
 
     const getLocalizedText = (obj: { en?: string; ar?: string } | string | null | undefined): string => {
         if (typeof obj === 'string') return obj;
@@ -99,6 +109,14 @@ const HalaqaDetailPage: React.FC = () => {
     const handleViewStudent = (student: Student) => {
         setSelectedPlanStudents([student]);
         setIsStudentsModalOpen(true);
+    };
+
+    const handleCloseMissingPlansModalAndScrollToPlans = () => {
+        setShowMissingPlansModal(false);
+        setShowPlanForm(true);
+        setTimeout(() => {
+            plansSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
     };
 
     // Prepare badges for header - MUST be before early returns to maintain hook order
@@ -225,19 +243,71 @@ const HalaqaDetailPage: React.FC = () => {
                 </div>
             </div>
 
+            {/* Missing plans warning modal */}
+            {showMissingPlansModal && studentsWithMissingPlans.length > 0 && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/50" aria-hidden onClick={() => setShowMissingPlansModal(false)} />
+                    <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-amber-100 rounded-lg">
+                                    <AlertTriangleIcon width={24} height={24} className="text-amber-600" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    {t('plan.studentsWithMissingPlans', 'Students with missing plans')}
+                                </h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowMissingPlansModal(false)}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg"
+                                aria-label="Close"
+                            >
+                                <XIcon width={20} height={20} />
+                            </button>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-4">
+                            {t('plan.missingPlansDescription', 'The following students do not have plans for some activities. Add plans for them in the Plans section below.')}
+                        </p>
+                        <ul className="space-y-3 mb-6 max-h-48 overflow-y-auto">
+                            {studentsWithMissingPlans.map((item) => (
+                                <li key={item.student_id} className="text-sm">
+                                    <span className="font-medium text-gray-900">
+                                        {getLocalizedText(item.student_name)}
+                                    </span>
+                                    <span className="text-gray-500 ml-1">
+                                        — {t('plan.missingActivities', 'Missing')}: {item.missing_activities.join(', ')}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="flex justify-end gap-2">
+                            <Button type="button" variant="secondary" onClick={() => setShowMissingPlansModal(false)}>
+                                {t('common.close', 'Close')}
+                            </Button>
+                            <Button type="button" variant="primary" onClick={handleCloseMissingPlansModalAndScrollToPlans}>
+                                {t('plan.goToPlansSection', 'Go to Plans section')}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Plans Section */}
-            <HalaqaPlansSection
-                plans={halaqa.plans || []}
-                halaqaId={id || ''}
-                students={halaqa.students}
-                activities={halaqa.activities as HalaqaActivity[] | undefined}
-                showPlanForm={showPlanForm}
-                onTogglePlanForm={() => setShowPlanForm(!showPlanForm)}
-                onPlanFormSuccess={() => setShowPlanForm(false)}
-                onViewPlanStudents={handleShowPlanStudents}
-                getPlanStudent={getPlanStudent}
-                getLocalizedText={getLocalizedText}
-            />
+            <div id="halaqa-plans-section" ref={plansSectionRef}>
+                <HalaqaPlansSection
+                    plans={halaqa.plans || []}
+                    halaqaId={id || ''}
+                    students={halaqa.students}
+                    activities={halaqa.activities as HalaqaActivity[] | undefined}
+                    showPlanForm={showPlanForm}
+                    onTogglePlanForm={() => setShowPlanForm(!showPlanForm)}
+                    onPlanFormSuccess={() => setShowPlanForm(false)}
+                    onViewPlanStudents={handleShowPlanStudents}
+                    getPlanStudent={getPlanStudent}
+                    getLocalizedText={getLocalizedText}
+                />
+            </div>
 
             {/* Students Modal */}
             <PlanStudentsModal
