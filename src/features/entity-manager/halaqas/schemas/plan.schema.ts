@@ -9,11 +9,22 @@ export const createPlanSchema = yup.object({
     plan_type: yup.string().oneOf(['daily_amount', 'start_end'], 'Plan type must be daily_amount or start_end').required('Plan type is required'),
     unit: yup.string().oneOf(['segments', 'parts', 'surahs'], 'Unit must be segments, parts, or surahs').required('Unit is required'),
     direction: yup.string().oneOf(['incremental', 'decremental'], 'Direction must be incremental or decremental').required('Direction is required'),
-    daily_amount: yup.number().when('plan_type', {
-        is: 'daily_amount',
-        then: (schema) => schema.required('Daily amount is required when plan type is daily_amount').positive('Daily amount must be positive'),
-        otherwise: (schema) => schema.notRequired()
-    }),
+    daily_amount: yup
+        .number()
+        .transform((value, originalValue) => {
+            if (originalValue === '' || originalValue === null || originalValue === undefined) return undefined;
+            const num = typeof value === 'number' ? value : Number(value);
+            return Number.isNaN(num) ? undefined : num;
+        })
+        .when('plan_type', {
+            is: 'daily_amount',
+            then: (schema) =>
+                schema
+                    .required('Daily amount is required')
+                    .positive('Daily amount must be a positive number')
+                    .integer('Daily amount must be a whole number'),
+            otherwise: (schema) => schema.notRequired().nullable()
+        }),
     // Conditional fields based on unit
     start_segment_verse_key: yup.string().when('unit', {
         is: 'segments',
