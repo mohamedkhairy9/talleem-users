@@ -79,6 +79,13 @@ export interface Plan {
     daily_schedule?: DailyScheduleItem[];
 }
 
+/** Student with missing plans (from halaqa detail API) */
+export interface StudentWithMissingPlans {
+    student_id: number;
+    student_name: BilingualName;
+    missing_activities: string[];
+}
+
 export interface HalaqaListItem {
     id: number;
     name?: BilingualName;
@@ -101,6 +108,7 @@ export interface HalaqaListItem {
     session_to?: string;
     students?: Student[];
     plans?: Plan[];
+    students_with_missing_plans?: StudentWithMissingPlans[];
     [key: string]: unknown;
 }
 
