@@ -446,7 +446,7 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 );
             })()}
 
-            {/* From medium screens: 2 columns for Activity, Plan Type, Unit, Direction, Daily amount */}
+            {/* Row 1: Activity, Plan Type (2 cols on md) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormSelect
                     name="activity"
@@ -464,6 +464,10 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                     options={planTypeOptions}
                     error={errors.plan_type?.message}
                 />
+            </div>
+
+            {/* Row 2: Unit, Direction, Daily amount (same row on md: 3 cols when daily_amount visible, else 2) */}
+            <div className={`grid gap-4 ${planType === 'daily_amount' ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
                 <FormSelect
                     name="unit"
                     control={control}
