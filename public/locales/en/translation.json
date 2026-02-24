@@ -210,6 +210,8 @@
         "previousPage": "Previous Page",
         "nextPage": "Next Page",
         "page": "Page",
+        "juz": "Juz",
+        "selectPage": "Select page",
         "clickSegmentToSelectStart": "Click on any segment in the page to set it as start.",
         "clickSegmentToSelectEnd": "Click on any segment in the page to set it as end.",
         "segmentsForPage": "Segments for Page",

@@ -210,6 +210,8 @@
         "previousPage": "الصفحة السابقة",
         "nextPage": "الصفحة التالية",
         "page": "صفحة",
+        "juz": "جزء",
+        "selectPage": "اختر الصفحة",
         "clickSegmentToSelectStart": "انقر على أي مقطع في الصفحة لتعيينه كبداية.",
         "clickSegmentToSelectEnd": "انقر على أي مقطع في الصفحة لتعيينه كنهاية.",
         "segmentsForPage": "مقاطع الصفحة",
