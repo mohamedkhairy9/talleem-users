@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useWatch } from 'react-hook-form';
 import { useFormWithValidation } from '@/utils';
@@ -99,6 +99,14 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
 
     // Plan preview state (after calling API with save_or_not: 0)
     const [planPreviewData, setPlanPreviewData] = useState<CreatePlanResponseData | null>(null);
+    const planPreviewRef = useRef<HTMLDivElement>(null);
+
+    // Scroll to plan preview when it loads so user sees result and can submit
+    useEffect(() => {
+        if (planPreviewData && planPreviewRef.current) {
+            planPreviewRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [planPreviewData]);
 
     // Load surah data on mount
     useEffect(() => {
@@ -358,7 +366,7 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 const hasEmptyDays = daysNeeded < availableDays; // empty days → warning, allow submit
                 const canConfirmSave = !isOverflow;
                 return (
-                    <div className="rounded-lg border-2 border-primary-200 bg-primary-50 p-4 space-y-3">
+                    <div ref={planPreviewRef} className="rounded-lg border-2 border-primary-200 bg-primary-50 p-4 space-y-3">
                         <h3 className="text-sm font-semibold text-primary-900">
                             {t('plan.previewTitle', 'Plan preview (not created yet)')}
                         </h3>
