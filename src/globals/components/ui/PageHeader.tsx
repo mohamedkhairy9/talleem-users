@@ -44,7 +44,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
     className = ''
 }) => {
     const { currentLocale } = useLocale();
-    const lang = currentLang || currentLocale || 'en';
+    const lang = currentLang || currentLocale || 'ar';
 
     return (
         <div className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${className}`}>

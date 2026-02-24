@@ -19,7 +19,7 @@ const RoleSelection: React.FC<RoleSelectionProps> = ({ onSelectRole, onCheckStat
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { lang } = useParams<{ lang: string }>();
-    const currentLang = lang || 'en';
+    const currentLang = lang || 'ar';
 
     const roles: Array<{ type: UserRoleType; labelKey: string; icon: React.ReactNode }> = [
         { type: 1, labelKey: 'auth.role.teacher', icon: <TeacherIcon width={48} height={48} className="text-gray-700 group-hover:text-primary-600" /> },

@@ -102,7 +102,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
     // Transform warning reasons to options
     const warningReasonOptions = useMemo(() => {
         const reasons = warningReasonsData?.data || [];
-        const currentLang = i18n.language || 'en';
+        const currentLang = i18n.language || 'ar';
         return reasons.map((reason) => ({
             value: reason.id,
             label: currentLang === 'ar' && reason.name.ar ? reason.name.ar : (reason.name.en || '')
@@ -120,7 +120,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
     const getLocalizedText = (obj: { en?: string; ar?: string } | string | null | undefined): string => {
         if (typeof obj === 'string') return obj;
         if (!obj) return t('common.not_available', 'N/A');
-        const currentLang = i18n.language || 'en';
+        const currentLang = i18n.language || 'ar';
         if (currentLang === 'ar' && obj.ar) return obj.ar;
         if (obj.en) return obj.en;
         return t('common.not_available', 'N/A');
@@ -155,7 +155,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
 
     const onSubmit = async (data: CreateWarningFormData) => {
         if (!branchId || !mainProgramId || !warningId) {
-            toast.error(t('warning.missingEntityData', 'Branch and program information is missing. Please contact support.'));
+            toast.error(t('warning.missingEntityData'));
             return;
         }
 
@@ -165,14 +165,14 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
             { id: warningId, data: payload },
             {
                 onSuccess: () => {
-                    toast.success(t('warning.updateSuccess', 'Warning updated successfully'));
+                    toast.success(t('warning.updateSuccess'));
                     setMode('view');
                     onClose();
                 },
                 onError: (error: any) => {
                     const errorMessage = error?.response?.data?.message ||
                                        error?.message ||
-                                       t('warning.updateError', 'Error updating warning');
+                                       t('warning.updateError');
                     toast.error(errorMessage);
                 }
             }
@@ -213,8 +213,8 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
                             <div>
                                 <h2 className="text-xl font-semibold text-gray-900">
                                     {mode === 'view'
-                                        ? t('warning.viewWarning', 'View Warning')
-                                        : t('warning.editWarning', 'Edit Warning')}
+                                        ? t('warning.viewWarning')
+                                        : t('warning.editWarning')}
                                 </h2>
                             </div>
                         </div>
@@ -236,7 +236,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
                             </div>
                         ) : !warning ? (
                             <div className="text-center py-12 text-red-600">
-                                {t('warning.notFound', 'Warning not found')}
+                                {t('warning.notFound')}
                             </div>
                         ) : mode === 'view' ? (
                             // View Mode
@@ -312,7 +312,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-gray-500">
-                                            {t('warning.createdBy', 'Created By')}
+                                            {t('warning.createdBy')}
                                         </label>
                                         <p className="mt-1 text-sm text-gray-900">
                                             {getLocalizedText(warning.created_by?.name)}
@@ -375,7 +375,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
                                             defaultOptions={true}
                                             cacheOptions={true}
                                             disabled={isTargetFieldDisabled}
-                                            placeholder={t('warning.searchStudent', 'Search and select student...')}
+                                            placeholder={t('warning.searchStudent')}
                                         />
                                     )}
 
@@ -391,7 +391,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
                                             defaultOptions={true}
                                             cacheOptions={true}
                                             disabled={isTargetFieldDisabled}
-                                            placeholder={t('warning.searchTeacher', 'Search and select teacher...')}
+                                            placeholder={t('warning.searchTeacher')}
                                         />
                                     )}
 
@@ -419,7 +419,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
                                             )}
                                         />
                                         <label className="text-sm font-medium text-gray-700">
-                                            {t('warning.status', 'Active')}
+                                            {t('warning.statusActive')}
                                         </label>
                                     </div>
                                 </div>
@@ -452,7 +452,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
                                     >
                                         {updateWarningMutation.isPending
                                             ? t('common.loading', 'Loading...')
-                                            : t('common.save', 'Save Changes')}
+                                            : t('common.saveChanges')}
                                     </Button>
                                 </div>
                             </form>

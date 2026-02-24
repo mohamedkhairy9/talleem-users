@@ -15,7 +15,7 @@ const HalaqasListPage: React.FC = () => {
     const { lang } = useParams<{ lang: string }>();
 
     const handleCreate = () => {
-        navigate(`/${lang || 'en'}/create-halaqa`);
+        navigate(`/${lang || 'ar'}/create-halaqa`);
     };
 
     return (

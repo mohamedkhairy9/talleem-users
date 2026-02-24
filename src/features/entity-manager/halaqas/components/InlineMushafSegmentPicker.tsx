@@ -5,7 +5,7 @@ import { fontLoader } from '@/utils/helpers/fontLoader';
 import { compareVerseKeys, verseKeysBetween } from '@/utils/helpers/surahHelper';
 import { quranSegmentsService, type QuranSegment } from '../services/quran-segments.service';
 import MushafPage from './MushafPage';
-import { ChevronRightIcon } from '@/globals/icons';
+import MushafPageNavigator from './MushafPageNavigator';
 import type { Database } from 'sql.js';
 
 interface InlineMushafSegmentPickerProps {
@@ -81,7 +81,7 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
             .catch((err) => {
                 if (!cancelled) {
                     console.error('Error initializing databases:', err);
-                    setError(err?.message || 'Failed to load Quran databases');
+                    setError(err?.message || t('quran.loadError'));
                     setIsLoading(false);
                 }
             });
@@ -171,8 +171,6 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
         return () => { cancelled = true; };
     }, [currentPage, segmentsByPageCache]);
 
-    const goPrev = useCallback(() => setCurrentPage((p) => Math.max(1, p - 1)), []);
-    const goNext = useCallback(() => setCurrentPage((p) => Math.min(604, p + 1)), []);
 
     // Highlight: selected start and end segments when they are on current page
     const selectedAyahs = useMemo(() => {
@@ -245,29 +243,10 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
                         </button>
                     )}
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={goPrev}
-                        disabled={currentPage <= 1}
-                        className="rounded-lg p-2 border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        aria-label={t('quran.previousPage', 'Previous Page')}
-                    >
-                        <ChevronRightIcon width={20} height={20} className="text-gray-600 rotate-180" />
-                    </button>
-                    <span className="text-sm font-medium text-gray-700 min-w-[4rem] text-center">
-                        {t('quran.page', 'Page')} {currentPage} / 604
-                    </span>
-                    <button
-                        type="button"
-                        onClick={goNext}
-                        disabled={currentPage >= 604}
-                        className="rounded-lg p-2 border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        aria-label={t('quran.nextPage', 'Next Page')}
-                    >
-                        <ChevronRightIcon width={20} height={20} className="text-gray-600" />
-                    </button>
-                </div>
+                <MushafPageNavigator
+                    value={currentPage}
+                    onChange={setCurrentPage}
+                />
             </div>
 
             {/* Hint */}

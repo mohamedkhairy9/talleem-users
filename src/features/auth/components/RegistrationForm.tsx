@@ -26,7 +26,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { lang } = useParams<{ lang: string }>();
-    const currentLang = lang || 'en';
+    const currentLang = lang || 'ar';
     const { data: formData, isLoading: isLoadingForm, error: formError } = useJoinRequestForm(userType);
     const submitMutation = useSubmitJoinRequest();
 
@@ -165,7 +165,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
             {
                 onSuccess: () => {
                     // Redirect to login or show success message
-                    const currentLang = window.location.pathname.split('/')[1] || 'en';
+                    const currentLang = window.location.pathname.split('/')[1] || 'ar';
                     navigate(`/${currentLang}/login`);
                 }
             }

@@ -113,7 +113,7 @@ const EditHalaqaForm: React.FC = () => {
                     toast.success(t('halaqa.updateSuccess', 'Halaqa updated successfully'));
                     queryClient.invalidateQueries({ queryKey: ['halaqas'] });
                     queryClient.invalidateQueries({ queryKey: ['halaqa', id] });
-                    navigate(`/${lang || 'en'}/halaqas/${id}`);
+                    navigate(`/${lang || 'ar'}/halaqas/${id}`);
                 },
                 onError: (error: any) => {
                     toast.error(error?.message || t('halaqa.updateError', 'Error updating halaqa. Please try again.'));
@@ -237,7 +237,7 @@ const EditHalaqaForm: React.FC = () => {
                 <Button
                     type="button"
                     variant="outline"
-                    onClick={() => navigate(`/${lang || 'en'}/halaqas/${id}`)}
+                    onClick={() => navigate(`/${lang || 'ar'}/halaqas/${id}`)}
                 >
                     {t('common.cancel', 'Cancel')}
                 </Button>

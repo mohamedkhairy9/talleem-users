@@ -1,5 +1,5 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import i18n from '@/i18n';
+import i18n, { DEFAULT_LANG } from '@/i18n';
 
 /**
  * Hook to manage language-based routing
@@ -10,7 +10,7 @@ export const useLanguagePath = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const currentLang = params.lang || i18n.language || 'en';
+    const currentLang = params.lang || i18n.language || DEFAULT_LANG;
 
     /**
      * Get a path with language prefix

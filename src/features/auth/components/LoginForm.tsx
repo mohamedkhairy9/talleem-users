@@ -6,7 +6,7 @@ import * as yup from 'yup';
 import { FormInput } from '@/globals/components';
 import { ROUTE_PATHS } from '@/config';
 import { useTranslation } from 'react-i18next';
-import i18n from '@/i18n';
+import i18n, { DEFAULT_LANG } from '@/i18n';
 
 /**
  * Login Form Schema
@@ -58,7 +58,7 @@ const LoginForm: React.FC = () => {
                     navigate(from, { replace: true });
                 } else {
                     // Redirect to default language dashboard
-                    const defaultLang = i18n.language || 'en';
+                    const defaultLang = i18n.language || DEFAULT_LANG;
                     navigate(`/${defaultLang}`, { replace: true });
                 }
             }
@@ -119,7 +119,7 @@ const LoginForm: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => {
-                            const currentLang = window.location.pathname.split('/')[1] || 'en';
+                            const currentLang = window.location.pathname.split('/')[1] || DEFAULT_LANG;
                             navigate(`/${currentLang}/${ROUTE_PATHS.REGISTER}`);
                         }}
                         className="text-primary-600 hover:text-primary-700 font-medium cursor-pointer"
@@ -132,7 +132,7 @@ const LoginForm: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => {
-                            const currentLang = window.location.pathname.split('/')[1] || 'en';
+                            const currentLang = window.location.pathname.split('/')[1] || DEFAULT_LANG;
                             navigate(`/${currentLang}/${ROUTE_PATHS.REGISTER}?checkStatus=1`);
                         }}
                         className="text-primary-600 hover:text-primary-700 font-medium cursor-pointer"

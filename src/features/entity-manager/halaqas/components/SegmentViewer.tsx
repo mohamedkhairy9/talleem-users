@@ -23,7 +23,7 @@ const SegmentViewer: React.FC<SegmentViewerProps> = ({
     className = ''
 }) => {
     const { t, i18n } = useTranslation();
-    const currentLang = i18n.language || 'en';
+    const currentLang = i18n.language || 'ar';
     const isRTL = currentLang === 'ar';
 
     if (!verses || verses.length === 0) {

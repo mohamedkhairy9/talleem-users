@@ -71,7 +71,7 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess, onCanc
     // Transform warning reasons to options
     const warningReasonOptions = useMemo(() => {
         const reasons = warningReasonsData?.data || [];
-        const currentLang = i18n.language || 'en';
+        const currentLang = i18n.language || 'ar';
         return reasons.map((reason) => ({
             value: reason.id,
             label: currentLang === 'ar' && reason.name.ar ? reason.name.ar : (reason.name.en || '')
@@ -129,7 +129,7 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess, onCanc
 
     const onSubmit = async (data: CreateWarningFormData) => {
         if (!branchId || !mainProgramId) {
-            toast.error(t('warning.missingEntityData', 'Branch and program information is missing. Please contact support.'));
+            toast.error(t('warning.missingEntityData'));
             return;
         }
 
@@ -137,7 +137,7 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess, onCanc
 
         createWarningMutation.mutate(payload, {
             onSuccess: () => {
-                toast.success(t('warning.createSuccess', 'Warning created successfully'));
+                toast.success(t('warning.createSuccess'));
                 queryClient.invalidateQueries({ queryKey: ['warnings'] });
                 reset();
                 onSuccess?.();
@@ -145,7 +145,7 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess, onCanc
             onError: (error: any) => {
                 const errorMessage = error?.response?.data?.message || 
                                    error?.message || 
-                                   t('warning.createError', 'Error creating warning');
+                                   t('warning.createError');
                 toast.error(errorMessage);
             }
         });
@@ -156,7 +156,7 @@ const CreateWarningForm: React.FC<CreateWarningFormProps> = ({ onSuccess, onCanc
         return (
             <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                 <p className="text-sm text-red-800">
-                    {t('warning.missingEntityData', 'Branch and program information is missing from your account. Please contact support.')}
+                    {t('warning.missingEntityDataAccount')}
                 </p>
             </div>
         );

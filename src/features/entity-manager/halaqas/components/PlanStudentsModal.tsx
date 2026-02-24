@@ -19,7 +19,7 @@ const PlanStudentsModal: React.FC<PlanStudentsModalProps> = ({
     isOpen,
     students,
     onClose,
-    currentLang = 'en'
+    currentLang = 'ar'
 }) => {
     const { t } = useTranslation();
 
@@ -55,7 +55,7 @@ const PlanStudentsModal: React.FC<PlanStudentsModalProps> = ({
                             type="button"
                             onClick={onClose}
                             className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                            aria-label="Close"
+                            aria-label={t('common.close')}
                         >
                             <XIcon width={20} height={20} />
                         </button>
@@ -73,42 +73,42 @@ const PlanStudentsModal: React.FC<PlanStudentsModalProps> = ({
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
                                                 <p className="text-sm font-semibold text-gray-900 mb-2">
-                                                    {getLocalizedText(student.name) || `Student #${student.id}`}
+                                                    {getLocalizedText(student.name) || t('plan.studentId', { id: student.id })}
                                                 </p>
                                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                                     {student.national_id && (
                                                         <div>
-                                                            <span className="text-gray-500">National ID: </span>
+                                                            <span className="text-gray-500">{t('student.nationalId')}: </span>
                                                             <span className="text-gray-700 font-medium">{student.national_id}</span>
                                                         </div>
                                                     )}
                                                     {student.phone && (
                                                         <div>
-                                                            <span className="text-gray-500">Phone: </span>
+                                                            <span className="text-gray-500">{t('student.phone')}: </span>
                                                             <span className="text-gray-700 font-medium">{student.phone}</span>
                                                         </div>
                                                     )}
                                                     {student.email && (
                                                         <div>
-                                                            <span className="text-gray-500">Email: </span>
+                                                            <span className="text-gray-500">{t('student.email')}: </span>
                                                             <span className="text-gray-700 font-medium">{student.email}</span>
                                                         </div>
                                                     )}
                                                     {student.gender && (
                                                         <div>
-                                                            <span className="text-gray-500">Gender: </span>
+                                                            <span className="text-gray-500">{t('student.gender')}: </span>
                                                             <span className="text-gray-700 font-medium capitalize">{student.gender}</span>
                                                         </div>
                                                     )}
                                                     {student.school_name && (
                                                         <div>
-                                                            <span className="text-gray-500">School: </span>
+                                                            <span className="text-gray-500">{t('student.school')}: </span>
                                                             <span className="text-gray-700 font-medium">{student.school_name}</span>
                                                         </div>
                                                     )}
                                                     {student.registration_date && (
                                                         <div>
-                                                            <span className="text-gray-500">Registered: </span>
+                                                            <span className="text-gray-500">{t('student.registered')}: </span>
                                                             <span className="text-gray-700 font-medium">
                                                                 {new Date(student.registration_date).toLocaleDateString()}
                                                             </span>
@@ -118,7 +118,7 @@ const PlanStudentsModal: React.FC<PlanStudentsModalProps> = ({
                                             </div>
                                             {student.id && (
                                                 <div className="ml-4 text-xs text-gray-400">
-                                                    ID: {student.id}
+                                                    {t('common.id')}: {student.id}
                                                 </div>
                                             )}
                                         </div>

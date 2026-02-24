@@ -10,7 +10,7 @@ import { ROUTE_PATHS } from '@/config';
 const RoleBasedIndexRoute: React.FC = () => {
     const { user } = useAuthStore();
     const { lang } = useParams<{ lang: string }>();
-    const currentLang = lang || 'en';
+    const currentLang = lang || 'ar';
 
     // Determine index route based on user role
     if (user?.roles?.includes('entity_manager')) {

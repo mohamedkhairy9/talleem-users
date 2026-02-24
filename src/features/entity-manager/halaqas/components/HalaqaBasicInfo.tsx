@@ -55,7 +55,7 @@ const HalaqaBasicInfo: React.FC<HalaqaBasicInfoProps> = ({
                 {entityType && (
                     <div className="space-y-1">
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                            {t('halaqa.memorizationProgramEntityType', 'Entity Type')}
+                            {t('halaqa.entityType')}
                         </p>
                         <p className="text-base font-medium text-gray-900">
                             {getLocalizedText(entityType)}

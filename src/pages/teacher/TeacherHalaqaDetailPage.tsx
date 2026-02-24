@@ -24,7 +24,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
     const { t, i18n } = useTranslation();
     const { id, lang } = useParams<{ id: string; lang: string }>();
     const navigate = useNavigate();
-    const currentLang = i18n.language || lang || 'en';
+    const currentLang = i18n.language || lang || 'ar';
 
     const { halaqa, students, date, time, isLoading, error, attendanceTypes } = useTeacherHalaqaStudents(id);
     const queryClient = useQueryClient();

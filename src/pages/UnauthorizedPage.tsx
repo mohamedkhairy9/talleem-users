@@ -14,7 +14,7 @@ const UnauthorizedPage: React.FC = () => {
     const { lang } = useParams<{ lang: string }>();
 
     const handleGoHome = () => {
-        navigate(`/${lang || 'en'}/${ROUTE_PATHS.DASHBOARD}`);
+        navigate(`/${lang || 'ar'}/${ROUTE_PATHS.DASHBOARD}`);
     };
 
     const handleGoBack = () => {

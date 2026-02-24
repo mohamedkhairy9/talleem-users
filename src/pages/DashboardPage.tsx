@@ -12,7 +12,7 @@ const DashboardPage: React.FC = () => {
     const { t } = useTranslation();
     const { user } = useAuthStore();
     const { lang } = useParams<{ lang: string }>();
-    const currentLang = lang || 'en';
+    const currentLang = lang || 'ar';
 
     // Redirect entity_manager to halaqas (their index page)
     if (user?.roles?.includes('entity_manager')) {

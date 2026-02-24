@@ -3,6 +3,9 @@ import { initReactI18next } from 'react-i18next';
 import HttpApi from 'i18next-http-backend';
 import { useLanguageStore } from './stores/language.store';
 
+/** Default app language (used for initial load, redirects, and fallbacks) */
+export const DEFAULT_LANG = 'ar';
+
 // Get initial language from store or URL
 const getInitialLanguage = (): string => {
     // Try to get from URL (if available)
@@ -19,13 +22,13 @@ const getInitialLanguage = (): string => {
         return storeLang;
     }
     
-    return 'en';
+    return DEFAULT_LANG;
 };
 
 i18n.use(HttpApi)
     .use(initReactI18next)
     .init({
-        supportedLngs: ['en', 'ar'],
+        supportedLngs: ['ar', 'en'],
         fallbackLng: 'en',
         lng: getInitialLanguage(),
         debug: false,

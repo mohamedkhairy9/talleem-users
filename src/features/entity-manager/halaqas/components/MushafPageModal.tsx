@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XIcon, ChevronRightIcon } from '@/globals/icons';
+import { XIcon } from '@/globals/icons';
 import MushafPage from './MushafPage';
+import MushafPageNavigator from './MushafPageNavigator';
 import { dbLoader } from '@/utils/helpers/databaseLoader';
 import { fontLoader } from '@/utils/helpers/fontLoader';
 import { loadMushafPages, getPageForVerseKey, verseKeysBetween, compareVerseKeys } from '@/utils/helpers/surahHelper';
@@ -50,9 +51,14 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     
     // Determine if we're in plan view mode
     const isPlanView = !!startVerseKey && !!endVerseKey;
-    const currentPage = isPlanView && planPages.length > 0 
-        ? planPages[currentPageIndex] 
-        : (pageNumber || 1);
+    // Single-page view: track selected page (e.g. when user changes dropdown)
+    const [singlePage, setSinglePage] = useState<number>(1);
+    useEffect(() => {
+        if (isOpen && !isPlanView && pageNumber != null) setSinglePage(pageNumber);
+    }, [isOpen, isPlanView, pageNumber]);
+    const currentPage = isPlanView && planPages.length > 0
+        ? planPages[currentPageIndex]
+        : singlePage;
     
     // Plan view: highlight only verses that belong to segments from the API (not all verses in range)
     const planSelectedAyahs = useMemo(() => planSegmentVerseKeys, [planSegmentVerseKeys]);
@@ -79,7 +85,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                 setIsLoading(false);
             } catch (err: any) {
                 console.error('Error initializing databases:', err);
-                setError(err?.message || 'Failed to load Quran databases');
+                setError(err?.message || t('quran.loadError'));
                 setIsLoading(false);
             }
         };
@@ -258,7 +264,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                 setIsLoading(false);
             } catch (err: any) {
                 console.error('Error loading page:', err);
-                setError(err?.message || 'Failed to load page data');
+                setError(err?.message || t('quran.loadError'));
                 setIsLoading(false);
             }
         };
@@ -266,16 +272,12 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
         loadPageWithFont();
     }, [currentPage, linesDb, isOpen]);
 
-    // Navigation handlers
-    const goToNextPage = () => {
-        if (isPlanView && currentPageIndex < planPages.length - 1) {
-            setCurrentPageIndex(currentPageIndex + 1);
-        }
-    };
-
-    const goToPrevPage = () => {
-        if (isPlanView && currentPageIndex > 0) {
-            setCurrentPageIndex(currentPageIndex - 1);
+    const handlePageChange = (page: number) => {
+        if (isPlanView && planPages.length > 0) {
+            const idx = planPages.indexOf(page);
+            if (idx >= 0) setCurrentPageIndex(idx);
+        } else {
+            setSinglePage(page);
         }
     };
 
@@ -295,25 +297,23 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
             <div className="relative flex min-h-full items-center justify-center p-4 pt-20 md:pt-24 z-10">
                 <div className="relative bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)] overflow-hidden">
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-white">
-                        <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-white flex-wrap gap-3">
+                        <div className="flex items-center gap-3 flex-wrap">
                             <h3 className="text-lg font-semibold text-gray-900">
-                                {isPlanView 
-                                    ? t('quran.planView', 'Plan View')
-                                    : `${t('quran.mushafPage', 'Mushaf Page')} - ${t('quran.page', 'Page')} ${currentPage}`
-                                }
+                                {isPlanView ? t('quran.planView', 'Plan View') : t('quran.mushafPage', 'Mushaf Page')}
                             </h3>
-                            {isPlanView && planPages.length > 0 && (
-                                <span className="text-sm text-gray-500">
-                                    {t('quran.page', 'Page')} {currentPage} {t('quran.of', 'of')} {planPages.length}
-                                </span>
-                            )}
+                            <MushafPageNavigator
+                                value={currentPage}
+                                onChange={handlePageChange}
+                                pageNumbers={isPlanView && planPages.length > 0 ? planPages : undefined}
+                                disabled={isLoading || isLoadingPlanPages}
+                            />
                         </div>
                         <button
                             type="button"
                             onClick={onClose}
                             className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                            aria-label="Close"
+                            aria-label={t('common.close')}
                         >
                             <XIcon width={20} height={20} />
                         </button>
@@ -321,46 +321,6 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
 
                     {/* Body */}
                     <div className="relative px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
-                        {/* Navigation buttons for plan view */}
-                        {isPlanView && planPages.length > 1 && (
-                            <>
-                                <button
-                                    type="button"
-                                    onClick={goToPrevPage}
-                                    disabled={currentPageIndex === 0}
-                                    className={`absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white shadow-lg border border-gray-300 transition-all ${
-                                        currentPageIndex === 0
-                                            ? 'opacity-50 cursor-not-allowed'
-                                            : 'hover:bg-gray-50 hover:shadow-xl'
-                                    }`}
-                                    aria-label={t('quran.previousPage', 'Previous Page')}
-                                >
-                                    <ChevronRightIcon 
-                                        width={24} 
-                                        height={24} 
-                                        className="text-gray-700 rotate-180" 
-                                    />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={goToNextPage}
-                                    disabled={currentPageIndex === planPages.length - 1}
-                                    className={`absolute right-4 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white shadow-lg border border-gray-300 transition-all ${
-                                        currentPageIndex === planPages.length - 1
-                                            ? 'opacity-50 cursor-not-allowed'
-                                            : 'hover:bg-gray-50 hover:shadow-xl'
-                                    }`}
-                                    aria-label={t('quran.nextPage', 'Next Page')}
-                                >
-                                    <ChevronRightIcon 
-                                        width={24} 
-                                        height={24} 
-                                        className="text-gray-700" 
-                                    />
-                                </button>
-                            </>
-                        )}
-                        
                         {isLoading || isLoadingPlanPages ? (
                             <div className="flex items-center justify-center py-20">
                                 <div className="text-center">

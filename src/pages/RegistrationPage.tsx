@@ -36,7 +36,7 @@ const RegistrationPage: React.FC = () => {
 
     // Redirect if already authenticated
     if (isAuthenticated) {
-        const currentLang = lang || 'en';
+        const currentLang = lang || 'ar';
         return <Navigate to={`/${currentLang}`} replace />;
     }
 
