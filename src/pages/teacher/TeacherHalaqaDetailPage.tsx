@@ -213,6 +213,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                                 getLocalizedText={getLocalizedText}
                                 halaqaId={id}
                                 attendanceTypes={attendanceTypes}
+                                currentDate={date}
                             />
                         </div>
                     )}

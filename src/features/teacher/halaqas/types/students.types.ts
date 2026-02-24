@@ -29,6 +29,25 @@ export interface AttendanceTypesResponse {
     };
 }
 
+/** Daily schedule item from teacher API (verse keys for mushaf) */
+export interface TeacherDailyScheduleItem {
+    day: number;
+    date: string;
+    from_verse_key: string;
+    to_verse_key: string;
+    juz_numbers?: number[];
+}
+
+/** Plan with daily_schedule (from teacher halaqa students response) */
+export interface TeacherStudentPlan {
+    id: number;
+    activity: string;
+    daily_amount?: number;
+    unit?: string;
+    direction?: string;
+    daily_schedule?: TeacherDailyScheduleItem[];
+}
+
 export interface HalaqaStudent {
     id: number;
     name?: BilingualName;
@@ -36,6 +55,8 @@ export interface HalaqaStudent {
     attendance_type_id: number | null;
     can_memorize: boolean;
     activities?: string[];
+    /** Plans with daily_schedule (from teacher GET halaqa students) */
+    plans?: TeacherStudentPlan[];
 }
 
 export interface TeacherHalaqaStudentsResponse {

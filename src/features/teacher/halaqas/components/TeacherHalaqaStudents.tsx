@@ -2,11 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { UsersIcon, UserIcon, AlertTriangleIcon, XIcon, CheckIcon, BookIcon, ClipboardCheckIcon } from '@/globals/icons';
-import type { HalaqaStudent, BilingualName, AttendanceType } from '../types/students.types';
+import type { HalaqaStudent, BilingualName, AttendanceType, TeacherStudentPlan } from '../types/students.types';
 import { useStudentPlan } from '../hooks/useStudentPlan';
 import { teacherHalaqasService } from '../services/halaqas.service';
 import { formatDate } from '@/utils';
 import { Button } from '@/globals/components';
+import MushafPageModal from '@/features/entity-manager/halaqas/components/MushafPageModal';
 
 interface TeacherHalaqaStudentsProps {
     students: HalaqaStudent[];
@@ -15,6 +16,8 @@ interface TeacherHalaqaStudentsProps {
     getLocalizedText: (obj: BilingualName | string | null | undefined) => string;
     halaqaId: number | string | undefined;
     attendanceTypes?: AttendanceType[];
+    /** Session/current date (YYYY-MM-DD) from API – used to highlight today in plan daily schedule */
+    currentDate?: string;
 }
 
 const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
@@ -23,7 +26,8 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
     error,
     getLocalizedText,
     halaqaId,
-    attendanceTypes = []
+    attendanceTypes = [],
+    currentDate: sessionDate
 }) => {
     const { t, i18n } = useTranslation();
     const queryClient = useQueryClient();
@@ -51,6 +55,9 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
         notes: ''
     });
 
+    /** Open mushaf modal for a verse range (from daily_schedule) */
+    const [mushafRange, setMushafRange] = useState<{ from_verse_key: string; to_verse_key: string } | null>(null);
+
     // Fetch plan data for grade submission
     const { data: gradePlanData, isLoading: isLoadingGradePlan } = useStudentPlan(
         halaqaId,
@@ -75,11 +82,21 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
         return attendanceTypesData?.data ?? [];
     }, [attendanceTypes, attendanceTypesData]);
 
+    const selectedStudent = useMemo(
+        () => (selectedPlan ? students.find((s) => s.id === selectedPlan.studentId) : undefined),
+        [students, selectedPlan]
+    );
+    const planFromStudent = useMemo(
+        (): TeacherStudentPlan | undefined =>
+            selectedStudent?.plans?.find((p) => p.activity === selectedPlan?.activity),
+        [selectedStudent?.plans, selectedPlan?.activity]
+    );
+
     const { data: planData, isLoading: isLoadingPlan, error: planError } = useStudentPlan(
         halaqaId,
         selectedPlan?.studentId,
         selectedPlan?.activity,
-        !!selectedPlan
+        !!selectedPlan && !planFromStudent
     );
 
     // Mutation for submitting attendance
@@ -206,6 +223,13 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
     };
 
     const currentLang = i18n.language || 'ar';
+
+    /** Date used as "today" for plan daily schedule: session date from API or local today (YYYY-MM-DD) */
+    const planCurrentDate = useMemo(() => {
+        if (sessionDate) return sessionDate;
+        const d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }, [sessionDate]);
 
     // Extract error message
     const errorMessage = error
@@ -438,7 +462,118 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
 
                             {/* Body */}
                             <div className="px-6 py-4 max-h-[calc(100vh-12rem)] md:max-h-[calc(100vh-14rem)] overflow-y-auto">
-                                {isLoadingPlan ? (
+                                {planFromStudent ? (
+                                    <div className="space-y-6">
+                                        {/* Plan Info from student.plans */}
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                            <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                                                {t('plan.planInfo', 'Plan Information')}
+                                            </h4>
+                                            <dl className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <dt className="text-xs font-medium text-gray-500">
+                                                        {t('plan.activity', 'Activity')}
+                                                    </dt>
+                                                    <dd className="mt-1 text-sm text-gray-900">
+                                                        {t(`halaqa.activity.${planFromStudent.activity}`, planFromStudent.activity)}
+                                                    </dd>
+                                                </div>
+                                                {planFromStudent.daily_amount != null && (
+                                                    <div>
+                                                        <dt className="text-xs font-medium text-gray-500">
+                                                            {t('plan.dailyAmount', 'Daily Amount')}
+                                                        </dt>
+                                                        <dd className="mt-1 text-sm text-gray-900">
+                                                            {planFromStudent.daily_amount} {planFromStudent.unit === 'parts' ? t('plan.unit.juz', 'Juz') : planFromStudent.unit ? t(`plan.unit.${planFromStudent.unit}`, planFromStudent.unit) : ''}
+                                                        </dd>
+                                                    </div>
+                                                )}
+                                                {planFromStudent.unit && (
+                                                    <div>
+                                                        <dt className="text-xs font-medium text-gray-500">
+                                                            {t('plan.unit', 'Unit')}
+                                                        </dt>
+                                                        <dd className="mt-1 text-sm text-gray-900">
+                                                            {planFromStudent.unit === 'parts' ? t('plan.unit.juz', 'Juz') : t(`plan.unit.${planFromStudent.unit}`, planFromStudent.unit)}
+                                                        </dd>
+                                                    </div>
+                                                )}
+                                                {planFromStudent.direction && (
+                                                    <div>
+                                                        <dt className="text-xs font-medium text-gray-500">
+                                                            {t('plan.direction', 'Direction')}
+                                                        </dt>
+                                                        <dd className="mt-1 text-sm text-gray-900">
+                                                            {t(`plan.direction.${planFromStudent.direction}`, planFromStudent.direction)}
+                                                        </dd>
+                                                    </div>
+                                                )}
+                                            </dl>
+                                        </div>
+
+                                        {/* Daily Schedule with View in Mushaf */}
+                                        {planFromStudent.daily_schedule && planFromStudent.daily_schedule.length > 0 && (
+                                            <div className="bg-primary-50 rounded-lg p-4">
+                                                <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                                                    {t('plan.dailySchedule', 'Daily Schedule')}
+                                                </h4>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm text-left">
+                                                        <thead>
+                                                            <tr className="border-b border-primary-200">
+                                                                <th className="py-2 pr-2 font-medium text-gray-700">{t('plan.dayNumber', 'Day')}</th>
+                                                                <th className="py-2 pr-2 font-medium text-gray-700">{t('plan.date', 'Date')}</th>
+                                                                <th className="py-2 pr-2 font-medium text-gray-700">{t('plan.verses', 'Verses')}</th>
+                                                                <th className="py-2 font-medium text-gray-700">{t('plan.action', 'Action')}</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {planFromStudent.daily_schedule.map((row) => {
+                                                                const isCurrentDay = row.date === planCurrentDate;
+                                                                return (
+                                                                    <tr
+                                                                        key={row.day}
+                                                                        className={`border-b border-primary-100 ${isCurrentDay ? 'bg-primary-100 ring-1 ring-primary-200' : ''}`}
+                                                                    >
+                                                                        <td className="py-2 pr-2 text-gray-900">{row.day}</td>
+                                                                        <td className="py-2 pr-2 text-gray-900">
+                                                                            {formatDate(row.date)}
+                                                                            {isCurrentDay && (
+                                                                                <span className="mr-2 inline-flex items-center rounded-full bg-primary-600 px-2 py-0.5 text-xs font-medium text-white">
+                                                                                    {t('plan.today', 'Today')}
+                                                                                </span>
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="py-2 pr-2 text-gray-700 font-mono">
+                                                                            {row.from_verse_key} – {row.to_verse_key}
+                                                                        </td>
+                                                                        <td className="py-2">
+                                                                            <Button
+                                                                                type="button"
+                                                                                size="sm"
+                                                                                variant="outline"
+                                                                                className="gap-1.5"
+                                                                                onClick={() =>
+                                                                                    setMushafRange({
+                                                                                        from_verse_key: row.from_verse_key,
+                                                                                        to_verse_key: row.to_verse_key
+                                                                                    })
+                                                                                }
+                                                                            >
+                                                                                <BookIcon width={14} height={14} />
+                                                                                {t('plan.viewInMushaf', 'View in Mushaf')}
+                                                                            </Button>
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : isLoadingPlan ? (
                                     <div className="flex items-center justify-center py-8">
                                         <div className="flex flex-col items-center gap-2">
                                             <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-primary-600" />
@@ -843,6 +978,16 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Mushaf viewer for daily schedule verse range (read-only) */}
+            {mushafRange && (
+                <MushafPageModal
+                    isOpen={true}
+                    onClose={() => setMushafRange(null)}
+                    startVerseKey={mushafRange.from_verse_key}
+                    endVerseKey={mushafRange.to_verse_key}
+                />
             )}
         </div>
     );
