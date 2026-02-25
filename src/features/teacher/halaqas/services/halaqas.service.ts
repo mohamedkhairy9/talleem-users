@@ -87,7 +87,7 @@ export const teacherHalaqasService = {
     /**
      * Submit memorization/grade for a student
      * POST /teacher/halaqas/:halaqaId/memorization
-     * Payload: { student_id, activity, halaqa_plan_id, is_complete, grade, actual_end_verse_id, notes }
+     * Payload: { student_id, activity, halaqa_plan_id, is_complete, grade, actual_end_verse_key, notes }
      */
     submitMemorization: (
         halaqaId: number | string,
@@ -97,7 +97,7 @@ export const teacherHalaqasService = {
             halaqa_plan_id: number;
             is_complete: boolean;
             grade: number;
-            actual_end_verse_id: number;
+            actual_end_verse_key: string;
             notes?: string;
         }
     ): Promise<any> => {

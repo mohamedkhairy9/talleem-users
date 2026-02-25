@@ -51,12 +51,17 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
     const [gradeForm, setGradeForm] = useState({
         is_complete: true,
         grade: '',
-        actual_end_verse_id: '',
+        actual_end_verse_key: '',
         notes: ''
     });
 
-    /** Open mushaf modal for a verse range (from daily_schedule) */
+    /** Open mushaf modal for a verse range (from daily_schedule) - read-only view */
     const [mushafRange, setMushafRange] = useState<{ from_verse_key: string; to_verse_key: string } | null>(null);
+    /** Open mushaf modal to select actual end verse (daily schedule range only) */
+    const [gradeMushafPickerRange, setGradeMushafPickerRange] = useState<{
+        from_verse_key: string;
+        to_verse_key: string;
+    } | null>(null);
 
     // Fetch plan data for grade submission
     const { data: gradePlanData, isLoading: isLoadingGradePlan } = useStudentPlan(
@@ -120,7 +125,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
             halaqa_plan_id: number;
             is_complete: boolean;
             grade: number;
-            actual_end_verse_id: number;
+            actual_end_verse_key: string;
             notes?: string;
         }) => {
             return teacherHalaqasService.submitMemorization(halaqaId!, data);
@@ -132,7 +137,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
             setGradeForm({
                 is_complete: true,
                 grade: '',
-                actual_end_verse_id: '',
+                actual_end_verse_key: '',
                 notes: ''
             });
         }
@@ -185,9 +190,10 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
         setGradeForm({
             is_complete: true,
             grade: '',
-            actual_end_verse_id: '',
+            actual_end_verse_key: '',
             notes: ''
         });
+        setGradeMushafPickerRange(null);
     };
 
     const handleCloseGradeModal = () => {
@@ -195,18 +201,19 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
         setGradeForm({
             is_complete: true,
             grade: '',
-            actual_end_verse_id: '',
+            actual_end_verse_key: '',
             notes: ''
         });
+        setGradeMushafPickerRange(null);
     };
 
     const handleSubmitGrade = () => {
         if (!gradeModal || !gradePlanData?.plan) return;
 
         const grade = Number(gradeForm.grade);
-        const actualEndVerseId = Number(gradeForm.actual_end_verse_id);
+        const actualEndVerseKey = gradeForm.actual_end_verse_key.trim();
 
-        if (!grade || !actualEndVerseId) {
+        if (!grade || !actualEndVerseKey) {
             // Show validation error
             return;
         }
@@ -217,7 +224,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
             halaqa_plan_id: gradePlanData.plan.id,
             is_complete: gradeForm.is_complete,
             grade: grade,
-            actual_end_verse_id: actualEndVerseId,
+            actual_end_verse_key: actualEndVerseKey,
             notes: gradeForm.notes || undefined
         });
     };
@@ -230,6 +237,25 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
         const d = new Date();
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }, [sessionDate]);
+
+    /** Daily range for grade modal: from student's plan daily_schedule for the session date (from halaqa students response) */
+    const gradeModalDailyRange = useMemo((): { from_verse_key: string; to_verse_key: string } | null => {
+        if (!gradeModal || !students.length) return null;
+        const student = students.find((s) => s.id === gradeModal.studentId);
+        const plan = student?.plans?.find((p) => p.activity === gradeModal.activity);
+        const entry = plan?.daily_schedule?.find((d) => d.date === planCurrentDate);
+        if (!entry?.from_verse_key || !entry?.to_verse_key) return null;
+        return { from_verse_key: entry.from_verse_key, to_verse_key: entry.to_verse_key };
+    }, [gradeModal, students, planCurrentDate]);
+
+    /** When grade modal opens with Is Complete checked, set actual_end_verse_key to daily schedule end */
+    React.useEffect(() => {
+        if (!gradeModal || !gradeModalDailyRange) return;
+        setGradeForm((prev) => {
+            if (!prev.is_complete || prev.actual_end_verse_key.trim()) return prev;
+            return { ...prev, actual_end_verse_key: gradeModalDailyRange.to_verse_key };
+        });
+    }, [gradeModal?.studentId, gradeModal?.activity, gradeModalDailyRange?.to_verse_key]);
 
     // Extract error message
     const errorMessage = error
@@ -853,16 +879,16 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                             </p>
                                         </div>
 
-                                        {/* Plan Info Reference */}
-                                        {gradePlanData.today_schedule && (
+                                        {/* Plan Info: daily range from student's plan (daily_schedule for session date) */}
+                                        {gradeModalDailyRange && (
                                             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                                                 <p className="text-xs font-medium text-blue-900 mb-2">
-                                                    {t('grade.expectedRange', 'Expected Verse Range')}
+                                                    {t('grade.expectedRange', 'Expected Verse Range')} ({planCurrentDate})
                                                 </p>
                                                 <p className="text-sm text-blue-800">
-                                                    {t('plan.verseRange', 'From verse {{from}} to verse {{to}}', {
-                                                        from: gradePlanData.today_schedule.from_verse_id,
-                                                        to: gradePlanData.today_schedule.to_verse_id
+                                                    {t('plan.verseRangeKeys', 'From {{from}} to {{to}}', {
+                                                        from: gradeModalDailyRange.from_verse_key,
+                                                        to: gradeModalDailyRange.to_verse_key
                                                     })}
                                                 </p>
                                             </div>
@@ -876,13 +902,27 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                     <input
                                                         type="checkbox"
                                                         checked={gradeForm.is_complete}
-                                                        onChange={(e) => setGradeForm({ ...gradeForm, is_complete: e.target.checked })}
+                                                        onChange={(e) => {
+                                                            const checked = e.target.checked;
+                                                            setGradeForm({
+                                                                ...gradeForm,
+                                                                is_complete: checked,
+                                                                actual_end_verse_key: checked && gradeModalDailyRange
+                                                                    ? gradeModalDailyRange.to_verse_key
+                                                                    : ''
+                                                            });
+                                                        }}
                                                         className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                                                     />
                                                     <span className="text-sm font-medium text-gray-700">
                                                         {t('grade.isComplete', 'Is Complete')}
                                                     </span>
                                                 </label>
+                                                {gradeForm.is_complete && gradeModalDailyRange && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        {t('grade.actualEndSetToSchedule', 'Actual end verse set to daily schedule end')}: {gradeModalDailyRange.to_verse_key}
+                                                    </p>
+                                                )}
                                             </div>
 
                                             {/* Grade */}
@@ -906,19 +946,46 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                 )}
                                             </div>
 
-                                            {/* Actual End Verse ID */}
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    {t('grade.actualEndVerse', 'Actual End Verse ID')} <span className="text-red-500">*</span>
+                                            {/* Actual End Verse — field + button to open mushaf (daily_schedule range) and select segment */}
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">
+                                                    {t('grade.actualEndVerse', 'Actual End Verse')} <span className="text-red-500">*</span>
                                                 </label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    value={gradeForm.actual_end_verse_id}
-                                                    onChange={(e) => setGradeForm({ ...gradeForm, actual_end_verse_id: e.target.value })}
-                                                    placeholder={t('grade.actualEndVersePlaceholder', 'Enter actual end verse ID')}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                                                />
+                                                <p className="text-xs text-gray-500">
+                                                    {t('grade.actualEndVerseHint', 'Click the button to open the mushaf (daily range) and select the verse where the student stopped.')}
+                                                </p>
+                                                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center flex-wrap">
+                                                    <div className="flex-1 min-w-0 flex items-center rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                                                        {gradeForm.actual_end_verse_key ? (
+                                                            <span className="font-medium text-gray-900">{gradeForm.actual_end_verse_key}</span>
+                                                        ) : (
+                                                            <span className="text-gray-400 italic">{t('grade.noVerseSelected', 'No verse selected')}</span>
+                                                        )}
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant={gradeForm.actual_end_verse_key ? 'outline' : 'primary'}
+                                                        disabled={!gradeModalDailyRange}
+                                                        onClick={() => {
+                                                            if (!gradeModalDailyRange) return;
+                                                            setGradeMushafPickerRange({
+                                                                from_verse_key: gradeModalDailyRange.from_verse_key,
+                                                                to_verse_key: gradeModalDailyRange.to_verse_key
+                                                            });
+                                                        }}
+                                                        className="shrink-0"
+                                                    >
+                                                        <BookIcon width={18} height={18} className="mr-1.5 inline" />
+                                                        {gradeForm.actual_end_verse_key
+                                                            ? t('grade.changeEndVerse', 'Change end verse')
+                                                            : t('grade.selectFromMushaf', 'Select from mushaf')}
+                                                    </Button>
+                                                </div>
+                                                {!gradeModalDailyRange && (
+                                                    <p className="text-xs text-amber-600">
+                                                        {t('grade.dailyRangeRequired', 'No daily schedule for this date. Add a schedule for {{date}} in the plan.', { date: planCurrentDate })}
+                                                    </p>
+                                                )}
                                             </div>
 
                                             {/* Notes */}
@@ -969,7 +1036,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                         variant="primary"
                                         onClick={handleSubmitGrade}
                                         loading={gradeMutation.isPending}
-                                        disabled={!gradeForm.grade || !gradeForm.actual_end_verse_id}
+                                        disabled={!gradeForm.grade || !gradeForm.actual_end_verse_key.trim()}
                                     >
                                         {t('grade.submit', 'Submit Grade')}
                                     </Button>
@@ -987,6 +1054,20 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                     onClose={() => setMushafRange(null)}
                     startVerseKey={mushafRange.from_verse_key}
                     endVerseKey={mushafRange.to_verse_key}
+                />
+            )}
+
+            {/* Mushaf picker for grade actual end verse (daily schedule only) */}
+            {gradeMushafPickerRange && (
+                <MushafPageModal
+                    isOpen={true}
+                    onClose={() => setGradeMushafPickerRange(null)}
+                    startVerseKey={gradeMushafPickerRange.from_verse_key}
+                    endVerseKey={gradeMushafPickerRange.to_verse_key}
+                    onSelectVerseKey={(verseKey) => {
+                        setGradeForm((prev) => ({ ...prev, actual_end_verse_key: verseKey }));
+                        setGradeMushafPickerRange(null);
+                    }}
                 />
             )}
         </div>

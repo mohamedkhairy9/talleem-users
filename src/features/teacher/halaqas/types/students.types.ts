@@ -75,6 +75,9 @@ export interface TodaySchedule {
     juz_numbers: number[];
     from_verse_id: number;
     to_verse_id: number;
+    /** Verse keys for daily range (e.g. "2:1", "2:50"); used for mushaf picker */
+    from_verse_key?: string;
+    to_verse_key?: string;
     text: string;
 }
 

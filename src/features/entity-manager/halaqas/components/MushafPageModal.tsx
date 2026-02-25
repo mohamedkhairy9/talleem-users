@@ -17,6 +17,8 @@ interface MushafPageModalProps {
     // Plan view mode
     startVerseKey?: string; // Format: "surah:ayah" (e.g., "1:1")
     endVerseKey?: string; // Format: "surah:ayah" (e.g., "1:7")
+    /** When set, verse keys in range are clickable; on verse click calls this with verse key (e.g. "2:255") */
+    onSelectVerseKey?: (verseKey: string) => void;
 }
 
 /**
@@ -29,7 +31,8 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     pageNumber,
     selectedAyahs = new Set(),
     startVerseKey,
-    endVerseKey
+    endVerseKey,
+    onSelectVerseKey
 }) => {
     const { t } = useTranslation();
     const [pageLines, setPageLines] = useState<any[]>([]);
@@ -49,6 +52,9 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     // Memoized segments per page (pageNumber -> segments) to avoid re-requesting when navigating
     const [segmentsByPageCache, setSegmentsByPageCache] = useState<Record<number, QuranSegment[]>>({});
     
+    // When in select-verse mode: local selection before confirm (show in hint, then confirm to apply)
+    const [selectedVerseKeyInModal, setSelectedVerseKeyInModal] = useState<string | null>(null);
+
     // Determine if we're in plan view mode
     const isPlanView = !!startVerseKey && !!endVerseKey;
     // Single-page view: track selected page (e.g. when user changes dropdown)
@@ -62,8 +68,17 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     
     // Plan view: highlight only verses that belong to segments from the API (not all verses in range)
     const planSelectedAyahs = useMemo(() => planSegmentVerseKeys, [planSegmentVerseKeys]);
-    
-    const displaySelectedAyahs = isPlanView ? planSelectedAyahs : selectedAyahs;
+
+    // When in select-verse mode, also highlight the locally selected verse
+    const displaySelectedAyahs = useMemo(() => {
+        const base = isPlanView ? planSelectedAyahs : selectedAyahs;
+        if (onSelectVerseKey && selectedVerseKeyInModal) {
+            const next = new Set(base);
+            next.add(selectedVerseKeyInModal);
+            return next;
+        }
+        return base;
+    }, [isPlanView, planSelectedAyahs, selectedAyahs, onSelectVerseKey, selectedVerseKeyInModal]);
 
     // Initialize databases on mount
     useEffect(() => {
@@ -281,6 +296,33 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
         }
     };
 
+    /** In select mode: word location may be "surah:ayah" or "surah:ayah:wordIndex"; normalize to verse key, check range, set local selection */
+    const handleWordClick = React.useCallback(
+        (_wordId: number, location: string) => {
+            if (!onSelectVerseKey || !startVerseKey || !endVerseKey) return;
+            const parts = location.trim().split(':').filter(Boolean);
+            if (parts.length < 2) return;
+            const verseKey = `${parts[0]}:${parts[1]}`;
+            if (!/^\d+:\d+$/.test(verseKey)) return;
+            if (compareVerseKeys(verseKey, startVerseKey) < 0 || compareVerseKeys(verseKey, endVerseKey) > 0) return;
+            setSelectedVerseKeyInModal(verseKey);
+        },
+        [onSelectVerseKey, startVerseKey, endVerseKey]
+    );
+
+    /** Confirm selection and close (called from hint bar button) */
+    const handleConfirmSelection = React.useCallback(() => {
+        if (selectedVerseKeyInModal && onSelectVerseKey) {
+            onSelectVerseKey(selectedVerseKeyInModal);
+            setSelectedVerseKeyInModal(null);
+        }
+    }, [selectedVerseKeyInModal, onSelectVerseKey]);
+
+    /** Reset local selection when opening in select mode */
+    useEffect(() => {
+        if (isOpen && onSelectVerseKey) setSelectedVerseKeyInModal(null);
+    }, [isOpen, onSelectVerseKey]);
+
     if (!isOpen) return null;
 
     return (
@@ -300,7 +342,11 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                     <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-white flex-wrap gap-3">
                         <div className="flex items-center gap-3 flex-wrap">
                             <h3 className="text-lg font-semibold text-gray-900">
-                                {isPlanView ? t('quran.planView', 'Plan View') : t('quran.mushafPage', 'Mushaf Page')}
+                                {onSelectVerseKey
+                                    ? t('grade.selectEndVerse', 'Select actual end verse')
+                                    : isPlanView
+                                        ? t('quran.planView', 'Plan View')
+                                        : t('quran.mushafPage', 'Mushaf Page')}
                             </h3>
                             <MushafPageNavigator
                                 value={currentPage}
@@ -318,6 +364,34 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                             <XIcon width={20} height={20} />
                         </button>
                     </div>
+
+                    {/* Hint when selecting verse for grade: instructions + selected verse + Confirm */}
+                    {onSelectVerseKey && !isLoading && !isLoadingPlanPages && !error && (
+                        <div className="px-4 sm:px-6 py-3 bg-primary-50 border-b border-primary-100">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <p className="text-sm text-primary-800">
+                                    {selectedVerseKeyInModal ? (
+                                        <span>
+                                            {t('grade.selectedVerse', 'Selected')}: <strong className="font-semibold text-primary-900">{selectedVerseKeyInModal}</strong>
+                                            {' — '}
+                                            {t('grade.confirmOrPickAnother', 'Click Confirm to use this verse, or click another verse.')}
+                                        </span>
+                                    ) : (
+                                        t('grade.clickVerseToSelect', 'Click any verse on the page to set it as the actual end verse. Use the page navigator above to change pages.')
+                                    )}
+                                </p>
+                                {selectedVerseKeyInModal && (
+                                    <button
+                                        type="button"
+                                        onClick={handleConfirmSelection}
+                                        className="shrink-0 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 shadow-sm"
+                                    >
+                                        {t('grade.confirmVerse', 'Confirm')}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Body */}
                     <div className="relative px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
@@ -348,6 +422,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                                 surahData={surahData}
                                 selectedAyahs={displaySelectedAyahs}
                                 isFontLoading={isFontLoading}
+                                onWordClick={onSelectVerseKey ? handleWordClick : undefined}
                             />
                         )}
                     </div>

@@ -268,6 +268,21 @@ export function isLastVerseOfSurah(surah: number, ayah: number): boolean {
     return max != null && ayah === max;
 }
 
+/**
+ * Convert global 1-based verse index (1..6236) to verse key "surah:ayah".
+ * Used when API returns only verse IDs (e.g. today_schedule.from_verse_id).
+ */
+export function getVerseKeyFromGlobalId(verseId: number): string {
+    if (verseId < 1) return '1:1';
+    let remaining = verseId;
+    for (let s = 1; s <= 114; s++) {
+        const count = VERSE_COUNT_PER_SURAH[s - 1] ?? 0;
+        if (remaining <= count) return `${s}:${remaining}`;
+        remaining -= count;
+    }
+    return '114:6'; // last verse
+}
+
 /** Compare two verse keys (e.g. "2:286" vs "3:1"). Returns -1 if a < b, 0 if equal, 1 if a > b. */
 export function compareVerseKeys(a: string, b: string): number {
     const [as, aa] = a.trim().split(':').map(Number);
