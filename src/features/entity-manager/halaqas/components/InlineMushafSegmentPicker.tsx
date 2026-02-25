@@ -179,7 +179,7 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
     }, [currentPage, segmentsByPageCache]);
 
 
-    // Highlight: selected start and end segments when they are on current page
+    // Highlight: current selection (as soon as user clicks) + committed start/end when on current page
     const selectedAyahs = useMemo(() => {
         const set = new Set<string>();
         if (selectedStartSegment?.page_number === currentPage) {
@@ -188,8 +188,11 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
         if (selectedEndSegment?.page_number === currentPage) {
             verseKeysForSegment(selectedEndSegment).forEach((k) => set.add(k));
         }
+        if (currentSelection?.page_number === currentPage) {
+            verseKeysForSegment(currentSelection).forEach((k) => set.add(k));
+        }
         return set;
-    }, [currentPage, selectedStartSegment, selectedEndSegment]);
+    }, [currentPage, selectedStartSegment, selectedEndSegment, currentSelection]);
 
     const handleWordClick = useCallback(
         (_wordId: number, location: string) => {
