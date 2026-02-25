@@ -6,6 +6,16 @@ import React from 'react';
  * Includes both component types and shared application types
  */
 
+/** API date object: gregorian + hijri variants (used for start_date, end_date, joined_at, daily_schedule date, etc.) */
+export interface AppDate {
+    gregorian: string;
+    hijri: string;
+    hijri_indic: string;
+}
+
+/** User preference for how dates are displayed app-wide */
+export type DateFormatPreference = 'gregorian' | 'hijri' | 'hijri_indic';
+
 /** Bilingual name from API */
 export interface BilingualName {
     en?: string;

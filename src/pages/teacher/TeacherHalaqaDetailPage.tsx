@@ -9,7 +9,7 @@ import { useTeacherHalaqaStudents } from '@/features/teacher/halaqas/hooks/useTe
 import { teacherHalaqasService } from '@/features/teacher/halaqas/services/halaqas.service';
 import TeacherHalaqaStudents from '@/features/teacher/halaqas/components/TeacherHalaqaStudents';
 import type { BilingualName } from '@/features/teacher/halaqas/types/list.types';
-import { formatDate } from '@/utils';
+import { getDisplayDate } from '@/utils';
 import HalaqaBasicInfo from '@/features/entity-manager/halaqas/components/HalaqaBasicInfo';
 import HalaqaQuickStats from '@/features/entity-manager/halaqas/components/HalaqaQuickStats';
 import HalaqaAdditionalInfo from '@/features/entity-manager/halaqas/components/HalaqaAdditionalInfo';
@@ -254,7 +254,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                                     <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                         {t('halaqa.date', 'Date')}
                                     </dt>
-                                    <dd className="mt-1 text-base font-medium text-gray-900">{formatDate(date)}</dd>
+                                    <dd className="mt-1 text-base font-medium text-gray-900">{getDisplayDate(date)}</dd>
                                 </div>
                                 {time && (
                                     <div>

@@ -1,11 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatDate } from '@/utils';
+import { FormattedDate } from '@/globals/components/ui';
 import { CalendarIcon } from '@/globals/icons';
+import type { AppDate } from '@/globals/types';
 
 interface HalaqaDatesScheduleProps {
-    startDate?: string;
-    endDate?: string;
+    startDate?: AppDate | string;
+    endDate?: AppDate | string;
     sessionTime?: string;
 }
 
@@ -33,7 +34,7 @@ const HalaqaDatesSchedule: React.FC<HalaqaDatesScheduleProps> = ({
                             {t('halaqa.startDate', 'Start Date')}
                         </p>
                         <p className="text-base font-medium text-gray-900">
-                            {formatDate(startDate)}
+                            <FormattedDate value={startDate} />
                         </p>
                     </div>
                 )}
@@ -43,7 +44,7 @@ const HalaqaDatesSchedule: React.FC<HalaqaDatesScheduleProps> = ({
                             {t('halaqa.endDate', 'End Date')}
                         </p>
                         <p className="text-base font-medium text-gray-900">
-                            {formatDate(endDate)}
+                            <FormattedDate value={endDate} />
                         </p>
                     </div>
                 )}

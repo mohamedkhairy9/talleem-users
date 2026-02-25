@@ -3,6 +3,7 @@
  * Response structure: { halaqa: {...}, students: [...], attendance_types: [], date: string, time: string }
  */
 
+import type { AppDate } from '@/globals/types';
 import type { Halaqa, BilingualName } from './list.types';
 
 // Re-export BilingualName for convenience
@@ -32,7 +33,7 @@ export interface AttendanceTypesResponse {
 /** Daily schedule item from teacher API (verse keys for mushaf) */
 export interface TeacherDailyScheduleItem {
     day: number;
-    date: string;
+    date: AppDate | string;
     from_verse_key: string;
     to_verse_key: string;
     juz_numbers?: number[];
@@ -69,7 +70,7 @@ export interface TeacherHalaqaStudentsResponse {
 
 export interface TodaySchedule {
     day_number: number;
-    date: string;
+    date: AppDate | string;
     day_name_ar: string;
     day_name_en: string;
     juz_numbers: number[];

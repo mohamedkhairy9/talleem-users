@@ -4,6 +4,7 @@ import { CalendarIcon, BookOpenIcon } from '@/globals/icons';
 import MushafPageModal from './MushafPageModal';
 import { toast } from 'react-toastify';
 import { dbLoader } from '@/utils/helpers/databaseLoader';
+import { getDisplayDate, getGregorianDate } from '@/utils';
 import type { DailyScheduleItem } from '../types/list.types';
 
 interface PlanDailyScheduleProps {
@@ -89,9 +90,9 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
         return new Date().toISOString().split('T')[0];
     }, [currentDate]);
 
-    // Find today's schedule item
+    // Find today's schedule item (date may be string or AppDate)
     const todaySchedule = useMemo(() => {
-        return dailySchedule.find(item => item.date === today);
+        return dailySchedule.find((item) => getGregorianDate(item.date) === today);
     }, [dailySchedule, today]);
 
     // Get items to display
@@ -107,19 +108,6 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
             </div>
         );
     }
-
-    const formatDate = (dateString: string) => {
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-            });
-        } catch {
-            return dateString;
-        }
-    };
 
     return (
         <div className="space-y-4">
@@ -138,7 +126,7 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                                 {t('plan.day', 'Day')} {todaySchedule.day}:
                             </span>
                             <span className="text-gray-600">
-                                {formatDate(todaySchedule.date)} ({todaySchedule.day_name})
+                                {getDisplayDate(todaySchedule.date)} ({todaySchedule.day_name})
                             </span>
                         </div>
                         <div className="text-sm text-gray-700">
@@ -231,8 +219,8 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
 
                 <div className="space-y-2 max-h-[600px] overflow-y-auto">
                     {itemsToShow.map((item) => {
-                        const isToday = item.date === today;
-                        const isPast = new Date(item.date) < new Date(today);
+                        const isToday = getGregorianDate(item.date) === today;
+                        const isPast = new Date(getGregorianDate(item.date)) < new Date(today);
 
                         return (
                             <div
@@ -260,7 +248,7 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                                                 {t('plan.day', 'Day')} {item.day}
                                             </span>
                                             <span className="text-xs text-gray-500">
-                                                {formatDate(item.date)}
+                                                {getDisplayDate(item.date)}
                                             </span>
                                             <span className="text-xs text-gray-400">
                                                 {item.day_name}

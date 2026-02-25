@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { EyeIcon, TrashIcon } from '@/globals/icons';
 import type { WarningResponse } from '../services/warnings.service';
-import { formatDate } from '@/utils';
+import { getDisplayDate } from '@/utils';
 
 interface WarningsListMobileProps {
     list: WarningResponse[];
@@ -98,7 +98,7 @@ export const WarningsListMobile: React.FC<WarningsListMobileProps> = ({
                             <div className="flex justify-between gap-2">
                                 <span className="text-gray-500">{t('warning.date', 'Date')}</span>
                                 <span className="text-gray-900 text-end">
-                                    {formatDate(row.date)}
+                                    {getDisplayDate(row.date)}
                                 </span>
                             </div>
                             <div className="flex justify-between gap-2">

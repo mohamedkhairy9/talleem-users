@@ -3,6 +3,8 @@
  * Centralized and extensible for pagination and filters
  */
 
+import type { AppDate } from '@/globals/types';
+
 export interface BilingualName {
     en?: string;
     ar?: string;
@@ -43,7 +45,7 @@ export interface Student {
     gender?: string;
     created_at?: string;
     updated_at?: string;
-    joined_at?: string;
+    joined_at?: AppDate | string;
 }
 
 /**
@@ -51,7 +53,7 @@ export interface Student {
  */
 export interface DailyScheduleItem {
     day: number;
-    date: string;
+    date: AppDate | string;
     text: string;
     to_text: string;
     day_name: string;
@@ -92,8 +94,8 @@ export interface HalaqaListItem {
     memorization_program_entity_type?: MemorizationProgramEntityType;
     period?: string;
     teacher?: { id: number; name?: BilingualName };
-    start_date?: string;
-    end_date?: string;
+    start_date?: AppDate | string;
+    end_date?: AppDate | string;
     duration_in_days?: number;
     weekly_holiday?: string;
     evaluation_system?: string;

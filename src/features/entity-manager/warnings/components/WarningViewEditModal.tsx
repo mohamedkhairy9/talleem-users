@@ -11,7 +11,7 @@ import { UpdateWarningPayload, WarningResponse } from '../services';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '@/stores';
 import { createStudentsLoader, createTeachersLoader } from '../utils';
-import { formatDate } from '@/utils';
+import { getDisplayDate } from '@/utils';
 import { WARNING_TYPES } from '../config';
 
 interface WarningViewEditModalProps {
@@ -247,7 +247,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
                                             {t('warning.date', 'Date')}
                                         </label>
                                         <p className="mt-1 text-sm text-gray-900">
-                                            {formatDate(warning.date)}
+                                            {getDisplayDate(warning.date)}
                                         </p>
                                     </div>
                                     <div>

@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { EyeIcon } from '@/globals/icons';
 import type { TeacherHalaqaItem, BilingualName } from '../types/list.types';
-import { formatDate } from '@/utils';
+import { getDisplayDate } from '@/utils';
 
 interface TeacherHalaqaListMobileProps {
     list: TeacherHalaqaItem[];
@@ -91,7 +91,7 @@ const TeacherHalaqaListMobile: React.FC<TeacherHalaqaListMobileProps> = ({
                                     {t('halaqa.startDate', 'Start Date')}
                                 </span>
                                 <span className="text-gray-900 text-end">
-                                    {formatDate(row.start_date)}
+                                    {getDisplayDate(row.start_date)}
                                 </span>
                             </div>
                             <div className="flex justify-between gap-2">

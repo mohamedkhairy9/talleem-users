@@ -5,7 +5,7 @@ import { UsersIcon, UserIcon, AlertTriangleIcon, XIcon, CheckIcon, BookIcon, Cli
 import type { HalaqaStudent, BilingualName, AttendanceType, TeacherStudentPlan } from '../types/students.types';
 import { useStudentPlan } from '../hooks/useStudentPlan';
 import { teacherHalaqasService } from '../services/halaqas.service';
-import { formatDate } from '@/utils';
+import { getDisplayDate, getGregorianDate } from '@/utils';
 import { Button } from '@/globals/components';
 import MushafPageModal from '@/features/entity-manager/halaqas/components/MushafPageModal';
 
@@ -243,7 +243,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
         if (!gradeModal || !students.length) return null;
         const student = students.find((s) => s.id === gradeModal.studentId);
         const plan = student?.plans?.find((p) => p.activity === gradeModal.activity);
-        const entry = plan?.daily_schedule?.find((d) => d.date === planCurrentDate);
+        const entry = plan?.daily_schedule?.find((d) => getGregorianDate(d.date) === planCurrentDate);
         if (!entry?.from_verse_key || !entry?.to_verse_key) return null;
         return { from_verse_key: entry.from_verse_key, to_verse_key: entry.to_verse_key };
     }, [gradeModal, students, planCurrentDate]);
@@ -555,7 +555,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                         </thead>
                                                         <tbody>
                                                             {planFromStudent.daily_schedule.map((row) => {
-                                                                const isCurrentDay = row.date === planCurrentDate;
+                                                                const isCurrentDay = getGregorianDate(row.date) === planCurrentDate;
                                                                 return (
                                                                     <tr
                                                                         key={row.day}
@@ -563,7 +563,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                                     >
                                                                         <td className="py-2 pr-2 text-gray-900">{row.day}</td>
                                                                         <td className="py-2 pr-2 text-gray-900">
-                                                                            {formatDate(row.date)}
+                                                                            {getDisplayDate(row.date)}
                                                                             {isCurrentDay && (
                                                                                 <span className="mr-2 inline-flex items-center rounded-full bg-primary-600 px-2 py-0.5 text-xs font-medium text-white">
                                                                                     {t('plan.today', 'Today')}
@@ -677,7 +677,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                             {t('plan.date', 'Date')}
                                                         </dt>
                                                         <dd className="mt-1 text-sm text-gray-900">
-                                                            {formatDate(planData.today_schedule.date)} ({currentLang === 'ar' ? planData.today_schedule.day_name_ar : planData.today_schedule.day_name_en})
+                                                            {getDisplayDate(planData.today_schedule.date)} ({currentLang === 'ar' ? planData.today_schedule.day_name_ar : planData.today_schedule.day_name_en})
                                                         </dd>
                                                     </div>
                                                     <div>

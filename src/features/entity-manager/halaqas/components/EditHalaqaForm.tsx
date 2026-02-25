@@ -8,6 +8,7 @@ import { useHalaqa, useUpdateHalaqa } from '../hooks/useHalaqas';
 import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
+import { getGregorianDate } from '@/utils';
 import {
     HALAQA_PERIODS,
     HALAQA_ACTIVITIES
@@ -88,8 +89,8 @@ const EditHalaqaForm: React.FC = () => {
                 },
                 teacher_id: teacherId,
                 period: halaqa.period || 'morning',
-                start_date: halaqa.start_date || '',
-                end_date: halaqa.end_date || '',
+                start_date: getGregorianDate(halaqa.start_date) || '',
+                end_date: getGregorianDate(halaqa.end_date) || '',
                 activities: halaqa.activities || [],
                 student_ids: studentIds
             });

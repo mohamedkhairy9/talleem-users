@@ -1,6 +1,6 @@
 import { TableColumn } from '@/globals/types';
 import type { WarningResponse } from '../services/warnings.service';
-import { formatDate } from '@/utils';
+import { getDisplayDate } from '@/utils';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -16,7 +16,7 @@ export const createWarningsListColumns = (params: {
     return [
         {
             header: t('warning.date', 'Date'),
-            accessor: (row: WarningResponse) => formatDate(row.date)
+            accessor: (row: WarningResponse) => getDisplayDate(row.date)
         },
         {
             header: t('warning.warningType', 'Warning Type'),

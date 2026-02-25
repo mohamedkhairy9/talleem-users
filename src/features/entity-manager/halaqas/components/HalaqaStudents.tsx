@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatDate } from '@/utils';
+import { FormattedDate } from '@/globals/components/ui';
 import { UsersIcon, UserIcon } from '@/globals/icons';
 import type { Student } from '../types';
 
@@ -61,7 +61,7 @@ const HalaqaStudents: React.FC<HalaqaStudentsProps> = ({
                                 </p>
                                 {student.joined_at && (
                                     <p className="text-xs text-gray-500 mt-0.5">
-                                        {t('halaqa.joinedAt', 'Joined')}: {formatDate(student.joined_at)}
+                                        {t('halaqa.joinedAt', 'Joined')}: <FormattedDate value={student.joined_at} />
                                     </p>
                                 )}
                             </div>

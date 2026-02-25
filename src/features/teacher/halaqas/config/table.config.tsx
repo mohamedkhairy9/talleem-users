@@ -1,6 +1,6 @@
 import { TableColumn } from '@/globals/types';
 import type { TeacherHalaqaItem } from '../types/list.types';
-import { formatDate } from '@/utils';
+import { getDisplayDate } from '@/utils';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -25,11 +25,11 @@ export const createTeacherHalaqaListColumns = (params: {
         },
         {
             header: t('halaqa.startDate', 'Start Date'),
-            accessor: (row) => formatDate(row.halaqa.start_date)
+            accessor: (row) => getDisplayDate(row.halaqa.start_date)
         },
         {
             header: t('halaqa.endDate', 'End Date'),
-            accessor: (row) => formatDate(row.halaqa.end_date)
+            accessor: (row) => getDisplayDate(row.halaqa.end_date)
         },
         {
             header: t('halaqa.sessionTime', 'Session Time'),

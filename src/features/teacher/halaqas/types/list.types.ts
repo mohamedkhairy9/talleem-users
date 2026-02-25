@@ -3,6 +3,8 @@
  * Response structure: { data: TeacherHalaqaItem[] }
  */
 
+import type { AppDate } from '@/globals/types';
+
 export interface BilingualName {
     en?: string;
     ar?: string;
@@ -27,12 +29,12 @@ export interface Platform {
 export interface Student {
     id: number;
     name?: BilingualName;
-    joined_at?: string;
+    joined_at?: AppDate | string;
 }
 
 export interface DailyScheduleItem {
     day: number;
-    date: string;
+    date: AppDate | string;
     text: string;
     to_text: string;
     day_name: string;
@@ -59,8 +61,8 @@ export interface Halaqa {
     memorization_program_entity_type?: MemorizationProgramEntityType;
     period?: string;
     teacher?: Teacher;
-    start_date?: string;
-    end_date?: string;
+    start_date?: AppDate | string;
+    end_date?: AppDate | string;
     duration_in_days?: number;
     weekly_holiday?: string;
     evaluation_system?: string;

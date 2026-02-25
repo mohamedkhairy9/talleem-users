@@ -12,3 +12,5 @@ export { default as ConfirmationModal } from './ConfirmationModal';
 export type { ConfirmationModalProps } from './ConfirmationModal';
 export { default as PageHeader } from './PageHeader';
 export type { PageHeaderAction, PageHeaderBadge } from './PageHeader';
+export { default as FormattedDate } from './FormattedDate';
+export type { FormattedDateProps } from './FormattedDate';
