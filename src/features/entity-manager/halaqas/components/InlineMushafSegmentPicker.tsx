@@ -38,6 +38,12 @@ function verseKeysForSegment(seg: QuranSegment): Set<string> {
     return new Set(keys);
 }
 
+function segmentLabel(seg: QuranSegment): string {
+    return seg.first_verse_key === seg.last_verse_key
+        ? seg.first_verse_key
+        : `${seg.first_verse_key} – ${seg.last_verse_key}`;
+}
+
 /**
  * Inline mushaf viewer for segment selection. Shows one page at a time with arrows.
  * Fetches segments per page from API (cached). User clicks on the page to select a segment.
@@ -61,7 +67,8 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
     const [segmentsByPageCache, setSegmentsByPageCache] = useState<Record<number, QuranSegment[]>>({});
     const [currentPageSegments, setCurrentPageSegments] = useState<QuranSegment[]>([]);
     const [isLoadingSegments, setIsLoadingSegments] = useState(false);
-    const [selectionMode, setSelectionMode] = useState<'start' | 'end'>('start');
+    /** Segment currently selected (clicked on page or list); shown in header. Start/End buttons commit this as start/end. */
+    const [currentSelection, setCurrentSelection] = useState<QuranSegment | null>(null);
 
     // Initialize databases on mount
     useEffect(() => {
@@ -188,14 +195,18 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
         (_wordId: number, location: string) => {
             const segment = findSegmentForVerseKey(location, currentPageSegments);
             if (!segment) return;
-            if (selectionMode === 'start') {
-                onSelectStartSegment(segment);
-            } else {
-                onSelectEndSegment(segment);
-            }
+            setCurrentSelection(segment);
         },
-        [currentPageSegments, selectionMode, onSelectStartSegment, onSelectEndSegment]
+        [currentPageSegments]
     );
+
+    const handleSetStart = useCallback(() => {
+        if (currentSelection) onSelectStartSegment(currentSelection);
+    }, [currentSelection, onSelectStartSegment]);
+
+    const handleSetEnd = useCallback(() => {
+        if (currentSelection) onSelectEndSegment(currentSelection);
+    }, [currentSelection, onSelectEndSegment]);
 
     if (isLoading || error) {
         return (
@@ -214,46 +225,85 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
 
     return (
         <div className="space-y-4">
-            {/* Selection mode + page navigation */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white p-3">
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700">{t('quran.selectSegment', 'Select segment')}:</span>
-                    <button
-                        type="button"
-                        onClick={() => setSelectionMode('start')}
-                        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                            selectionMode === 'start'
-                                ? 'bg-primary-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                    >
-                        {t('quran.startSegment', 'Start')}
-                    </button>
+            {/* Header: clear Start / End display + assign buttons + page nav */}
+            <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-4">
+                {/* Row 1: Always show what is set as Start (and End for start_end) */}
+                <div className={`grid gap-3 ${planType === 'start_end' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+                    <div className="rounded-lg border-2 border-emerald-200 bg-emerald-50/50 px-3 py-2">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700 mb-0.5">
+                            {t('quran.startSegment', 'Start')}
+                        </div>
+                        <div className="text-sm font-medium text-emerald-900">
+                            {selectedStartSegment
+                                ? `${t('quran.segment', 'Segment')} ${selectedStartSegment.segment_number} (${segmentLabel(selectedStartSegment)})`
+                                : `— ${t('quran.notSet', 'Not set')}`}
+                        </div>
+                    </div>
                     {planType === 'start_end' && (
-                        <button
-                            type="button"
-                            onClick={() => setSelectionMode('end')}
-                            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                                selectionMode === 'end'
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                            {t('quran.endSegment', 'End')}
-                        </button>
+                        <div className="rounded-lg border-2 border-blue-200 bg-blue-50/50 px-3 py-2">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-blue-700 mb-0.5">
+                                {t('quran.endSegment', 'End')}
+                            </div>
+                            <div className="text-sm font-medium text-blue-900">
+                                {selectedEndSegment
+                                    ? `${t('quran.segment', 'Segment')} ${selectedEndSegment.segment_number} (${segmentLabel(selectedEndSegment)})`
+                                    : `— ${t('quran.notSet', 'Not set')}`}
+                            </div>
+                        </div>
                     )}
                 </div>
-                <MushafPageNavigator
-                    value={currentPage}
-                    onChange={setCurrentPage}
-                />
+
+                {/* Row 2: Current selection + Set as Start / Set as End */}
+                <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-gray-100">
+                    <span className="text-sm font-medium text-gray-600">
+                        {t('quran.selectSegment', 'Select segment')}:
+                    </span>
+                    {currentSelection ? (
+                        <>
+                            <span className="text-sm text-gray-800 font-medium px-2 py-1 rounded bg-gray-100">
+                                {t('quran.selected', 'Selected')}: {t('quran.segment', 'Segment')} {currentSelection.segment_number} ({segmentLabel(currentSelection)})
+                            </span>
+                            <button
+                                type="button"
+                                onClick={handleSetStart}
+                                className="rounded-lg px-3 py-1.5 text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
+                            >
+                                {t('quran.setAsStart', 'Set as Start')}
+                            </button>
+                            {planType === 'start_end' && (
+                                <button
+                                    type="button"
+                                    onClick={handleSetEnd}
+                                    className="rounded-lg px-3 py-1.5 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                                >
+                                    {t('quran.setAsEnd', 'Set as End')}
+                                </button>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <span className="text-sm text-gray-500 italic">{t('quran.clickSegmentFirst', 'Click a segment in the page or list')}</span>
+                            <button type="button" disabled className="rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-300 text-gray-500 cursor-not-allowed">
+                                {t('quran.setAsStart', 'Set as Start')}
+                            </button>
+                            {planType === 'start_end' && (
+                                <button type="button" disabled className="rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-300 text-gray-500 cursor-not-allowed">
+                                    {t('quran.setAsEnd', 'Set as End')}
+                                </button>
+                            )}
+                        </>
+                    )}
+                </div>
+
+                <div className="flex justify-end border-t border-gray-100 pt-3">
+                    <MushafPageNavigator value={currentPage} onChange={setCurrentPage} />
+                </div>
             </div>
 
-            {/* Hint */}
             <p className="text-sm text-gray-500">
-                {selectionMode === 'start'
-                    ? t('quran.clickSegmentToSelectStart', 'Click on any segment in the page to set it as start.')
-                    : t('quran.clickSegmentToSelectEnd', 'Click on any segment in the page to set it as end.')}
+                {planType === 'start_end'
+                    ? t('quran.hintStartEnd', 'Click a segment (on the page or in the list), then click "Set as Start" or "Set as End".')
+                    : t('quran.clickSegmentThenStartEnd', 'Click on a segment in the page or list, then use Start to set it.')}
             </p>
 
             {/* Grid: mushaf page and segments on the same row */}
@@ -292,13 +342,12 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
                                     <button
                                         key={seg.id}
                                         type="button"
-                                        onClick={() => {
-                                            if (selectionMode === 'start') onSelectStartSegment(seg);
-                                            else onSelectEndSegment(seg);
-                                        }}
+                                        onClick={() => setCurrentSelection(seg)}
                                         className={`rounded-lg px-3 py-2 text-left text-sm border-2 transition-colors ${
                                             isSelected
                                                 ? 'border-primary-500 bg-primary-50 text-primary-900'
+                                                : currentSelection?.id === seg.id
+                                                ? 'border-primary-400 bg-primary-50/70 text-primary-900'
                                                 : 'border-gray-200 bg-white hover:border-primary-300'
                                         }`}
                                     >

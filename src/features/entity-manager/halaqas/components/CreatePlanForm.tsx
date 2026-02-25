@@ -360,11 +360,14 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Plan preview: data from API with save_or_not: 0 — not created yet. Shown for both daily_amount and start_end. */}
             {planPreviewData && (() => {
+                const isStartEndPlan = planPreviewData.plan_type === 'start_end';
                 const daysNeeded = planPreviewData.days_needed ?? 0;
                 const availableDays = planPreviewData.available_study_days ?? 0;
-                const isOverflow = daysNeeded > availableDays;   // plan doesn't fit → error, disable submit
-                const hasEmptyDays = daysNeeded < availableDays; // empty days → warning, allow submit
+                // Only for start_end: validate days; otherwise allow submit and show only API warning
+                const isOverflow = isStartEndPlan && daysNeeded > availableDays;
+                const hasEmptyDays = isStartEndPlan && daysNeeded < availableDays;
                 const canConfirmSave = !isOverflow;
+                const hasApiWarning = !!planPreviewData.warning;
                 return (
                     <div ref={planPreviewRef} className="rounded-lg border-2 border-primary-200 bg-primary-50 p-4 space-y-3">
                         <h3 className="text-sm font-semibold text-primary-900">
@@ -393,30 +396,30 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                                 )}
                             </div>
                         )}
-                        {/* days_needed > available_study_days: error — plan does not fit; disable submit */}
+                        {/* For start_end only: days_needed > available_study_days → error, disable submit */}
                         {isOverflow && (
                             <div className="rounded-lg border border-red-300 bg-red-50 p-3">
                                 <p className="text-sm font-medium text-red-800">
                                     {t('plan.errorPlanDoesNotFit', { daysNeeded, availableDays })}
                                 </p>
-                                {planPreviewData.warning && (
+                                {hasApiWarning && (
                                     <p className="text-sm text-red-700 mt-1">{planPreviewData.warning}</p>
                                 )}
                             </div>
                         )}
-                        {/* days_needed < available_study_days: warning — empty days; allow submit */}
+                        {/* For start_end only: days_needed < available_study_days → empty days warning; allow submit */}
                         {hasEmptyDays && !isOverflow && (
                             <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
                                 <p className="text-sm font-medium text-amber-800">
                                     {t('plan.warningEmptyDays', 'There will be empty days. You can still submit the plan.')}
                                 </p>
-                                {planPreviewData.warning && (
+                                {hasApiWarning && (
                                     <p className="text-sm text-amber-700 mt-1">{planPreviewData.warning}</p>
                                 )}
                             </div>
                         )}
-                        {/* days_needed === available_study_days: only show API warning if present */}
-                        {!isOverflow && !hasEmptyDays && planPreviewData.warning && (
+                        {/* API warning only (no days validation): show when response has warning and we didn't show it above */}
+                        {hasApiWarning && !isOverflow && !hasEmptyDays && (
                             <p className="text-sm text-amber-700">{planPreviewData.warning}</p>
                         )}
                         <div className="flex flex-wrap items-center gap-2 pt-2">
@@ -440,8 +443,8 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setPlanStartVerseKey(planPreviewData.start_verse_key);
-                                    setPlanEndVerseKey(planPreviewData.end_verse_key ?? planPreviewData.computed_last_verse_key);
+                                    setPlanStartVerseKey(planPreviewData.start_verse_key ?? undefined);
+                                    setPlanEndVerseKey(planPreviewData.end_verse_key ?? planPreviewData.computed_last_verse_key ?? undefined);
                                     setShowPlanMushafViewer(true);
                                 }}
                                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-700 bg-primary-100 rounded-lg hover:bg-primary-200 transition-colors"

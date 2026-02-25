@@ -74,9 +74,13 @@ export interface CreatePlanPayload {
 export interface PlanDailyScheduleItem {
     day: number;
     date: string;
-    from_verse_key: string;
-    to_verse_key: string;
-    juz_numbers: number[];
+    from_verse_key: string | null;
+    to_verse_key: string | null;
+    juz_numbers?: number[];
+    surah_numbers?: number[];
+    from_text?: string;
+    to_text?: string;
+    text?: string;
 }
 
 /** Plan preview/save response data */
@@ -95,7 +99,7 @@ export interface CreatePlanResponseData {
     available_study_days: number;
     has_empty_days: boolean;
     warning: string | null;
-    computed_last_verse_key: string;
+    computed_last_verse_key: string | null;
     daily_schedule: PlanDailyScheduleItem[];
     students_missing_activity: unknown[];
 }
