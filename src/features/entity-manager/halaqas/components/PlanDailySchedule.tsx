@@ -2,8 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarIcon, BookOpenIcon } from '@/globals/icons';
 import MushafPageModal from './MushafPageModal';
-import { toast } from 'react-toastify';
-import { loadMushafPages, getPageForVerseKey } from '@/utils/helpers/surahHelper';
 import { getDisplayDate, getGregorianDate } from '@/utils';
 import { useDateFormatStore } from '@/stores';
 import type { DailyScheduleItem } from '../types/list.types';
@@ -25,24 +23,8 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
     useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
     const [showAll, setShowAll] = React.useState(false);
     
-    // Mushaf modal state
-    const [showMushafModal, setShowMushafModal] = useState(false);
-    const [mushafPageNumber, setMushafPageNumber] = useState<number | undefined>(undefined);
-    const [selectedAyahsForMushaf, setSelectedAyahsForMushaf] = useState<Set<string>>(new Set());
-    const [isResolvingMushafPage, setIsResolvingMushafPage] = useState(false);
-
-    // Get mushaf page (1–604) for a verse key using mushaf_pages.json (same as plan viewer)
-    const getPageNumberFromVerseKey = React.useCallback(async (verseKey: string): Promise<number | null> => {
-        if (!verseKey || !verseKey.trim()) return null;
-        try {
-            const pages = await loadMushafPages();
-            if (!pages || pages.length === 0) return null;
-            return getPageForVerseKey(verseKey.trim(), pages);
-        } catch (error) {
-            console.error('Error resolving mushaf page for verse key:', error);
-            return null;
-        }
-    }, []);
+    // Mushaf modal: open with daily range (start/end verse keys) so viewer shows only that range
+    const [mushafRange, setMushafRange] = useState<{ from_verse_key: string; to_verse_key: string } | null>(null);
 
     // Get today's date in YYYY-MM-DD format
     const today = useMemo(() => {
@@ -110,36 +92,13 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                         <div className="mt-3">
                             <button
                                 type="button"
-                                onClick={async () => {
-                                    setIsResolvingMushafPage(true);
-                                    try {
-                                        const fromPage = await getPageNumberFromVerseKey(todaySchedule.from_verse_key);
-                                        if (!fromPage) {
-                                            toast.error(t('quran.verseNotFound', 'Verse information not found'));
-                                            return;
-                                        }
-                                        setMushafPageNumber(fromPage);
-                                        const ayahs = new Set<string>();
-                                        const [startSurah, startAyah] = todaySchedule.from_verse_key.split(':').map(Number);
-                                        const [endSurah, endAyah] = todaySchedule.to_verse_key.split(':').map(Number);
-                                        for (let s = startSurah; s <= endSurah; s++) {
-                                            const startA = (s === startSurah) ? startAyah : 1;
-                                            const endA = (s === endSurah) ? endAyah : 999;
-                                            for (let a = startA; a <= endA; a++) {
-                                                ayahs.add(`${s}:${a}`);
-                                            }
-                                        }
-                                        setSelectedAyahsForMushaf(ayahs);
-                                        setShowMushafModal(true);
-                                    } catch (error: any) {
-                                        console.error('Error loading verse information:', error);
-                                        toast.error(t('quran.errorLoadingVerse', 'Error loading verse information'));
-                                    } finally {
-                                        setIsResolvingMushafPage(false);
-                                    }
+                                onClick={() => {
+                                    setMushafRange({
+                                        from_verse_key: todaySchedule.from_verse_key,
+                                        to_verse_key: todaySchedule.to_verse_key
+                                    });
                                 }}
                                 className="px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-100 rounded-lg hover:bg-primary-200 transition-colors"
-                                disabled={isResolvingMushafPage}
                             >
                                 {t('quran.viewInMushaf', 'View in Mushaf')}
                             </button>
@@ -244,37 +203,14 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                                     <div className="flex-shrink-0">
                                         <button
                                             type="button"
-                                            onClick={async () => {
-                                                setIsResolvingMushafPage(true);
-                                                try {
-                                                    const fromPage = await getPageNumberFromVerseKey(item.from_verse_key);
-                                                    if (!fromPage) {
-                                                        toast.error(t('quran.verseNotFound', 'Verse information not found'));
-                                                        return;
-                                                    }
-                                                    setMushafPageNumber(fromPage);
-                                                    const ayahs = new Set<string>();
-                                                    const [startSurah, startAyah] = item.from_verse_key.split(':').map(Number);
-                                                    const [endSurah, endAyah] = item.to_verse_key.split(':').map(Number);
-                                                    for (let s = startSurah; s <= endSurah; s++) {
-                                                        const startA = (s === startSurah) ? startAyah : 1;
-                                                        const endA = (s === endSurah) ? endAyah : 999;
-                                                        for (let a = startA; a <= endA; a++) {
-                                                            ayahs.add(`${s}:${a}`);
-                                                        }
-                                                    }
-                                                    setSelectedAyahsForMushaf(ayahs);
-                                                    setShowMushafModal(true);
-                                                } catch (error: any) {
-                                                    console.error('Error loading verse information:', error);
-                                                    toast.error(t('quran.errorLoadingVerse', 'Error loading verse information'));
-                                                } finally {
-                                                    setIsResolvingMushafPage(false);
-                                                }
+                                            onClick={() => {
+                                                setMushafRange({
+                                                    from_verse_key: item.from_verse_key,
+                                                    to_verse_key: item.to_verse_key
+                                                });
                                             }}
                                             className="px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-100 rounded-lg hover:bg-primary-200 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                                             title={t('quran.viewInMushaf', 'View in Mushaf')}
-                                            disabled={isResolvingMushafPage}
                                         >
                                             {t('quran.viewInMushaf', 'View in Mushaf')}
                                         </button>
@@ -286,17 +222,13 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                 </div>
             </div>
             
-            {/* Mushaf Modal */}
-            {showMushafModal && mushafPageNumber && (
+            {/* Mushaf Modal: open with daily range only (plan view) */}
+            {mushafRange && (
                 <MushafPageModal
-                    isOpen={showMushafModal}
-                    onClose={() => {
-                        setShowMushafModal(false);
-                        setMushafPageNumber(undefined);
-                        setSelectedAyahsForMushaf(new Set());
-                    }}
-                    pageNumber={mushafPageNumber}
-                    selectedAyahs={selectedAyahsForMushaf}
+                    isOpen={!!mushafRange}
+                    onClose={() => setMushafRange(null)}
+                    startVerseKey={mushafRange.from_verse_key}
+                    endVerseKey={mushafRange.to_verse_key}
                 />
             )}
         </div>
