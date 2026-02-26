@@ -188,9 +188,9 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                         }));
                     } else if (typeof field.options === 'object') {
                         // Use option value (e.g. "ذكر", "أنثى") as form value so it matches backend validation
-                        staticOptions = Object.entries(field.options).map(([value]) => ({
-                            value: String(value),
-                            label: String(value)
+                        staticOptions = Object.entries(field.options).map(([, val]) => ({
+                            value: String(val),
+                            label: String(val)
                         }));
                     }
 
