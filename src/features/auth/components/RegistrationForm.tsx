@@ -9,9 +9,7 @@ import { Button } from '@/globals/components';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ROUTE_PATHS } from '@/config';
-import { registrationService } from '../services/registration.service';
 import { useWatch } from 'react-hook-form';
-import { useQuery } from '@tanstack/react-query';
 
 interface RegistrationFormProps {
     userType: UserRoleType;
@@ -51,38 +49,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
         defaultValues
     });
 
-    // Watch branch_id and main_program_id to handle dependencies
-    const branchId = useWatch({ control, name: 'branch_id' });
+    // Watch main_program_id and city_id for dependent field resets
     const mainProgramId = useWatch({ control, name: 'main_program_id' });
+    const cityId = useWatch({ control, name: 'city_id' });
 
-    // Fetch branches to get city from selected branch (always enabled for select options)
-    const { data: branchesData } = useQuery({
-        queryKey: ['branches'],
-        queryFn: () => registrationService.getBranches(),
-        staleTime: 5 * 60 * 1000
-    });
-
-    // Get selected branch and extract city
-    const selectedBranch = React.useMemo(() => {
-        if (!branchId || !branchesData?.data) return null;
-        return branchesData.data.find((b: any) => (b.id || b.value) == branchId);
-    }, [branchId, branchesData]);
-
-    // Auto-set city_id from selected branch's city when branch changes
+    // Reset neighborhood when city changes (city is independent from branch)
     React.useEffect(() => {
-        if (branchId && selectedBranch?.city) {
-            const branchCityId = selectedBranch.city.id || selectedBranch.city_id;
-            if (branchCityId) {
-                setValue('city_id', branchCityId, { shouldValidate: false });
-                // Reset neighborhood when city changes
-                setValue('neighborhood_id', '');
-            }
-        } else if (!branchId) {
-            // Reset city and neighborhood when branch is cleared
-            setValue('city_id', '');
-            setValue('neighborhood_id', '');
-        }
-    }, [branchId, selectedBranch, setValue]);
+        setValue('neighborhood_id', '');
+    }, [cityId, setValue]);
 
     // Reset dependent fields when main_program_id changes
     React.useEffect(() => {

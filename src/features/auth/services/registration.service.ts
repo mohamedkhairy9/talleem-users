@@ -40,6 +40,13 @@ export const registrationService = {
     },
 
     /**
+     * Get cities
+     */
+    getCities: async (): Promise<{ data: SelectOption[] }> => {
+        return axiosInstance.get('/cities');
+    },
+
+    /**
      * Get neighborhoods (with optional city_id filter)
      */
     getNeighborhoods: async (params?: { city_id?: number | string }): Promise<{ data: SelectOption[] }> => {

@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
  */
 const getFieldEndpoint = (fieldKey: string, params?: { city_id?: number | string }) => {
     switch (fieldKey) {
+        case 'city_id':
+            return registrationService.getCities();
         case 'neighborhood_id':
             return registrationService.getNeighborhoods(params);
         case 'branch_id':

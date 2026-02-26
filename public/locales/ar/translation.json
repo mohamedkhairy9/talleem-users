@@ -6,7 +6,7 @@
         "dashboard": "لوحة التحكم",
         "students": "الطلاب",
         "teachers": "المعلمون",
-        "entityManagers": "مديرو الكيانات",
+        "entityManagers": "مديرو الجهات",
         "save": "حفظ",
         "cancel": "إلغاء",
         "delete": "حذف",
@@ -62,7 +62,7 @@
         "settings": "الإعدادات",
         "students": "الطلاب",
         "teachers": "المعلمون",
-        "entityManagers": "مديرو الكيانات",
+        "entityManagers": "مديرو الجهات",
         "halaqas": "الحلقات",
         "halaqaty": "حلقاتي",
         "createHalaqa": "إنشاء حلقة",
@@ -90,7 +90,7 @@
         "role": {
             "teacher": "معلم",
             "student": "طالب",
-            "entityManager": "مدير كيان"
+            "entityManager": "مدير جهة"
         },
         "submit_registration": "إرسال التسجيل",
         "registration_error": "خطأ في إرسال التسجيل. يرجى المحاولة مرة أخرى.",
@@ -119,8 +119,8 @@
         },
         "teacher": "المعلم",
         "selectTeacher": "اختر معلماً",
-        "memorizationProgramEntityType": "نوع كيان برنامج الحفظ",
-        "selectMemorizationProgramEntityType": "اختر نوع كيان برنامج الحفظ",
+        "memorizationProgramEntityType": "نوع جهة برنامج الحفظ",
+        "selectMemorizationProgramEntityType": "اختر نوع جهة برنامج الحفظ",
         "period": "الفترة",
         "period.morning": "صباحي",
         "period.evening": "مسائي",
@@ -160,7 +160,7 @@
         "joinedAt": "انضم في",
         "viewMoreStudents": "عرض {{count}} طلاب آخرين",
         "duration": "المدة",
-        "entityType": "نوع الكيان"
+        "entityType": "نوع الجهة"
     },
     "warning": {
         "listTitle": "الإنذارات",
@@ -177,11 +177,11 @@
         "warningType": "نوع الإنذار",
         "type.student": "طالب",
         "type.teacher": "معلم",
-        "type.entity": "كيان",
+        "type.entity": "جهة",
         "warningReason": "سبب الإنذار",
         "student": "طالب",
         "teacher": "معلم",
-        "entity": "كيان",
+        "entity": "جهة",
         "date": "التاريخ",
         "note": "ملاحظة",
         "status": "الحالة",

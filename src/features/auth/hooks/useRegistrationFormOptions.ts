@@ -35,6 +35,12 @@ export const useRegistrationFormOptions = () => {
         staleTime: 5 * 60 * 1000
     });
 
+    const citiesQuery = useQuery({
+        queryKey: ['formOptions', 'cities'],
+        queryFn: () => registrationService.getCities(),
+        staleTime: 5 * 60 * 1000
+    });
+
     const majorsQuery = useQuery({
         queryKey: ['formOptions', 'majors'],
         queryFn: () => registrationService.getMajors(),
@@ -59,6 +65,13 @@ export const useRegistrationFormOptions = () => {
         staleTime: 5 * 60 * 1000
     });
 
+    // Extract list from API response: supports { data: [] } or [{ data: [], meta }] (paginated)
+    const extractDataList = (response: any): any[] => {
+        if (!response) return [];
+        if (Array.isArray(response) && response[0]?.data) return response[0].data ?? [];
+        return response.data ?? [];
+    };
+
     // Transform options to SelectOption format
     const transformOptions = (data: any[]): Array<{ value: string | number; label: string }> => {
         if (!data) return [];
@@ -82,19 +95,20 @@ export const useRegistrationFormOptions = () => {
     };
 
     return {
-        branch_id: transformOptions(branchesQuery.data?.data || []),
-        main_program_id: transformOptions(mainProgramsQuery.data?.data || []),
-        session_mode_id: transformOptions(sessionModesQuery.data?.data || []),
-        nationality_id: transformOptions(nationalitiesQuery.data?.data || []),
-        major_id: transformOptions(majorsQuery.data?.data || []),
-        academic_qualification_id: transformOptions(academicQualificationsQuery.data?.data || []),
-        'remotely-attendance-platforms': transformOptions(remotelyAttendancePlatformsQuery.data?.data || []),
-        memorization_program_entity_type_id: transformOptions(memorizationProgramEntityTypesQuery.data?.data || []),
-        isLoading: branchesQuery.isLoading || mainProgramsQuery.isLoading || sessionModesQuery.isLoading || 
-                   nationalitiesQuery.isLoading || majorsQuery.isLoading || academicQualificationsQuery.isLoading ||
+        branch_id: transformOptions(extractDataList(branchesQuery.data)),
+        main_program_id: transformOptions(extractDataList(mainProgramsQuery.data)),
+        session_mode_id: transformOptions(extractDataList(sessionModesQuery.data)),
+        nationality_id: transformOptions(extractDataList(nationalitiesQuery.data)),
+        city_id: transformOptions(extractDataList(citiesQuery.data)),
+        major_id: transformOptions(extractDataList(majorsQuery.data)),
+        academic_qualification_id: transformOptions(extractDataList(academicQualificationsQuery.data)),
+        'remotely-attendance-platforms': transformOptions(extractDataList(remotelyAttendancePlatformsQuery.data)),
+        memorization_program_entity_type_id: transformOptions(extractDataList(memorizationProgramEntityTypesQuery.data)),
+        isLoading: branchesQuery.isLoading || mainProgramsQuery.isLoading || sessionModesQuery.isLoading ||
+                   nationalitiesQuery.isLoading || citiesQuery.isLoading || majorsQuery.isLoading || academicQualificationsQuery.isLoading ||
                    remotelyAttendancePlatformsQuery.isLoading || memorizationProgramEntityTypesQuery.isLoading,
         // Raw data for accessing nested properties (like branch.city)
-        rawBranches: branchesQuery.data?.data || []
+        rawBranches: extractDataList(branchesQuery.data)
     };
 };
 

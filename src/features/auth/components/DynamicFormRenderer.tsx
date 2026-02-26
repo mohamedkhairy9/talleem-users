@@ -24,58 +24,21 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     errors,
     setValue
 }: DynamicFormRendererProps<T>) => {
-    const { t, i18n } = useTranslation();
-    const currentLang = i18n.language || 'ar';
+    const { t } = useTranslation();
     
     // Use setValue prop or fallback to any type for dynamic field names
     const setValueFn = (setValue as any) || (() => {});
     
     // Watch form values for dependencies
     const formValues = useWatch({ control });
-    const branchId = formValues?.branch_id;
     const cityId = formValues?.city_id;
     const latitude = formValues?.latitude;
     const longitude = formValues?.longitude;
 
-    // Fetch all form options
+    // Fetch all form options (nationalities, cities, etc.)
     const options = useRegistrationFormOptions();
-    
-    // Get selected branch to extract city
-    const selectedBranch = React.useMemo(() => {
-        if (!branchId || !options.rawBranches) return null;
-        return options.rawBranches.find((branch: any) => (branch.id || branch.value) == branchId);
-    }, [branchId, options.rawBranches]);
 
-    // Get city from selected branch
-    const branchCity = React.useMemo(() => {
-        return selectedBranch?.city || null;
-    }, [selectedBranch]);
-
-    // Get city name from branch's city object (bilingual)
-    const cityName = React.useMemo(() => {
-        if (!branchCity) return '';
-        
-        // Handle the structure: branch.city.name.en or branch.city.name.ar
-        if (typeof branchCity === 'object' && branchCity.name) {
-            if (typeof branchCity.name === 'object') {
-                return currentLang === 'ar' && branchCity.name.ar 
-                    ? branchCity.name.ar 
-                    : (branchCity.name.en || '');
-            }
-            return String(branchCity.name);
-        }
-        
-        // Fallback for other structures
-        if (typeof branchCity === 'object') {
-            return currentLang === 'ar' && branchCity.ar 
-                ? branchCity.ar 
-                : (branchCity.en || '');
-        }
-        
-        return String(branchCity || '');
-    }, [branchCity, currentLang]);
-
-    // Fetch neighborhoods based on city_id
+    // Fetch neighborhoods based on city_id (city is independent from branch)
     const neighborhoodsOptions = useNeighborhoodsOptions(cityId);
 
     // Check if field should be visible based on visible_when conditions
@@ -96,14 +59,9 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     const isFieldDisabled = (field: JoinRequestFormField) : boolean => {
         if (field.disabled) return true;
 
-        // Disable city_id when branch is selected (city comes from branch, read-only)
-        if (field.key === 'city_id') {
-            return !!branchId; // Disable when branch is selected
-        }
-
-        // Disable neighborhood_id if branch_id is not selected
+        // Disable neighborhood_id when city_id is not selected (neighborhood depends on city, not branch)
         if (field.key === 'neighborhood_id') {
-            return !branchId;
+            return !cityId;
         }
 
         // Handle depends_on
@@ -137,23 +95,6 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                 // Hide latitude and longitude fields - they will be handled by MapPicker
                 if (field.key === 'latitude' || field.key === 'longitude') {
                     return null;
-                }
-                
-                // Special handling for city_id - show city name from branch (read-only)
-                if (field.key === 'city_id' && branchCity) {
-                    return (
-                        <FormInput
-                            key={field.key}
-                            name={fieldName}
-                            control={control}
-                            label={extractLabel(field.label)}
-                            type="text"
-                            required={field.required}
-                            error={fieldError?.message}
-                            disabled={true}
-                            value={cityName}
-                        />
-                    );
                 }
                 return (
                     <FormInput
@@ -246,8 +187,9 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                             label: t(`common.${opt}`, opt)
                         }));
                     } else if (typeof field.options === 'object') {
-                        staticOptions = Object.entries(field.options).map(([key, value]) => ({
-                            value: key,
+                        // Use option value (e.g. "ذكر", "أنثى") as form value so it matches backend validation
+                        staticOptions = Object.entries(field.options).map(([value]) => ({
+                            value: String(value),
                             label: String(value)
                         }));
                     }
@@ -267,31 +209,18 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                     );
                 }
 
-                // Special handling for city_id - show as read-only text input with city name from branch
-                if (field.key === 'city_id' && branchCity) {
-                    return (
-                        <FormInput
-                            key={field.key}
-                            name={fieldName}
-                            control={control}
-                            label={extractLabel(field.label)}
-                            type="text"
-                            required={field.required}
-                            error={fieldError?.message}
-                            disabled={true}
-                            value={cityName}
-                        />
-                    );
-                }
-
                 // Handle dynamic select with API call
                 let dynamicOptions: Array<{ value: string | number; label: string }> = [];
                 let isLoadingOptions = false;
 
-                // Map field keys to options
+                // Map field keys to options (works for top-level and nested group fields e.g. manager.nationality_id)
                 switch (field.key) {
                     case 'branch_id':
                         dynamicOptions = options.branch_id;
+                        isLoadingOptions = options.isLoading;
+                        break;
+                    case 'city_id':
+                        dynamicOptions = options.city_id;
                         isLoadingOptions = options.isLoading;
                         break;
                     case 'main_program_id':
