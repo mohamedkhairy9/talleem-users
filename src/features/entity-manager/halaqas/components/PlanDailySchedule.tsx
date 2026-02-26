@@ -1,9 +1,9 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarIcon, BookOpenIcon } from '@/globals/icons';
 import MushafPageModal from './MushafPageModal';
 import { toast } from 'react-toastify';
-import { dbLoader } from '@/utils/helpers/databaseLoader';
+import { loadMushafPages, getPageForVerseKey } from '@/utils/helpers/surahHelper';
 import { getDisplayDate, getGregorianDate } from '@/utils';
 import { useDateFormatStore } from '@/stores';
 import type { DailyScheduleItem } from '../types/list.types';
@@ -29,62 +29,20 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
     const [showMushafModal, setShowMushafModal] = useState(false);
     const [mushafPageNumber, setMushafPageNumber] = useState<number | undefined>(undefined);
     const [selectedAyahsForMushaf, setSelectedAyahsForMushaf] = useState<Set<string>>(new Set());
-    
-    // Database state
-    const [wordsDb, setWordsDb] = useState<any>(null);
-    const [linesDb, setLinesDb] = useState<any>(null);
-    
-    // Initialize database
-    useEffect(() => {
-        dbLoader.initialize().then(({ wordsDb: wDb, linesDb: lDb }) => {
-            setWordsDb(wDb);
-            setLinesDb(lDb);
-        }).catch((error) => {
-            console.error('Error initializing database:', error);
-        });
-    }, []);
-    
-    // Helper function to get page number from verse key using local database
+    const [isResolvingMushafPage, setIsResolvingMushafPage] = useState(false);
+
+    // Get mushaf page (1–604) for a verse key using mushaf_pages.json (same as plan viewer)
     const getPageNumberFromVerseKey = React.useCallback(async (verseKey: string): Promise<number | null> => {
-        if (!wordsDb || !linesDb || !verseKey) return null;
-        
+        if (!verseKey || !verseKey.trim()) return null;
         try {
-            // verse_key format: "surah:ayah" (e.g., "1:1")
-            const [surah] = verseKey.split(':').map(Number);
-            
-            // Step 1: Find word IDs that belong to this verse location
-            const wordsQuery = `SELECT id FROM words WHERE location = '${verseKey}' ORDER BY id LIMIT 1`;
-            const wordsResult = wordsDb.exec(wordsQuery);
-            
-            if (!wordsResult || wordsResult.length === 0 || !wordsResult[0].values || wordsResult[0].values.length === 0) {
-                // Fallback: approximate page based on surah
-                const fallbackPage = Math.max(1, Math.min(604, Math.floor((surah - 1) * 2) + 1));
-                return fallbackPage;
-            }
-            
-            const wordId = wordsResult[0].values[0][0] as number;
-            
-            // Step 2: Query lines database to find which page contains this word
-            // Pages table has first_word_id and last_word_id, so we find the page where wordId falls in that range
-            const pageQuery = `SELECT DISTINCT page_number FROM pages WHERE first_word_id <= ${wordId} AND last_word_id >= ${wordId} LIMIT 1`;
-            const pageResult = linesDb.exec(pageQuery);
-            
-            let pageNumber = 1; // Default
-            if (pageResult && pageResult.length > 0 && pageResult[0].values && pageResult[0].values.length > 0) {
-                const columns = pageResult[0].columns;
-                const pageIndex = columns && Array.isArray(columns) ? columns.indexOf('page_number') : 0;
-                pageNumber = pageResult[0].values[0][pageIndex] as number;
-            } else {
-                // Fallback: approximate based on surah (rough estimation)
-                pageNumber = Math.max(1, Math.min(604, Math.floor((surah - 1) * 2) + 1));
-            }
-            
-            return pageNumber;
+            const pages = await loadMushafPages();
+            if (!pages || pages.length === 0) return null;
+            return getPageForVerseKey(verseKey.trim(), pages);
         } catch (error) {
-            console.error('Error querying database for verse key:', error);
+            console.error('Error resolving mushaf page for verse key:', error);
             return null;
         }
-    }, [wordsDb, linesDb]);
+    }, []);
 
     // Get today's date in YYYY-MM-DD format
     const today = useMemo(() => {
@@ -153,28 +111,17 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                             <button
                                 type="button"
                                 onClick={async () => {
-                                    if (!wordsDb || !linesDb) {
-                                        toast.error(t('quran.databaseNotReady', 'Database is not ready. Please wait...'));
-                                        return;
-                                    }
-                                    
+                                    setIsResolvingMushafPage(true);
                                     try {
-                                        // Get page number from verse keys using local database
                                         const fromPage = await getPageNumberFromVerseKey(todaySchedule.from_verse_key);
-                                        
                                         if (!fromPage) {
                                             toast.error(t('quran.verseNotFound', 'Verse information not found'));
                                             return;
                                         }
-                                        
-                                        // Use the page number from the first verse
                                         setMushafPageNumber(fromPage);
-                                        
-                                        // Create set of ayahs from first to last verse
                                         const ayahs = new Set<string>();
                                         const [startSurah, startAyah] = todaySchedule.from_verse_key.split(':').map(Number);
                                         const [endSurah, endAyah] = todaySchedule.to_verse_key.split(':').map(Number);
-                                        
                                         for (let s = startSurah; s <= endSurah; s++) {
                                             const startA = (s === startSurah) ? startAyah : 1;
                                             const endA = (s === endSurah) ? endAyah : 999;
@@ -182,16 +129,17 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                                                 ayahs.add(`${s}:${a}`);
                                             }
                                         }
-                                        
                                         setSelectedAyahsForMushaf(ayahs);
                                         setShowMushafModal(true);
                                     } catch (error: any) {
                                         console.error('Error loading verse information:', error);
                                         toast.error(t('quran.errorLoadingVerse', 'Error loading verse information'));
+                                    } finally {
+                                        setIsResolvingMushafPage(false);
                                     }
                                 }}
                                 className="px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-100 rounded-lg hover:bg-primary-200 transition-colors"
-                                disabled={!wordsDb}
+                                disabled={isResolvingMushafPage}
                             >
                                 {t('quran.viewInMushaf', 'View in Mushaf')}
                             </button>
@@ -297,28 +245,17 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                                         <button
                                             type="button"
                                             onClick={async () => {
-                                                if (!wordsDb) {
-                                                    toast.error(t('quran.databaseNotReady', 'Database is not ready. Please wait...'));
-                                                    return;
-                                                }
-                                                
+                                                setIsResolvingMushafPage(true);
                                                 try {
-                                                    // Get page number from verse keys using local database
                                                     const fromPage = await getPageNumberFromVerseKey(item.from_verse_key);
-                                                    
                                                     if (!fromPage) {
                                                         toast.error(t('quran.verseNotFound', 'Verse information not found'));
                                                         return;
                                                     }
-                                                    
-                                                    // Use the page number from the first verse
                                                     setMushafPageNumber(fromPage);
-                                                    
-                                                    // Create set of ayahs from first to last verse
                                                     const ayahs = new Set<string>();
                                                     const [startSurah, startAyah] = item.from_verse_key.split(':').map(Number);
                                                     const [endSurah, endAyah] = item.to_verse_key.split(':').map(Number);
-                                                    
                                                     for (let s = startSurah; s <= endSurah; s++) {
                                                         const startA = (s === startSurah) ? startAyah : 1;
                                                         const endA = (s === endSurah) ? endAyah : 999;
@@ -326,17 +263,18 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                                                             ayahs.add(`${s}:${a}`);
                                                         }
                                                     }
-                                                    
                                                     setSelectedAyahsForMushaf(ayahs);
                                                     setShowMushafModal(true);
                                                 } catch (error: any) {
                                                     console.error('Error loading verse information:', error);
                                                     toast.error(t('quran.errorLoadingVerse', 'Error loading verse information'));
+                                                } finally {
+                                                    setIsResolvingMushafPage(false);
                                                 }
                                             }}
                                             className="px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-100 rounded-lg hover:bg-primary-200 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                                             title={t('quran.viewInMushaf', 'View in Mushaf')}
-                                            disabled={!wordsDb || !linesDb}
+                                            disabled={isResolvingMushafPage}
                                         >
                                             {t('quran.viewInMushaf', 'View in Mushaf')}
                                         </button>
