@@ -231,6 +231,8 @@
         "noSegmentsFound": "No segments found for this page",
         "noVerses": "No verses available",
         "surah": "Surah",
+        "ayah": "Ayah",
+        "surahAyahLabel": "{{surah}}, {{ayahLabel}}: {{number}}",
         "viewFullPlan": "View Full Plan in Mushaf",
         "planView": "Plan View",
         "mushafPage": "Mushaf Page",
@@ -244,6 +246,7 @@
     "plan": {
         "plan": "Plan",
         "plans": "Plans",
+        "fromVerseToVerse": "From {{from}} to {{to}}",
         "activity": "Activity",
         "student": "Student",
         "studentCount": "{{count}} students",

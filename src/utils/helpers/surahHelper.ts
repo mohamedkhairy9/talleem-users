@@ -118,6 +118,29 @@ export async function getSurahName(
 }
 
 /**
+ * Get display info for a verse key (surah name + ayah number) for use in "From X to Y" labels.
+ * @param verseKey - Format "surah:ayah" (e.g. "2:102")
+ * @param surahData - Loaded surah data map (from loadSurahData)
+ * @param lang - 'ar' for Arabic surah name, otherwise English
+ * @returns { surahName, ayahNumber } or null if invalid/no data (then display raw verse_key)
+ */
+export function getVerseKeyDisplay(
+    verseKey: string,
+    surahData: SurahDataMap | null,
+    lang: string
+): { surahName: string; ayahNumber: number } | null {
+    if (!verseKey?.trim() || !surahData) return null;
+    const parts = verseKey.trim().split(':');
+    const surahNum = parseInt(parts[0], 10);
+    const ayahNum = parseInt(parts[1], 10);
+    if (isNaN(surahNum) || isNaN(ayahNum) || surahNum < 1 || surahNum > 114) return null;
+    const surah = surahData[String(surahNum)];
+    if (!surah) return null;
+    const surahName = lang === 'ar' ? (surah.name_arabic || surah.name_simple) : (surah.name_simple || surah.name_arabic);
+    return { surahName, ayahNumber: ayahNum };
+}
+
+/**
  * Get surah display name based on locale
  * @param surahNumber - The surah number (1-114)
  * @param locale - The locale ('ar' for Arabic, 'en' for English)

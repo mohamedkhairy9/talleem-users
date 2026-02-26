@@ -231,6 +231,8 @@
         "noSegmentsFound": "لم يتم العثور على مقاطع لهذه الصفحة",
         "noVerses": "لا توجد آيات",
         "surah": "سورة",
+        "ayah": "آية",
+        "surahAyahLabel": "{{surah}}، {{ayahLabel}}: {{number}}",
         "viewFullPlan": "عرض الخطة كاملة في المصحف",
         "planView": "عرض الخطة",
         "mushafPage": "صفحة المصحف",
@@ -244,6 +246,7 @@
     "plan": {
         "plan": "الخطة",
         "plans": "الخطط",
+        "fromVerseToVerse": "من {{from}} إلى {{to}}",
         "activity": "النشاط",
         "student": "الطالب",
         "studentCount": "{{count}} طلاب",

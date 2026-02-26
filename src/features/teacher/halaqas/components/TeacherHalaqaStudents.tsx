@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { UsersIcon, UserIcon, AlertTriangleIcon, XIcon, CheckIcon, BookIcon, ClipboardCheckIcon } from '@/globals/icons';
@@ -9,6 +9,8 @@ import { getDisplayDate, getGregorianDate } from '@/utils';
 import { useDateFormatStore } from '@/stores';
 import { Button } from '@/globals/components';
 import MushafPageModal from '@/features/entity-manager/halaqas/components/MushafPageModal';
+import { loadSurahData, getVerseKeyDisplay } from '@/utils/helpers/surahHelper';
+import type { SurahDataMap } from '@/utils/helpers/surahHelper';
 
 interface TeacherHalaqaStudentsProps {
     students: HalaqaStudent[];
@@ -232,6 +234,35 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
     };
 
     const currentLang = i18n.language || 'ar';
+
+    const [surahData, setSurahData] = useState<SurahDataMap | null>(null);
+    useEffect(() => {
+        loadSurahData().then(setSurahData).catch(() => setSurahData(null));
+    }, []);
+
+    const formatVerseRange = useMemo(() => {
+        const locale = currentLang === 'ar' ? 'ar' : 'en';
+        const formatAyahNum = (n: number) => new Intl.NumberFormat(locale).format(n);
+        return (fromKey: string, toKey: string) => {
+            const from = getVerseKeyDisplay(fromKey, surahData, currentLang);
+            const to = getVerseKeyDisplay(toKey, surahData, currentLang);
+            const fromStr = from
+                ? t('quran.surahAyahLabel', '{{surah}}, {{ayahLabel}}: {{number}}', {
+                    surah: from.surahName,
+                    ayahLabel: t('quran.ayah', 'Ayah'),
+                    number: formatAyahNum(from.ayahNumber)
+                })
+                : fromKey;
+            const toStr = to
+                ? t('quran.surahAyahLabel', '{{surah}}, {{ayahLabel}}: {{number}}', {
+                    surah: to.surahName,
+                    ayahLabel: t('quran.ayah', 'Ayah'),
+                    number: formatAyahNum(to.ayahNumber)
+                })
+                : toKey;
+            return t('plan.fromVerseToVerse', 'From {{from}} to {{to}}', { from: fromStr, to: toStr });
+        };
+    }, [surahData, currentLang, t]);
 
     /** Date used as "today" for plan daily schedule: session date from API or local today (YYYY-MM-DD) */
     const planCurrentDate = useMemo(() => {
@@ -572,8 +603,8 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                                                 </span>
                                                                             )}
                                                                         </td>
-                                                                        <td className="py-2 pr-2 text-gray-700 font-mono">
-                                                                            {row.from_verse_key} – {row.to_verse_key}
+                                                                        <td className="py-2 pr-2 text-gray-700">
+                                                                            {formatVerseRange(row.from_verse_key, row.to_verse_key)}
                                                                         </td>
                                                                         <td className="py-2">
                                                                             <Button

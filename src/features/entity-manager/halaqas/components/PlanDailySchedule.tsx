@@ -1,10 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarIcon, BookOpenIcon } from '@/globals/icons';
 import MushafPageModal from './MushafPageModal';
 import { getDisplayDate, getGregorianDate } from '@/utils';
 import { useDateFormatStore } from '@/stores';
+import { loadSurahData, getVerseKeyDisplay } from '@/utils/helpers/surahHelper';
 import type { DailyScheduleItem } from '../types/list.types';
+import type { SurahDataMap } from '@/utils/helpers/surahHelper';
 
 interface PlanDailyScheduleProps {
     dailySchedule: DailyScheduleItem[];
@@ -19,10 +21,40 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
     compact = false,
     maxItems = 10
 }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const lang = i18n.language || 'ar';
     useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
     const [showAll, setShowAll] = React.useState(false);
-    
+    const [surahData, setSurahData] = useState<SurahDataMap | null>(null);
+
+    useEffect(() => {
+        loadSurahData().then(setSurahData).catch(() => setSurahData(null));
+    }, []);
+
+    const formatVerseRange = useMemo(() => {
+        const locale = lang === 'ar' ? 'ar' : 'en';
+        const formatAyahNum = (n: number) => new Intl.NumberFormat(locale).format(n);
+        return (fromKey: string, toKey: string) => {
+            const from = getVerseKeyDisplay(fromKey, surahData, lang);
+            const to = getVerseKeyDisplay(toKey, surahData, lang);
+            const fromStr = from
+                ? t('quran.surahAyahLabel', '{{surah}}, {{ayahLabel}}: {{number}}', {
+                    surah: from.surahName,
+                    ayahLabel: t('quran.ayah', 'Ayah'),
+                    number: formatAyahNum(from.ayahNumber)
+                })
+                : fromKey;
+            const toStr = to
+                ? t('quran.surahAyahLabel', '{{surah}}, {{ayahLabel}}: {{number}}', {
+                    surah: to.surahName,
+                    ayahLabel: t('quran.ayah', 'Ayah'),
+                    number: formatAyahNum(to.ayahNumber)
+                })
+                : toKey;
+            return t('plan.fromVerseToVerse', 'From {{from}} to {{to}}', { from: fromStr, to: toStr });
+        };
+    }, [surahData, lang, t]);
+
     // Mushaf modal: open with daily range (start/end verse keys) so viewer shows only that range
     const [mushafRange, setMushafRange] = useState<{ from_verse_key: string; to_verse_key: string } | null>(null);
 
@@ -73,13 +105,8 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                         </div>
                         <div className="text-sm text-gray-700">
                             <span className="font-medium">
-                                {t('plan.verses', 'Verses')} {todaySchedule.from_verse_key} - {todaySchedule.to_verse_key}
+                                {formatVerseRange(todaySchedule.from_verse_key, todaySchedule.to_verse_key)} 
                             </span>
-                            {todaySchedule.juz_numbers && todaySchedule.juz_numbers.length > 0 && (
-                                <span className="ml-2 text-primary-600">
-                                    ({t('plan.juz', 'Juz')} {todaySchedule.juz_numbers.join(', ')})
-                                </span>
-                            )}
                         </div>
                         {todaySchedule.from_text && (
                             <div className="mt-2 p-2 bg-white rounded border border-primary-100">
@@ -174,13 +201,8 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                                                 <BookOpenIcon width={14} height={14} className="text-gray-400" />
                                                 <span className="text-gray-700">
                                                     <span className="font-medium">
-                                                        {t('plan.verses', 'Verses')} {item.from_verse_key} - {item.to_verse_key}
+                                                        {formatVerseRange(item.from_verse_key, item.to_verse_key)}
                                                     </span>
-                                                    {item.juz_numbers && item.juz_numbers.length > 0 && (
-                                                        <span className="ml-2 text-primary-600">
-                                                            ({t('plan.juz', 'Juz')} {item.juz_numbers.join(', ')})
-                                                        </span>
-                                                    )}
                                                 </span>
                                             </div>
 
