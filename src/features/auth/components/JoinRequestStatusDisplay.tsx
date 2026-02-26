@@ -1,53 +1,118 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormWithValidation } from '@/utils';
+import * as yup from 'yup';
+import { FormFile, Button } from '@/globals/components';
+import { useSubmitJoinRequestStep } from '../hooks/useRegistration';
+import { toast } from 'react-toastify';
+
+export interface FormInputDefinition {
+    key: string;
+    type: string;
+    label: string;
+    required?: boolean;
+}
 
 interface JoinRequestStatusData {
     id: number;
     request_type: string;
     status: number;
-    current_phase: {
-        en: string;
-        ar: string;
-    };
+    current_phase: string | { en: string; ar: string };
     current_step: {
         id: number;
-        name: {
-            en: string;
-            ar: string;
-        };
+        name: string | { en: string; ar: string };
         order: number;
         step_type: string;
         assigned_to_type: string;
         assigned_to_id: number;
-        form_inputs: any;
+        form_inputs?: FormInputDefinition[];
     };
     submitted_logs: Array<{
         step_id: number;
-        step_name: {
-            en: string;
-            ar: string;
-        };
+        step_name: string | { en: string; ar: string };
         status: number;
         notes: string | null;
-        form_data: any;
-        files: any[];
+        form_data?: Record<string, unknown>;
+        files?: string[] | Array<{ name?: string; url?: string }>;
     }>;
 }
 
 interface JoinRequestStatusDisplayProps {
     data: JoinRequestStatusData;
+    onStepSubmitted?: () => void;
 }
 
 /**
  * Join Request Status Display Component
- * Displays the join request status information
+ * Displays the join request status information.
+ * When current_step.step_type is "upload", shows a form to upload documents and submit the step.
  */
-const JoinRequestStatusDisplay: React.FC<JoinRequestStatusDisplayProps> = ({ data }) => {
+const JoinRequestStatusDisplay: React.FC<JoinRequestStatusDisplayProps> = ({ data, onStepSubmitted }) => {
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'ar';
+    const submitStepMutation = useSubmitJoinRequestStep();
 
-    const getBilingualText = (obj: { en: string; ar: string }) => {
+    const isUploadStep = data.current_step?.step_type === 'upload' && (data.current_step?.form_inputs?.length ?? 0) > 0;
+    const formInputs = data.current_step?.form_inputs ?? [];
+
+    const uploadSchema = useMemo(() => {
+        const shape: Record<string, yup.AnySchema> = {};
+        formInputs.forEach((input) => {
+            shape[input.key] = input.required
+                ? yup.mixed().required(t('common.required', 'This field is required'))
+                : yup.mixed();
+        });
+        return yup.object(shape);
+    }, [formInputs, t]);
+
+    const uploadDefaultValues = useMemo(() => {
+        const values: Record<string, null> = {};
+        formInputs.forEach((input) => {
+            values[input.key] = null;
+        });
+        return values;
+    }, [formInputs]);
+
+    const {
+        control,
+        handleSubmit,
+        formState: { errors },
+        reset
+    } = useFormWithValidation({
+        schema: uploadSchema,
+        defaultValues: uploadDefaultValues
+    });
+
+    const getBilingualText = (obj: string | { en: string; ar: string }) => {
+        if (typeof obj === 'string') return obj;
         return currentLang === 'ar' ? obj.ar : obj.en;
+    };
+
+    const onSubmitUploadStep = (values: Record<string, File | File[] | null>) => {
+        const formDataToSend = new FormData();
+        formInputs.forEach((input) => {
+            const value = values[input.key];
+            if (value == null) return;
+            if (value instanceof File) {
+                formDataToSend.append(input.key, value);
+            } else if (Array.isArray(value)) {
+                value.forEach((file) => file && formDataToSend.append(`${input.key}[]`, file));
+            }
+        });
+
+        submitStepMutation.mutate(
+            { joinRequestId: data.id, formData: formDataToSend },
+            {
+                onSuccess: () => {
+                    toast.success(t('auth.step_submitted', 'Documents submitted successfully'));
+                    reset(uploadDefaultValues);
+                    onStepSubmitted?.();
+                },
+                onError: (error: any) => {
+                    toast.error(error?.message || t('auth.step_submit_error', 'Error submitting documents'));
+                }
+            }
+        );
     };
 
     const getStatusBadge = (status: number) => {
@@ -127,6 +192,44 @@ const JoinRequestStatusDisplay: React.FC<JoinRequestStatusDisplayProps> = ({ dat
                             </p>
                         </div>
                     </div>
+
+                    {/* Upload step form: when step_type is "upload", render form from form_inputs */}
+                    {isUploadStep && (
+                        <form onSubmit={handleSubmit(onSubmitUploadStep)} className="mt-6 pt-6 border-t border-gray-200 space-y-4">
+                            <h4 className="text-md font-medium text-gray-800 mb-3">
+                                {t('auth.upload_documents', 'Upload Documents')}
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {formInputs.map((input) => (
+                                    input.type === 'file' && (
+                                        <FormFile
+                                            key={input.key}
+                                            name={input.key}
+                                            control={control}
+                                            label={input.label}
+                                            required={input.required}
+                                            error={errors[input.key]?.message as string}
+                                        />
+                                    )
+                                ))}
+                            </div>
+                            {submitStepMutation.error && (
+                                <p className="text-sm text-red-600">
+                                    {(submitStepMutation.error as any)?.message || t('auth.step_submit_error', 'Error submitting documents')}
+                                </p>
+                            )}
+                            <div className="flex justify-end">
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    loading={submitStepMutation.isPending}
+                                    disabled={submitStepMutation.isPending}
+                                >
+                                    {submitStepMutation.isPending ? t('common.loading', 'Loading...') : t('auth.submit_documents', 'Submit Documents')}
+                                </Button>
+                            </div>
+                        </form>
+                    )}
                 </div>
             )}
 
@@ -162,11 +265,21 @@ const JoinRequestStatusDisplay: React.FC<JoinRequestStatusDisplayProps> = ({ dat
                                             {t('status.files', 'Files')}
                                         </p>
                                         <div className="space-y-1">
-                                            {log.files.map((file: any, fileIndex: number) => (
-                                                <p key={fileIndex} className="text-sm text-gray-600">
-                                                    {file.name || file.url || `File ${fileIndex + 1}`}
-                                                </p>
-                                            ))}
+                                            {log.files.map((file: string | { name?: string; url?: string }, fileIndex: number) => {
+                                                const url = typeof file === 'string' ? file : file?.url;
+                                                const name = typeof file === 'object' && file?.name ? file.name : `File ${fileIndex + 1}`;
+                                                return (
+                                                    <p key={fileIndex} className="text-sm">
+                                                        {url ? (
+                                                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+                                                                {name}
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-gray-600">{name}</span>
+                                                        )}
+                                                    </p>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}

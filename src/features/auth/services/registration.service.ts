@@ -40,6 +40,17 @@ export const registrationService = {
     },
 
     /**
+     * Submit a join request step (e.g. upload documents)
+     */
+    submitJoinRequestStep: async (joinRequestId: number, formData: FormData): Promise<any> => {
+        return axiosInstance.post(`/join-request/${joinRequestId}/submit-step`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    },
+
+    /**
      * Get cities
      */
     getCities: async (): Promise<{ data: SelectOption[] }> => {

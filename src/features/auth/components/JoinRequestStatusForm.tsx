@@ -63,17 +63,29 @@ const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack })
         return { national_id: input };
     };
 
-    const onSubmit = async (data: StatusCheckFormData) => {
-        const requestData = detectInputType(data.input.trim());
-        
+    const [lastCheckInput, setLastCheckInput] = useState('');
+
+    const refetchStatus = () => {
+        if (!lastCheckInput.trim()) return;
+        const requestData = detectInputType(lastCheckInput.trim());
         statusMutation.mutate(requestData, {
             onSuccess: (response) => {
-                // Store the status data to display
+                setStatusData(response.data || response);
+            }
+        });
+    };
+
+    const onSubmit = async (data: StatusCheckFormData) => {
+        const input = data.input.trim();
+        setLastCheckInput(input);
+        const requestData = detectInputType(input);
+
+        statusMutation.mutate(requestData, {
+            onSuccess: (response) => {
                 setStatusData(response.data || response);
                 toast.success(t('auth.status_check_success', 'Status retrieved successfully'));
             },
             onError: (error: any) => {
-                // Handle error
                 const errorMessage = error.message || t('auth.status_check_error', 'Error checking status. Please try again.');
                 toast.error(errorMessage);
                 setStatusData(null);
@@ -90,7 +102,10 @@ const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack })
     if (statusData) {
         return (
             <div className="space-y-6">
-                <JoinRequestStatusDisplay data={statusData} />
+                <JoinRequestStatusDisplay
+                    data={statusData}
+                    onStepSubmitted={refetchStatus}
+                />
                 
                 {/* Action buttons */}
                 <div className="flex flex-col gap-3 pt-4 border-t border-gray-200">

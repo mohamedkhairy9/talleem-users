@@ -33,4 +33,14 @@ export const useCheckJoinRequestStatus = () => {
     });
 };
 
+/**
+ * Hook to submit a join request step (e.g. upload step)
+ */
+export const useSubmitJoinRequestStep = () => {
+    return useMutation({
+        mutationFn: ({ joinRequestId, formData }: { joinRequestId: number; formData: FormData }) =>
+            registrationService.submitJoinRequestStep(joinRequestId, formData)
+    });
+};
+
 
