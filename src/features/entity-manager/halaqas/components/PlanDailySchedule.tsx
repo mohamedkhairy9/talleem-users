@@ -5,6 +5,7 @@ import MushafPageModal from './MushafPageModal';
 import { toast } from 'react-toastify';
 import { dbLoader } from '@/utils/helpers/databaseLoader';
 import { getDisplayDate, getGregorianDate } from '@/utils';
+import { useDateFormatStore } from '@/stores';
 import type { DailyScheduleItem } from '../types/list.types';
 
 interface PlanDailyScheduleProps {
@@ -21,6 +22,7 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
     maxItems = 10
 }) => {
     const { t } = useTranslation();
+    useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
     const [showAll, setShowAll] = React.useState(false);
     
     // Mushaf modal state

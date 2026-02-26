@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { EyeIcon, EditIcon, TrashIcon } from '@/globals/icons';
 import type { HalaqaListItem, BilingualName } from '../types/list.types';
 import { getDisplayDate } from '@/utils';
+import { useDateFormatStore } from '@/stores';
 
 interface HalaqaListMobileProps {
     list: HalaqaListItem[];
@@ -32,6 +33,7 @@ export const HalaqaListMobile: React.FC<HalaqaListMobileProps> = ({
     isDeleting
 }) => {
     const { t } = useTranslation();
+    useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
 
     if (isLoading && list.length === 0) {
         return (

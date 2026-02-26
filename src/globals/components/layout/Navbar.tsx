@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocale } from '@/utils';
 import sideLogo from '@/assets/images/tallem-side-logo.svg';
-import { MenuIcon, XIcon } from '@/globals/icons';
+import { MenuIcon, XIcon, CalendarIcon, CheckIcon } from '@/globals/icons';
 import { useDateFormatStore } from '@/stores/dateFormat.store';
 import type { DateFormatPreference } from '@/globals/types';
 
@@ -17,22 +18,37 @@ interface NavbarProps {
     direction?: 'ltr' | 'rtl';
 }
 
+const DATE_FORMAT_VALUES: DateFormatPreference[] = ['gregorian', 'hijri', 'hijri_indic'];
+
 /**
  * Navbar Component
  * Full width; menu button opens/closes sidebar (overlay on small, expand/collapse on lg).
  */
-const DATE_FORMAT_OPTIONS: { value: DateFormatPreference; label: string; title: string }[] = [
-    { value: 'gregorian', label: 'G', title: 'Gregorian' },
-    { value: 'hijri', label: 'H', title: 'Hijri' },
-    { value: 'hijri_indic', label: 'H١', title: 'Hijri (Arabic-Indic numerals)' }
-];
-
 const Navbar: React.FC<NavbarProps> = ({
     isSidebarOpen = false,
     onToggleSidebar
 }) => {
+    const { t } = useTranslation();
     const { currentLocale, changeLanguage } = useLocale();
     const { dateFormat, setDateFormat } = useDateFormatStore();
+    const [dateFormatOpen, setDateFormatOpen] = useState(false);
+    const dateFormatRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!dateFormatOpen) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dateFormatRef.current && !dateFormatRef.current.contains(e.target as Node)) {
+                setDateFormatOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [dateFormatOpen]);
+
+    const handleSelectDateFormat = (value: DateFormatPreference) => {
+        setDateFormat(value);
+        setDateFormatOpen(false);
+    };
 
     return (
         <nav className={`fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200 ${NAVBAR_HEIGHT_CLASS}`}>
@@ -61,23 +77,43 @@ const Navbar: React.FC<NavbarProps> = ({
                 </div>
                 
                 <div className="flex items-center gap-2">
-                    {/* Date format: Gregorian / Hijri / Hijri (Indic) */}
-                    <div className="flex items-center gap-0.5 bg-gray-100 p-0.5 rounded-md" role="group" aria-label="Date format">
-                        {DATE_FORMAT_OPTIONS.map(({ value, label, title }) => (
-                            <button
-                                key={value}
-                                type="button"
-                                onClick={() => setDateFormat(value)}
-                                title={title}
-                                className={`px-2 py-1 rounded text-xs font-medium transition-all duration-200 ${
-                                    dateFormat === value
-                                        ? 'bg-primary-600 text-white shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                                }`}
+                    {/* Date format: calendar icon opens dropdown with 3 options */}
+                    <div className="relative" ref={dateFormatRef}>
+                        <button
+                            type="button"
+                            onClick={() => setDateFormatOpen((prev) => !prev)}
+                            className={`p-2 rounded-lg transition-colors ${
+                                dateFormatOpen ? 'bg-primary-100 text-primary-600' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                            }`}
+                            aria-label={t('dateFormat.label', 'Date format')}
+                            aria-expanded={dateFormatOpen}
+                            aria-haspopup="true"
+                        >
+                            <CalendarIcon width={22} height={22} />
+                        </button>
+                        {dateFormatOpen && (
+                            <div
+                                className="absolute right-0 mt-1 min-w-[12rem] py-1 bg-white rounded-lg shadow-lg border border-gray-200 z-[100]"
+                                role="menu"
                             >
-                                {label}
-                            </button>
-                        ))}
+                                {DATE_FORMAT_VALUES.map((value) => (
+                                    <button
+                                        key={value}
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={() => handleSelectDateFormat(value)}
+                                        className={`w-full px-3 py-2 text-start text-sm flex items-center justify-between gap-2 hover:bg-gray-50 ${
+                                            dateFormat === value ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
+                                        }`}
+                                    >
+                                        <span>{t(`dateFormat.${value}`, value)}</span>
+                                        {dateFormat === value && (
+                                            <CheckIcon width={16} height={16} className="shrink-0 text-primary-600" />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     {/* Language Switcher - Smaller */}
                     <div className="flex items-center gap-0.5 bg-gray-100 p-0.5 rounded-md">

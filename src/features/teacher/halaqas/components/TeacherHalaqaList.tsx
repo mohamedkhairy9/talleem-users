@@ -6,6 +6,7 @@ import { useTeacherHalaqas } from '../hooks/useTeacherHalaqas';
 import TeacherHalaqaListMobile from './TeacherHalaqaListMobile';
 import type { BilingualName } from '../types/list.types';
 import { createTeacherHalaqaListColumns } from '../config/table.config';
+import { useDateFormatStore } from '@/stores';
 
 /**
  * Teacher Halaqa List Component
@@ -16,6 +17,7 @@ const TeacherHalaqaList: React.FC = () => {
     const navigate = useNavigate();
     const { lang } = useParams<{ lang: string }>();
     const currentLang = i18n.language || lang || 'ar';
+    useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
 
     const { list, isLoading, error } = useTeacherHalaqas();
 

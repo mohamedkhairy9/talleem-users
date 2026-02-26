@@ -9,6 +9,7 @@ import WarningViewEditModal from './WarningViewEditModal';
 import type { WarningResponse } from '../services';
 import { toast } from 'react-toastify';
 import { createWarningsListColumns, WARNING_TYPES, WARNING_STATUS_OPTIONS } from '../config';
+import { useDateFormatStore } from '@/stores';
 
 /**
  * Warnings List Component
@@ -17,7 +18,8 @@ import { createWarningsListColumns, WARNING_TYPES, WARNING_STATUS_OPTIONS } from
 const WarningsList: React.FC = () => {
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'ar';
-    
+    useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
+
     const listState = useWarningsListState();
     const { params, page, perPage, search, warningType, status, setPage, setSearch, setWarningType, setStatus, resetFilters } = listState;
 

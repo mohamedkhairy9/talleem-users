@@ -6,6 +6,7 @@ import type { HalaqaStudent, BilingualName, AttendanceType, TeacherStudentPlan }
 import { useStudentPlan } from '../hooks/useStudentPlan';
 import { teacherHalaqasService } from '../services/halaqas.service';
 import { getDisplayDate, getGregorianDate } from '@/utils';
+import { useDateFormatStore } from '@/stores';
 import { Button } from '@/globals/components';
 import MushafPageModal from '@/features/entity-manager/halaqas/components/MushafPageModal';
 
@@ -30,6 +31,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
     currentDate: sessionDate
 }) => {
     const { t, i18n } = useTranslation();
+    useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
     const queryClient = useQueryClient();
     const [selectedPlan, setSelectedPlan] = useState<{
         studentId: number;

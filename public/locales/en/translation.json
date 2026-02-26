@@ -39,6 +39,12 @@
         "title": "Tallem Users Dashboard",
         "logout": "Logout"
     },
+    "dateFormat": {
+        "label": "Date format",
+        "gregorian": "Gregorian",
+        "hijri": "Hijri",
+        "hijri_indic": "Hijri (Arabic-Indic numerals)"
+    },
     "dashboard": {
         "title": "Dashboard",
         "welcome": "Welcome to the dashboard"

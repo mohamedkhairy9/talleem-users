@@ -10,6 +10,7 @@ import { teacherHalaqasService } from '@/features/teacher/halaqas/services/halaq
 import TeacherHalaqaStudents from '@/features/teacher/halaqas/components/TeacherHalaqaStudents';
 import type { BilingualName } from '@/features/teacher/halaqas/types/list.types';
 import { getDisplayDate } from '@/utils';
+import { useDateFormatStore } from '@/stores';
 import HalaqaBasicInfo from '@/features/entity-manager/halaqas/components/HalaqaBasicInfo';
 import HalaqaQuickStats from '@/features/entity-manager/halaqas/components/HalaqaQuickStats';
 import HalaqaAdditionalInfo from '@/features/entity-manager/halaqas/components/HalaqaAdditionalInfo';
@@ -25,6 +26,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
     const { id, lang } = useParams<{ id: string; lang: string }>();
     const navigate = useNavigate();
     const currentLang = i18n.language || lang || 'ar';
+    useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
 
     const { halaqa, students, date, time, isLoading, error, attendanceTypes } = useTeacherHalaqaStudents(id);
     const queryClient = useQueryClient();

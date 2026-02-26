@@ -12,6 +12,7 @@ import { toast } from 'react-toastify';
 import { useAuthStore } from '@/stores';
 import { createStudentsLoader, createTeachersLoader } from '../utils';
 import { getDisplayDate } from '@/utils';
+import { useDateFormatStore } from '@/stores';
 import { WARNING_TYPES } from '../config';
 
 interface WarningViewEditModalProps {
@@ -32,6 +33,7 @@ const WarningViewEditModal: React.FC<WarningViewEditModalProps> = ({
     mode: initialMode = 'view'
 }) => {
     const { t, i18n } = useTranslation();
+    useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
     const [mode, setMode] = React.useState<'view' | 'edit'>(initialMode);
     const updateWarningMutation = useUpdateWarning();
     const entity = useAuthStore((s) => s.user?.entity);

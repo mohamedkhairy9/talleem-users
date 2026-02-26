@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { EyeIcon } from '@/globals/icons';
 import type { TeacherHalaqaItem, BilingualName } from '../types/list.types';
 import { getDisplayDate } from '@/utils';
+import { useDateFormatStore } from '@/stores';
 
 interface TeacherHalaqaListMobileProps {
     list: TeacherHalaqaItem[];
@@ -26,6 +27,7 @@ const TeacherHalaqaListMobile: React.FC<TeacherHalaqaListMobileProps> = ({
     onView
 }) => {
     const { t } = useTranslation();
+    useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
 
     if (isLoading && list.length === 0) {
         return (

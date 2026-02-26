@@ -16,6 +16,7 @@ import { HALAQA_PERIODS, HALAQA_TEACHING_METHODS, createHalaqaListColumns } from
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 import { useConfirmationModal } from '@/globals/hooks/useConfirmationModal';
+import { useDateFormatStore } from '@/stores';
 
 /**
  * Halaqa List Component
@@ -24,6 +25,7 @@ import { useConfirmationModal } from '@/globals/hooks/useConfirmationModal';
 const HalaqaList: React.FC = () => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
+    useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
     const { lang } = useParams<{ lang: string }>();
     const queryClient = useQueryClient();
     const currentLang = i18n.language || lang || 'ar';

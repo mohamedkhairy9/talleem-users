@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { EyeIcon, TrashIcon } from '@/globals/icons';
 import type { WarningResponse } from '../services/warnings.service';
 import { getDisplayDate } from '@/utils';
+import { useDateFormatStore } from '@/stores';
 
 interface WarningsListMobileProps {
     list: WarningResponse[];
@@ -28,6 +29,7 @@ export const WarningsListMobile: React.FC<WarningsListMobileProps> = ({
     isDeleting = false
 }) => {
     const { t } = useTranslation();
+    useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
 
     if (isLoading && list.length === 0) {
         return (
