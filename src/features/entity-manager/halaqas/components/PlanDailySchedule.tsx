@@ -100,7 +100,7 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                                 {t('plan.day', 'Day')} {todaySchedule.day}:
                             </span>
                             <span className="text-gray-600">
-                                {getDisplayDate(todaySchedule.date)} ({todaySchedule.day_name})
+                                {getDisplayDate(todaySchedule.date)}
                             </span>
                         </div>
                         <div className="text-sm text-gray-700">
