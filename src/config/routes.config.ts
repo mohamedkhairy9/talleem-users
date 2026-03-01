@@ -17,6 +17,7 @@ export const ROUTE_PATHS = {
     HALAQA_DETAIL: 'halaqas/:id',
     EDIT_HALAQA: 'halaqas/:id/edit',
     WARNINGS_MANAGEMENT: 'warnings-management',
+    JOIN_REQUESTS: 'join-requests',
     // Teacher menu items
     TEACHER_HALAQAS: 'halaqaty',
     TEACHER_HALAQA_DETAIL: 'halaqaty/:id',

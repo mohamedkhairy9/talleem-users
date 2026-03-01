@@ -37,5 +37,9 @@ export const API_ENDPOINTS = {
         REFRESH: '/customer-refresh-token',
         CHANGE_PASSWORD: '/customer-change-password',
     },
-    // Add more endpoints as needed
+    JOIN_REQUESTS: {
+        LIST: '/join-requests',
+        LIST_PENDING: '/join-requests/pending',
+        PROCESS_STEP: (id: number) => `/join-requests/${id}/process-step`,
+    },
 } as const;

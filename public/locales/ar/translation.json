@@ -33,7 +33,9 @@
         "close": "إغلاق",
         "days": "أيام",
         "id": "المعرف",
-        "saveChanges": "حفظ التغييرات"
+        "saveChanges": "حفظ التغييرات",
+        "refresh": "تحديث",
+        "saving": "جاري الحفظ..."
     },
     "navbar": {
         "title": "لوحة تحكم مستخدمي تعليم",
@@ -66,7 +68,8 @@
         "halaqas": "الحلقات",
         "halaqaty": "حلقاتي",
         "createHalaqa": "إنشاء حلقة",
-        "warningsManagement": "إدارة الإنذارات"
+        "warningsManagement": "إدارة الإنذارات",
+        "joinRequests": "طلبات الانضمام"
     },
     "auth": {
         "email": {
@@ -309,6 +312,58 @@
         "missingPlansDescription": "الطلاب التاليون ليس لديهم خطط لبعض الأنشطة. أضف خططاً لهم في قسم الخطط أدناه.",
         "missingActivities": "ناقص",
         "goToPlansSection": "الذهاب إلى قسم الخطط"
+    },
+    "joinRequests": {
+        "title": "طلبات الانضمام",
+        "view": "عرض طلب الانضمام",
+        "requestInfo": "معلومات الطلب",
+        "requestType": "نوع الطلب",
+        "form": "النموذج",
+        "currentPhase": "المرحلة الحالية",
+        "status": "الحالة",
+        "createdAt": "تاريخ الإنشاء",
+        "submittedData": "البيانات المقدمة",
+        "takeAction": "اتخاذ إجراء",
+        "processStepHint": "اختر الحالة ويمكنك إضافة ملاحظات.",
+        "statusLabel": "الحالة",
+        "notes": "ملاحظات",
+        "process": "معالجة",
+        "processSuccess": "تمت معالجة طلب الانضمام بنجاح.",
+        "notFound": "طلب الانضمام غير موجود.",
+        "noData": "لا توجد طلبات انضمام.",
+        "searchPlaceholder": "البحث في طلبات الانضمام...",
+        "name": "الاسم",
+        "section_entity_info": "معلومات الجهة",
+        "section_location": "الموقع",
+        "section_program": "البرنامج",
+        "section_manager": "المدير",
+        "section_facilities": "المرافق",
+        "section_other": "أخرى",
+        "statusOptions": {
+            "approved": "موافق",
+            "rejected": "مرفوض",
+            "needReview": "يحتاج مراجعة",
+            "needUpload": "يحتاج رفع"
+        },
+        "field": {
+            "name": "الاسم",
+            "registration_date": "تاريخ التسجيل",
+            "license_number": "رقم الترخيص",
+            "phone": "الهاتف",
+            "email": "البريد الإلكتروني",
+            "address": "العنوان",
+            "area": "المنطقة",
+            "activities": "الأنشطة",
+            "branch": "الفرع",
+            "city": "المدينة",
+            "neighborhood": "الحي",
+            "location_type": "نوع الموقع",
+            "main_program": "البرنامج الرئيسي",
+            "manager": "المدير",
+            "class_count": "عدد الفصول",
+            "management_rooms_count": "غرف الإدارة",
+            "lecture_halls_count": "قاعات المحاضرات"
+        }
     },
     "student": {
         "nationalId": "رقم الهوية",

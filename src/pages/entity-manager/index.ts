@@ -9,5 +9,5 @@ export { default as CreateHalaqaPage } from './CreateHalaqaPage';
 export { default as EditHalaqaPage } from './EditHalaqaPage';
 export { default as HalaqaDetailPage } from './HalaqaDetailPage';
 export { default as WarningsPage } from './WarningsPage';
-
+export { default as JoinRequestsPage } from './JoinRequestsPage';
 

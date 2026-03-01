@@ -20,4 +20,8 @@ export * from './warnings';
 export { default as WarningsList } from './warnings/components/WarningsList';
 export { default as CreateWarningForm } from './warnings/components/CreateWarningForm';
 
+// Join Requests exports
+export * from './join-requests';
+export { default as JoinRequestsList } from './join-requests/components/JoinRequestsList';
+export { default as ViewJoinRequestModal } from './join-requests/components/ViewJoinRequestModal';
 

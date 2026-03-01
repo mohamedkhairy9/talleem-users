@@ -33,7 +33,9 @@
         "close": "Close",
         "days": "days",
         "id": "ID",
-        "saveChanges": "Save Changes"
+        "saveChanges": "Save Changes",
+        "refresh": "Refresh",
+        "saving": "Saving..."
     },
     "navbar": {
         "title": "Tallem Users Dashboard",
@@ -66,7 +68,8 @@
         "halaqas": "Halaqas",
         "halaqaty": "My Halaqas",
         "createHalaqa": "Create Halaqa",
-        "warningsManagement": "Warnings Management"
+        "warningsManagement": "Warnings Management",
+        "joinRequests": "Join Requests"
     },
     "auth": {
         "email": {
@@ -309,6 +312,58 @@
         "missingPlansDescription": "The following students do not have plans for some activities. Add plans for them in the Plans section below.",
         "missingActivities": "Missing",
         "goToPlansSection": "Go to Plans section"
+    },
+    "joinRequests": {
+        "title": "Join Requests",
+        "view": "View Join Request",
+        "requestInfo": "Request Info",
+        "requestType": "Request Type",
+        "form": "Form",
+        "currentPhase": "Current Phase",
+        "status": "Status",
+        "createdAt": "Created At",
+        "submittedData": "Submitted Data",
+        "takeAction": "Take Action",
+        "processStepHint": "Choose a status and optionally add notes.",
+        "statusLabel": "Status",
+        "notes": "Notes",
+        "process": "Process",
+        "processSuccess": "Join request processed successfully.",
+        "notFound": "Join request not found.",
+        "noData": "No join requests found.",
+        "searchPlaceholder": "Search join requests...",
+        "name": "Name",
+        "section_entity_info": "Entity Info",
+        "section_location": "Location",
+        "section_program": "Program",
+        "section_manager": "Manager",
+        "section_facilities": "Facilities",
+        "section_other": "Other",
+        "statusOptions": {
+            "approved": "Approved",
+            "rejected": "Rejected",
+            "needReview": "Need Review",
+            "needUpload": "Need Upload"
+        },
+        "field": {
+            "name": "Name",
+            "registration_date": "Registration Date",
+            "license_number": "License Number",
+            "phone": "Phone",
+            "email": "Email",
+            "address": "Address",
+            "area": "Area",
+            "activities": "Activities",
+            "branch": "Branch",
+            "city": "City",
+            "neighborhood": "Neighborhood",
+            "location_type": "Location Type",
+            "main_program": "Main Program",
+            "manager": "Manager",
+            "class_count": "Class Count",
+            "management_rooms_count": "Management Rooms",
+            "lecture_halls_count": "Lecture Halls"
+        }
     },
     "student": {
         "nationalId": "National ID",

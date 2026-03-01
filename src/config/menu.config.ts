@@ -35,6 +35,12 @@ export const MEMORIZATION_MENU_ITEMS: MenuItem[] = [
         labelKey: 'menu.warningsManagement',
         icon: 'AlertTriangleIcon',
         roles: ['admin', 'entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.JOIN_REQUESTS,
+        labelKey: 'menu.joinRequests',
+        icon: 'UsersIcon',
+        roles: ['entity_manager']
     }
 ];
 

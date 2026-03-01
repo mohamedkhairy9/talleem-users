@@ -5,7 +5,8 @@ import {
     HalaqaDetailPage,
     CreateHalaqaPage,
     EditHalaqaPage,
-    WarningsPage
+    WarningsPage,
+    JoinRequestsPage
 } from '@/pages/entity-manager';
 
 /**
@@ -42,6 +43,12 @@ export const entityManagerRoutes: RouteConfig[] = [
         path: ROUTE_PATHS.WARNINGS_MANAGEMENT,
         element: <WarningsPage />,
         roles: ['admin', 'entity_manager']
+    },
+    // Join Requests (entity manager: view and process join requests)
+    {
+        path: ROUTE_PATHS.JOIN_REQUESTS,
+        element: <JoinRequestsPage />,
+        roles: ['entity_manager']
     }
 ];
 
