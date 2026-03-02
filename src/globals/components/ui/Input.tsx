@@ -21,9 +21,8 @@ const Input: React.FC<InputProps> = ({
     const isRTL = i18n.language === 'ar';
     const [showPassword, setShowPassword] = useState(false);
     
-    // Determine text direction based on input type and language
-    // Email inputs are always LTR, password follows language direction
-    const inputDir = type === 'email' ? 'ltr' : (isRTL ? 'rtl' : 'ltr');
+    // Follow page direction (RTL in Arabic) for all inputs including email
+    const inputDir = isRTL ? 'rtl' : 'ltr';
     
     // For password inputs, toggle between 'password' and 'text'
     const inputType = type === 'password' ? (showPassword ? 'text' : 'password') : type;

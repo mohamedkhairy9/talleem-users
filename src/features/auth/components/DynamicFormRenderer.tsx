@@ -271,10 +271,15 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                 );
 
             case 'group':
+                // Manager group: fewer columns so fields are larger; other groups keep default grid
+                const isManagerGroup = field.key === 'manager';
+                const groupGridClass = isManagerGroup
+                    ? 'grid grid-cols-1 md:grid-cols-2 gap-4'
+                    : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
                 return (
                     <div key={field.key} className="border rounded-lg p-4 space-y-3 bg-gray-50">
                         <h3 className="text-base font-semibold text-gray-800 mb-3">{extractLabel(field.label)}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className={groupGridClass}>
                             {field.fields?.map((subField) => renderField(subField, fieldName))}
                         </div>
                     </div>
@@ -284,6 +289,23 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                 return null;
         }
     };
+
+    // Section order: entity first, then location, then manager, then rest (program, facilities, etc.)
+    const ENTITY_KEYS = ['name', 'registration_date', 'license_number', 'phone', 'email', 'address', 'area', 'status', 'activities'];
+    const LOCATION_KEYS = ['branch_id', 'city_id', 'neighborhood_id', 'location_type', 'latitude', 'longitude'];
+    const orderedFields = React.useMemo(() => {
+        const entityFields: JoinRequestFormField[] = [];
+        const locationFields: JoinRequestFormField[] = [];
+        const managerField: JoinRequestFormField[] = [];
+        const rest: JoinRequestFormField[] = [];
+        fields.forEach((f) => {
+            if (ENTITY_KEYS.includes(f.key)) entityFields.push(f);
+            else if (LOCATION_KEYS.includes(f.key)) locationFields.push(f);
+            else if (f.key === 'manager') managerField.push(f);
+            else rest.push(f);
+        });
+        return [...entityFields, ...rest, ...locationFields, ...managerField];
+    }, [fields]);
 
     // Check if latitude and longitude fields exist
     const hasLatitudeField = fields.some(f => f.key === 'latitude');
@@ -295,68 +317,67 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     const longitudeField = fields.find(f => f.key === 'longitude');
     const mapLabel = latitudeField?.label || longitudeField?.label || t('common.map_location', 'Map Location');
 
-    // Separate fields by type for better layout
-    const renderFields = () => {
-        return fields.map((field) => {
-            const isFullWidth = ['textarea', 'file', 'object', 'group'].includes(field.type);
-            
-            return (
-                <div 
-                    key={field.key} 
-                    className={isFullWidth ? 'col-span-full' : ''}
-                >
-                    {renderField(field)}
-                    {(field.note || field.notes) && (
-                        <p className="mt-1 text-xs text-gray-500 italic">{extractLabel(field.note || field.notes)}</p>
-                    )}
-                </div>
-            );
-        });
+    // Render a single field wrapper (skip when content is null to avoid empty white space)
+    const renderFieldWrapper = (field: JoinRequestFormField) => {
+        const content = renderField(field);
+        if (content == null) return null;
+        const isFullWidth = ['textarea', 'file', 'object', 'group'].includes(field.type);
+        return (
+            <div
+                key={field.key}
+                className={isFullWidth ? 'col-span-full' : ''}
+            >
+                {content}
+                {(field.note || field.notes) && (
+                    <p className="mt-1 text-xs text-gray-500 italic">{extractLabel(field.note || field.notes)}</p>
+                )}
+            </div>
+        );
     };
+
+    const entityFields = orderedFields.filter((f) => ENTITY_KEYS.includes(f.key));
+    const locationFields = orderedFields.filter((f) => LOCATION_KEYS.includes(f.key));
+    const managerFields = orderedFields.filter((f) => f.key === 'manager');
+    const restFields = orderedFields.filter(
+        (f) => !ENTITY_KEYS.includes(f.key) && !LOCATION_KEYS.includes(f.key) && f.key !== 'manager'
+    );
+
+    const mapPickerBlock = hasMapFields ? (
+        <div key="map-picker" className="col-span-full mt-6 space-y-3">
+            <h4 className="text-md font-medium text-gray-700">
+                {extractLabel(mapLabel)}
+            </h4>
+            <MapPicker
+                onLocationSelect={({ lat, lng }) => {
+                    setValueFn('latitude', lat.toString(), { shouldValidate: true });
+                    setValueFn('longitude', lng.toString(), { shouldValidate: true });
+                }}
+                oldLocation={
+                    latitude && longitude
+                        ? { lat: parseFloat(latitude.toString()), lng: parseFloat(longitude.toString()) }
+                        : null
+                }
+                disabled={false}
+            />
+            {(errors.latitude || errors.longitude) && (
+                <div className="mt-1">
+                    {errors.latitude && <p className="text-xs text-red-600">{errors.latitude.message}</p>}
+                    {errors.longitude && <p className="text-xs text-red-600">{errors.longitude.message}</p>}
+                </div>
+            )}
+        </div>
+    ) : null;
 
     return (
         <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {renderFields()}
+                {entityFields.map((field) => renderFieldWrapper(field))}
+                {restFields.map((field) => renderFieldWrapper(field))}
+
+                {locationFields.map((field) => renderFieldWrapper(field))}
+                {mapPickerBlock}
+                {managerFields.map((field) => renderFieldWrapper(field))}
             </div>
-            
-            {/* Map Picker for latitude and longitude - render at the end */}
-            {hasMapFields && (
-                <div className="col-span-full mt-6 space-y-3">
-                    <h4 className="text-md font-medium text-gray-700">
-                        {extractLabel(mapLabel)}
-                    </h4>
-                    <MapPicker
-                        onLocationSelect={({ lat, lng }) => {
-                            setValueFn('latitude', lat.toString(), {
-                                shouldValidate: true
-                            });
-                            setValueFn('longitude', lng.toString(), {
-                                shouldValidate: true
-                            });
-                        }}
-                        oldLocation={
-                            latitude && longitude
-                                ? {
-                                      lat: parseFloat(latitude.toString()),
-                                      lng: parseFloat(longitude.toString())
-                                  }
-                                : null
-                        }
-                        disabled={false}
-                    />
-                    {(errors.latitude || errors.longitude) && (
-                        <div className="mt-1">
-                            {errors.latitude && (
-                                <p className="text-xs text-red-600">{errors.latitude.message}</p>
-                            )}
-                            {errors.longitude && (
-                                <p className="text-xs text-red-600">{errors.longitude.message}</p>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
         </>
     );
 };
