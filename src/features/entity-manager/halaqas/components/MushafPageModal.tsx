@@ -148,13 +148,14 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
         [startVerseKey, endVerseKey]
     );
 
-    // Load plan pages only when in plan view; clear segments cache for new plan
+    // Load plan pages only when in plan view; clear segments cache and page lines for new plan
     useEffect(() => {
         if (!isOpen || !isPlanView || !startVerseKey || !endVerseKey) return;
 
         setIsLoadingPlanPages(true);
         setPlanSegmentVerseKeys(new Set());
         setSegmentsByPageCache({});
+        setPageLines([]);
 
         getAllPagesInRange(startVerseKey, endVerseKey)
             .then((pages) => {
@@ -198,6 +199,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     // Load page data when page number or databases change
     useEffect(() => {
         if (!isOpen || !linesDb || currentPage < 1 || currentPage > 604) return;
+        if (isPlanView && planPages.length === 0) return;
 
         const loadPageWithFont = async () => {
             try {
@@ -285,7 +287,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
         };
 
         loadPageWithFont();
-    }, [currentPage, linesDb, isOpen]);
+    }, [currentPage, linesDb, isOpen, isPlanView, planPages.length]);
 
     const handlePageChange = (page: number) => {
         if (isPlanView && planPages.length > 0) {

@@ -94,7 +94,7 @@ interface ViewJoinRequestModalProps {
 
 const ViewJoinRequestModal: React.FC<ViewJoinRequestModalProps> = ({ isOpen, request, onClose }) => {
     const { t, i18n } = useTranslation();
-    const lang = i18n.language || 'en';
+    const lang = i18n.language || 'ar';
     const processStepMutation = useProcessJoinRequestStep();
 
     const {

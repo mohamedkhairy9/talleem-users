@@ -4,9 +4,17 @@ import { CalendarIcon, BookOpenIcon } from '@/globals/icons';
 import MushafPageModal from './MushafPageModal';
 import { getDisplayDate, getGregorianDate } from '@/utils';
 import { useDateFormatStore } from '@/stores';
-import { loadSurahData, getVerseKeyDisplay } from '@/utils/helpers/surahHelper';
+import {
+    loadSurahData,
+    loadMushafPages,
+    loadJuzPages,
+    getVerseKeyDisplay,
+    getJuzForVerseKey,
+    type SurahDataMap,
+    type MushafPageEntry,
+    type JuzPageEntry
+} from '@/utils/helpers/surahHelper';
 import type { DailyScheduleItem } from '../types/list.types';
-import type { SurahDataMap } from '@/utils/helpers/surahHelper';
 
 interface PlanDailyScheduleProps {
     dailySchedule: DailyScheduleItem[];
@@ -26,9 +34,15 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
     useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
     const [showAll, setShowAll] = React.useState(false);
     const [surahData, setSurahData] = useState<SurahDataMap | null>(null);
+    const [mushafPages, setMushafPages] = useState<MushafPageEntry[]>([]);
+    const [juzPages, setJuzPages] = useState<JuzPageEntry[]>([]);
 
     useEffect(() => {
         loadSurahData().then(setSurahData).catch(() => setSurahData(null));
+    }, []);
+    useEffect(() => {
+        loadMushafPages().then(setMushafPages).catch(() => setMushafPages([]));
+        loadJuzPages().then(setJuzPages).catch(() => setJuzPages([]));
     }, []);
 
     const formatVerseRange = useMemo(() => {
@@ -51,9 +65,18 @@ const PlanDailySchedule: React.FC<PlanDailyScheduleProps> = ({
                     number: formatAyahNum(to.ayahNumber)
                 })
                 : toKey;
-            return t('plan.fromVerseToVerse', 'From {{from}} to {{to}}', { from: fromStr, to: toStr });
+            let range = t('plan.fromVerseToVerse', 'From {{from}} to {{to}}', { from: fromStr, to: toStr });
+            if (mushafPages.length > 0 && juzPages.length > 0) {
+                const juzFrom = getJuzForVerseKey(fromKey, mushafPages, juzPages);
+                const juzTo = getJuzForVerseKey(toKey, mushafPages, juzPages);
+                const juzLabel = juzFrom === juzTo
+                    ? t('quran.juzShort', 'Juz {{number}}', { number: juzFrom })
+                    : t('plan.juzRange', 'Juz {{from}}–{{to}}', { from: juzFrom, to: juzTo });
+                range = `${range} (${juzLabel})`;
+            }
+            return range;
         };
-    }, [surahData, lang, t]);
+    }, [surahData, mushafPages, juzPages, lang, t]);
 
     // Mushaf modal: open with daily range (start/end verse keys) so viewer shows only that range
     const [mushafRange, setMushafRange] = useState<{ from_verse_key: string; to_verse_key: string } | null>(null);

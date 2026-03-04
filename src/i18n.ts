@@ -29,7 +29,7 @@ i18n.use(HttpApi)
     .use(initReactI18next)
     .init({
         supportedLngs: ['ar', 'en'],
-        fallbackLng: 'en',
+        fallbackLng: ['ar', 'en'],
         lng: getInitialLanguage(),
         debug: false,
         interpolation: {
@@ -45,9 +45,17 @@ i18n.use(HttpApi)
         cleanCode: true
     });
 
-// Sync language changes to store
+function applyLanguageToDocument(lng: string) {
+    if (typeof document === 'undefined') return;
+    document.documentElement.lang = lng;
+    document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+}
+
+applyLanguageToDocument(getInitialLanguage());
+
 i18n.on('languageChanged', (lng: string) => {
     useLanguageStore.getState().setLanguage(lng);
+    applyLanguageToDocument(lng);
 });
 
 export default i18n;

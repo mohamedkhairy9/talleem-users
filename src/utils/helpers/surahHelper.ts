@@ -450,6 +450,16 @@ export function getJuzForPage(pageNum: number, juzPages: JuzPageEntry[]): number
 }
 
 /**
+ * Get juz number (1–30) for a verse key (e.g. "2:255").
+ * Requires mushaf pages and juz pages to be loaded.
+ */
+export function getJuzForVerseKey(verseKey: string, mushafPages: MushafPageEntry[], juzPages: JuzPageEntry[]): number {
+    if (!verseKey?.trim() || !mushafPages.length || !juzPages.length) return 1;
+    const pageNum = getPageForVerseKey(verseKey.trim(), mushafPages);
+    return getJuzForPage(pageNum, juzPages);
+}
+
+/**
  * Get surah number (1–114) for the first verse on a mushaf page.
  * Requires mushaf pages to be loaded (e.g. from loadMushafPages()).
  */

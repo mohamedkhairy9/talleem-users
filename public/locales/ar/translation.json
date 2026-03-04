@@ -244,12 +244,14 @@
         "verseNotFound": "لم يتم العثور على معلومات الآية",
         "errorLoadingVerse": "خطأ في تحميل معلومات الآية",
         "viewInMushaf": "عرض في المصحف",
-        "loadError": "فشل تحميل قواعد بيانات القرآن"
+        "loadError": "فشل تحميل قواعد بيانات القرآن",
+        "juzShort": "جزء {{number}}"
     },
     "plan": {
         "plan": "الخطة",
         "plans": "الخطط",
         "fromVerseToVerse": "من {{from}} إلى {{to}}",
+        "juzRange": "جزء {{from}}–{{to}}",
         "activity": "النشاط",
         "student": "الطالب",
         "studentCount": "{{count}} طلاب",

@@ -244,12 +244,14 @@
         "verseNotFound": "Verse information not found",
         "errorLoadingVerse": "Error loading verse information",
         "viewInMushaf": "View in Mushaf",
-        "loadError": "Failed to load Quran databases"
+        "loadError": "Failed to load Quran databases",
+        "juzShort": "Juz {{number}}"
     },
     "plan": {
         "plan": "Plan",
         "plans": "Plans",
         "fromVerseToVerse": "From {{from}} to {{to}}",
+        "juzRange": "Juz {{from}}–{{to}}",
         "activity": "Activity",
         "student": "Student",
         "studentCount": "{{count}} students",

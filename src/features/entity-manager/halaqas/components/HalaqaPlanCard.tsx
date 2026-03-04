@@ -120,7 +120,7 @@ const HalaqaPlanCard: React.FC<HalaqaPlanCardProps> = ({
                                 <CalendarIcon width={16} height={16} className="me-2" />
                                 {t('plan.viewSchedule', 'View Daily Schedule')}
                                 {scheduleCount > 0 && (
-                                    <span className="ml-2 px-2 py-0.5 bg-primary-100 text-primary-700 rounded text-xs font-semibold">
+                                    <span className="ms-2 px-2 py-0.5 bg-primary-100 text-primary-700 rounded text-xs font-semibold">
                                         {scheduleCount}
                                     </span>
                                 )}
