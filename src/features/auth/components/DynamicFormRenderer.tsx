@@ -117,6 +117,11 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     // Show entity_id validation error only after user has opened (blurred) the entity select
     const [entityIdTouched, setEntityIdTouched] = useState(false);
     const setEntityIdTouchedTrue = useCallback(() => setEntityIdTouched(true), []);
+    const [cachedEntityOption, setCachedEntityOption] = useState<AsyncPaginateOption | null>(null);
+    useEffect(() => {
+        if (formValues?.entity_id == null || formValues?.entity_id === '') setCachedEntityOption(null);
+        else if (cachedEntityOption && cachedEntityOption.value !== formValues?.entity_id) setCachedEntityOption(null);
+    }, [formValues?.entity_id, cachedEntityOption?.value]);
 
     const { i18n } = useTranslation();
     const currentLang = i18n.language || 'ar';
@@ -439,9 +444,11 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                             name={fieldName as any}
                             control={control}
                             render={({ field: f }) => {
-                                const entityValue: AsyncPaginateOption | null =
+                                const entityDisplayValue: AsyncPaginateOption | null =
                                     f.value != null && f.value !== ''
-                                        ? { value: f.value, label: String(f.value) }
+                                        ? (cachedEntityOption && cachedEntityOption.value === f.value
+                                            ? cachedEntityOption
+                                            : { value: f.value, label: String(f.value) })
                                         : null;
                                 return (
                                     <div>
@@ -452,10 +459,11 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                                             </label>
                                         )}
                                         <AsyncPaginate<AsyncPaginateOption, import('react-select').GroupBase<AsyncPaginateOption>, { page: number }, false>
-                                            value={entityValue}
+                                            value={entityDisplayValue}
                                             loadOptions={loadOptions}
                                             onChange={(option) => {
                                                 const single = option as AsyncPaginateOption | null;
+                                                setCachedEntityOption(single ?? null);
                                                 f.onChange(single?.value ?? null);
                                             }}
                                             onBlur={() => {

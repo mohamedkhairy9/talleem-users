@@ -1,4 +1,5 @@
-import { Controller, Control, FieldValues, Path } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { Controller, Control, FieldValues, Path, useWatch } from 'react-hook-form';
 import { AsyncPaginate } from 'react-select-async-paginate';
 import type { GroupBase } from 'react-select';
 import { useTranslation } from 'react-i18next';
@@ -47,6 +48,30 @@ function FormAsyncPaginate<T extends FieldValues = FieldValues>(props: FormAsync
         defaultAdditional = { page: 1 }
     } = props;
     const { t } = useTranslation();
+    const [cachedOption, setCachedOption] = useState<AsyncPaginateOption | null>(null);
+    const [cachedOptionsMulti, setCachedOptionsMulti] = useState<Map<string | number, AsyncPaginateOption>>(new Map());
+    const watchedValue = useWatch({ control, name: name as Path<T>, defaultValue: undefined });
+
+    useEffect(() => {
+        const value = watchedValue;
+        if (isMulti) {
+            if (!Array.isArray(value) || value.length === 0) {
+                setCachedOptionsMulti(new Map());
+            } else {
+                setCachedOptionsMulti((prev) => {
+                    const next = new Map<string | number, AsyncPaginateOption>();
+                    value.forEach((v: string | number) => {
+                        const o = prev.get(v);
+                        if (o) next.set(v, o);
+                    });
+                    return next;
+                });
+            }
+        } else {
+            if (value == null || value === '') setCachedOption(null);
+            else if (cachedOption && cachedOption.value !== value) setCachedOption(null);
+        }
+    }, [isMulti, watchedValue, cachedOption?.value]);
 
     const customStyles = {
         control: (base: Record<string, unknown>, state: { isFocused: boolean }) => ({
@@ -73,10 +98,10 @@ function FormAsyncPaginate<T extends FieldValues = FieldValues>(props: FormAsync
                 const value = field.value;
                 const resolvedValue: AsyncPaginateOption | AsyncPaginateOption[] | null = isMulti
                     ? Array.isArray(value) && value.length > 0
-                        ? value.map((v: string | number) => ({ value: v, label: String(v) }))
+                        ? value.map((v: string | number) => cachedOptionsMulti.get(v) ?? { value: v, label: String(v) })
                         : null
                     : value != null && value !== ''
-                        ? { value, label: String(value) }
+                        ? (cachedOption && cachedOption.value === value ? cachedOption : { value, label: String(value) })
                         : null;
 
                 return (
@@ -93,9 +118,15 @@ function FormAsyncPaginate<T extends FieldValues = FieldValues>(props: FormAsync
                             onChange={(option) => {
                                 if (isMulti) {
                                     const arr = Array.isArray(option) ? option : [];
+                                    setCachedOptionsMulti((prev) => {
+                                        const next = new Map(prev);
+                                        arr.forEach((o) => next.set(o.value, o));
+                                        return next;
+                                    });
                                     field.onChange(arr.map((o) => o.value));
                                 } else {
                                     const single = option as AsyncPaginateOption | null;
+                                    setCachedOption(single ?? null);
                                     field.onChange(single?.value ?? null);
                                 }
                             }}
