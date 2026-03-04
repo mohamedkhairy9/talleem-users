@@ -14,6 +14,8 @@ export const buildDefaultValues = (fields: JoinRequestFormField[]): Record<strin
                 return false;
             case 'select':
                 return null;
+            case 'multiselect':
+                return [];
             case 'file':
                 return field.multiple ? [] : null;
             case 'group':

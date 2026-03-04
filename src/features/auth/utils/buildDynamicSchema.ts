@@ -61,6 +61,10 @@ export const buildDynamicSchema = (fields: JoinRequestFormField[]): yup.AnyObjec
                 }
                 break;
 
+            case 'multiselect':
+                fieldSchema = yup.array().of(yup.mixed());
+                break;
+
             case 'file':
                 // File fields are handled separately in FormData
                 fieldSchema = yup.mixed();

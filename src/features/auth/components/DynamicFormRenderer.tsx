@@ -110,6 +110,9 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
         if (prevBranch !== undefined && (prevBranch !== branchId || prevMainProgram !== mainProgramId)) {
             setValueFn('entity_id', null, { shouldValidate: true });
         }
+        if (prevMainProgram !== undefined && prevMainProgram !== mainProgramId) {
+            setValueFn('activity_ids', [], { shouldValidate: true });
+        }
         prevDepValuesRef.current['_branch_id'] = branchId;
         prevDepValuesRef.current['_main_program_id'] = mainProgramId;
     }, [formValues, setValueFn, dependsOnList, branchId, mainProgramId]);
@@ -239,6 +242,40 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
         },
         [currentLang, branchId, mainProgramId]
     );
+    const loadEducationProgramEntityTypes = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getEducationProgramEntityTypes({ page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang]
+    );
+    const loadActivities = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            if (!mainProgramId) return { options: [], hasMore: false, additional: { page: 1 } };
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getActivities({ main_program_id: mainProgramId, page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang, mainProgramId]
+    );
+    const loadLocationTypes = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getLocationTypes({ page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang]
+    );
 
     // Check if field should be visible based on visible_when conditions
     // visible_when: { "session_mode_id": ["5", "6"] } => show when session_mode_id is one of these values
@@ -271,6 +308,12 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
             const branch = getFormValueByKey(formValues, 'branch_id', prefix);
             const mainProgram = getFormValueByKey(formValues, 'main_program_id', prefix);
             return !branch || !mainProgram;
+        }
+
+        // Disable activity_ids until main_program_id is selected (activities depend on program)
+        if (field.key === 'activity_ids') {
+            const mainProgram = getFormValueByKey(formValues, 'main_program_id', prefix);
+            return !mainProgram;
         }
 
         if (field.depends_on) {
@@ -427,8 +470,11 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                     major_id: loadMajors,
                     academic_qualification_id: loadAcademicQualifications,
                     memorization_program_entity_type_id: loadMemorizationProgramEntityTypes,
+                    education_program_entity_type_id: loadEducationProgramEntityTypes,
                     neighborhood_id: loadNeighborhoods,
-                    entity_id: loadEntities
+                    entity_id: loadEntities,
+                    activity_ids: loadActivities,
+                    location_type_id: loadLocationTypes
                 };
                 const loadOptions = loadOptionsMap[field.key];
 
@@ -536,8 +582,8 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     };
 
     // Section order: entity first, then branch + main_program (before entity_id), then entity_id, then rest, then location (branch already shown), then manager
-    const ENTITY_KEYS = ['name', 'registration_date', 'license_number', 'phone', 'email', 'address', 'area', 'status', 'activities'];
-    const LOCATION_KEYS = ['branch_id', 'city_id', 'neighborhood_id', 'location_type', 'latitude', 'longitude'];
+    const ENTITY_KEYS = ['name', 'registration_date', 'license_number', 'phone', 'email', 'address', 'area', 'status', 'activities', 'activity_ids'];
+    const LOCATION_KEYS = ['branch_id', 'city_id', 'neighborhood_id', 'location_type', 'location_type_id', 'latitude', 'longitude'];
     const BRANCH_MAIN_PROGRAM_KEYS = ['branch_id', 'main_program_id']; // shown before entity_id for teacher join form
     const orderedFields = React.useMemo(() => {
         const entityFields: JoinRequestFormField[] = [];

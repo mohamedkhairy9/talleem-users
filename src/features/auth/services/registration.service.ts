@@ -132,6 +132,27 @@ export const registrationService = {
      */
     getEntities: async (params?: { branch_id?: number | string; main_program_id?: number | string } & ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
         return axiosInstance.get('/entities', { params });
+    },
+
+    /**
+     * Get education program entity types (paginated)
+     */
+    getEducationProgramEntityTypes: async (params?: ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
+        return axiosInstance.get('/education-program-entity-types', { params });
+    },
+
+    /**
+     * Get activities (for activity_ids multiselect, filtered by main_program_id, paginated)
+     */
+    getActivities: async (params?: { main_program_id?: number | string } & ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
+        return axiosInstance.get('/activities', { params });
+    },
+
+    /**
+     * Get location types (paginated)
+     */
+    getLocationTypes: async (params?: ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
+        return axiosInstance.get('/location-types', { params });
     }
 };
 
