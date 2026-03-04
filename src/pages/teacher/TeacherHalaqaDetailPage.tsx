@@ -111,7 +111,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
 
     // Extract error message from error object
     const errorMessage = error
-        ? (error as any)?.message || (error as any)?.data?.message || t('halaqa.loadError', 'Error loading halaqa. Please try again.')
+        ? (error as any)?.message || (error as any)?.data?.message || t('halaqa.loadErrorDetail')
         : null;
 
     // Check if error is related to time restrictions
@@ -124,20 +124,20 @@ const TeacherHalaqaDetailPage: React.FC = () => {
 
     // Determine error title based on error type
     const errorTitle = isTimeRestrictionError
-        ? t('halaqa.timeRestriction', 'Access Restricted')
-        : t('halaqa.notFound', 'Halaqa not found');
+        ? t('halaqa.timeRestriction')
+        : t('halaqa.notFound');
 
     // Determine error description
     const errorDescription = isTimeRestrictionError
-        ? errorMessage || t('halaqa.timeRestrictionDescription', 'This halaqa is only available during its scheduled time window.')
-        : errorMessage || t('halaqa.notFoundDescription', 'The halaqa you are looking for does not exist or has been removed.');
+        ? errorMessage || t('halaqa.timeRestrictionDescription')
+        : errorMessage || t('halaqa.notFoundDescription');
 
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="flex flex-col items-center gap-4">
                     <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-200 border-t-primary-600"></div>
-                    <p className="text-gray-600 text-sm">{t('common.loading', 'Loading...')}</p>
+                    <p className="text-gray-600 text-sm">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -166,7 +166,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                 <PageHeader
                     title={getLocalizedText(halaqa.name)}
                     breadcrumb={{
-                        label: t('halaqa.backToHalaqas', 'Back to My Halaqas'),
+                        label: t('halaqa.backToHalaqas'),
                         onClick: handleBack
                     }}
                     badges={headerBadges}
@@ -204,7 +204,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                                     className="flex items-center gap-2"
                                 >
                                     <AlertTriangleIcon width={16} height={16} />
-                                    {t('attendance.teacherAbsence', 'Teacher Absence / Force Majeure')}
+                                    {t('attendance.teacherAbsence')}
                                 </Button>
                             </div>
 
@@ -248,20 +248,20 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                                     <CalendarIcon width={20} height={20} className="text-blue-600" />
                                 </div>
                                 <h2 className="text-xl font-semibold text-gray-900">
-                                    {t('halaqa.sessionInfo', 'Session Information')}
+                                    {t('halaqa.sessionInfo')}
                                 </h2>
                             </div>
                             <dl className="space-y-3">
                                 <div>
                                     <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                        {t('halaqa.date', 'Date')}
+                                        {t('halaqa.date')}
                                     </dt>
                                     <dd className="mt-1 text-base font-medium text-gray-900">{getDisplayDate(date)}</dd>
                                 </div>
                                 {time && (
                                     <div>
                                         <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                            {t('halaqa.time', 'Time')}
+                                            {t('halaqa.time')}
                                         </dt>
                                         <dd className="mt-1 text-base font-medium text-gray-900">{time}</dd>
                                     </div>
@@ -289,13 +289,13 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                             {/* Header */}
                             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
                                 <h3 className="text-lg font-semibold text-gray-900">
-                                    {t('attendance.teacherAbsence', 'Teacher Absence / Force Majeure')}
+                                    {t('attendance.teacherAbsence')}
                                 </h3>
                                 <button
                                     type="button"
                                     onClick={handleCloseTeacherAbsenceModal}
                                     className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                                    aria-label="Close"
+                                    aria-label={t('common.closeAria')}
                                 >
                                     <XIcon width={20} height={20} />
                                 </button>
@@ -304,7 +304,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                             {/* Body */}
                             <div className="px-6 py-4">
                                 <p className="text-sm text-gray-600 mb-4">
-                                    {t('attendance.selectReason', 'Please select the reason for marking all students as present:')}
+                                    {t('attendance.selectReason')}
                                 </p>
                                 
                                 <div className="space-y-3">
@@ -334,10 +334,10 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                                                 </div>
                                                 <div>
                                                     <p className="font-semibold text-gray-900">
-                                                        {t('attendance.teacherAbsence', 'Teacher Absence')}
+                                                        {t('attendance.teacherAbsenceShort')}
                                                     </p>
                                                     <p className="text-xs text-gray-500 mt-0.5">
-                                                        {t('attendance.teacherAbsenceDesc', 'Mark all students as present due to teacher absence')}
+                                                        {t('attendance.teacherAbsenceDesc')}
                                                     </p>
                                                 </div>
                                             </div>
@@ -370,10 +370,10 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                                                 </div>
                                                 <div>
                                                     <p className="font-semibold text-gray-900">
-                                                        {t('attendance.forceMajeure', 'Force Majeure')}
+                                                        {t('attendance.forceMajeure')}
                                                     </p>
                                                     <p className="text-xs text-gray-500 mt-0.5">
-                                                        {t('attendance.forceMajeureDesc', 'Mark all students as present due to force majeure')}
+                                                        {t('attendance.forceMajeureDesc')}
                                                     </p>
                                                 </div>
                                             </div>
@@ -384,7 +384,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                                 {students && students.length > 0 && (
                                     <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                                         <p className="text-xs text-gray-600">
-                                            {t('attendance.studentsCount', 'This will mark {{count}} student(s) as present', { count: students.length })}
+                                            {t('attendance.studentsCount', { count: students.length })}
                                         </p>
                                     </div>
                                 )}
@@ -397,7 +397,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                                     onClick={handleCloseTeacherAbsenceModal}
                                     disabled={bulkAttendanceMutation.isPending}
                                 >
-                                    {t('common.cancel', 'Cancel')}
+                                    {t('common.cancel')}
                                 </Button>
                                 <Button
                                     variant="primary"
@@ -405,7 +405,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
                                     loading={bulkAttendanceMutation.isPending}
                                     disabled={!selectedReason}
                                 >
-                                    {t('attendance.submit', 'Submit')}
+                                    {t('attendance.submit')}
                                 </Button>
                             </div>
                         </div>

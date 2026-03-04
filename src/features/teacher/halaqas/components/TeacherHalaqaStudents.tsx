@@ -292,7 +292,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
 
     // Extract error message
     const errorMessage = error
-        ? (error as any)?.message || (error as any)?.data?.message || t('halaqa.loadError', 'Error loading students')
+        ? (error as any)?.message || (error as any)?.data?.message || t('halaqa.loadErrorStudents')
         : null;
 
     if (isLoading) {
@@ -369,7 +369,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                 <div className="flex items-start justify-between gap-2 mb-3">
                                     <div className="flex-1 min-w-0">
                                         <h3 className="text-base font-semibold text-gray-900 truncate">
-                                            {getLocalizedText(student.name) || `Student #${student.id}`}
+                                            {getLocalizedText(student.name) || t('plan.studentId', { id: student.id })}
                                         </h3>
                                     </div>
                                     
@@ -392,7 +392,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                         )}
                                         {/* Can Memorize Badge */}
                                         {student.can_memorize && (
-                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
+                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 ">
                                                 {t('halaqa.canMemorize', 'Can Memorize')}
                                             </span>
                                         )}
@@ -513,7 +513,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                     type="button"
                                     onClick={handleCloseModal}
                                     className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                                    aria-label="Close"
+                                    aria-label={t('common.closeAria')}
                                 >
                                     <XIcon width={20} height={20} />
                                 </button>
@@ -736,7 +736,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                             {t('plan.verses', 'Verses')}
                                                         </dt>
                                                         <dd className="mt-1 text-sm text-gray-900">
-                                                            {t('plan.verseRange', 'From verse {{from}} to verse {{to}}', {
+                                                            {t('plan.verseRangeFormat', 'From verse {{from}} to verse {{to}}', {
                                                                 from: planData.today_schedule.from_verse_id,
                                                                 to: planData.today_schedule.to_verse_id
                                                             })}
@@ -808,7 +808,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                     type="button"
                                     onClick={handleCloseAttendanceModal}
                                     className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                                    aria-label="Close"
+                                    aria-label={t('common.closeAria')}
                                 >
                                     <XIcon width={20} height={20} />
                                 </button>
@@ -817,7 +817,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                             {/* Body */}
                             <div className="px-6 py-4">
                                 <p className="text-sm text-gray-600 mb-4">
-                                    {t('attendance.selectType', 'Select attendance type for')} <span className="font-semibold text-gray-900">{attendanceModal.studentName}</span>
+                                    {t('attendance.selectTypeFor')} <span className="font-semibold text-gray-900">{attendanceModal.studentName}</span>
                                 </p>
                                 
                                 <div className="space-y-3">
@@ -829,7 +829,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                         onChange={(e) => setSelectedAttendanceType(Number(e.target.value))}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                     >
-                                        <option value="">{t('attendance.selectType', 'Select attendance type')}</option>
+                                        <option value="">{t('attendance.selectType')}</option>
                                         {availableAttendanceTypes.map((type) => (
                                             <option key={type.id} value={type.id}>
                                                 {getLocalizedText(type.name)}
@@ -885,7 +885,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                     type="button"
                                     onClick={handleCloseGradeModal}
                                     className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                                    aria-label="Close"
+                                    aria-label={t('common.closeAria')}
                                 >
                                     <XIcon width={20} height={20} />
                                 </button>

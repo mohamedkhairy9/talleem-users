@@ -24,7 +24,7 @@ const HalaqaDatesSchedule: React.FC<HalaqaDatesScheduleProps> = ({
                     <CalendarIcon width={20} height={20} className="text-blue-600" />
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900">
-                    {t('halaqa.dates', 'Dates & Schedule')}
+                    {t('halaqa.datesAndSchedule')}
                 </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
