@@ -93,7 +93,7 @@ const Navbar: React.FC<NavbarProps> = ({
                         </button>
                         {dateFormatOpen && (
                             <div
-                                className="absolute right-0 mt-1 min-w-[12rem] py-1 bg-white rounded-lg shadow-lg border border-gray-200 z-[100]"
+                                className="absolute  end-0 mt-1 min-w-[12rem] py-1 bg-white rounded-lg shadow-lg border border-gray-200 z-[100]"
                                 role="menu"
                             >
                                 {DATE_FORMAT_VALUES.map((value) => (
