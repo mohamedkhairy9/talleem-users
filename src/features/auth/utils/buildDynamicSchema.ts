@@ -84,7 +84,16 @@ export const buildDynamicSchema = (fields: JoinRequestFormField[]): yup.AnyObjec
                 fieldSchema = yup.mixed();
         }
 
-        if (field.required && field.type !== 'file') {
+        // entity_id is only required when branch_id and main_program_id are selected (field is enabled)
+        if (field.key === 'entity_id' && field.required && field.type === 'select') {
+            fieldSchema = fieldSchema.when(['branch_id', 'main_program_id'], {
+                is: (branch_id: unknown, main_program_id: unknown) =>
+                    branch_id != null && branch_id !== '' &&
+                    main_program_id != null && main_program_id !== '',
+                then: (schema: yup.AnySchema) => schema.required(`${field.label} is required`),
+                otherwise: (schema: yup.AnySchema) => schema.nullable()
+            });
+        } else if (field.required && field.type !== 'file') {
             fieldSchema = fieldSchema.required(`${field.label} is required`);
         }
 

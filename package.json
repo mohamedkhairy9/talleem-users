@@ -28,6 +28,7 @@
     "react-i18next": "^15.7.3",
     "react-router-dom": "^7.9.1",
     "react-select": "^5.10.2",
+    "react-select-async-paginate": "^0.7.11",
     "react-toastify": "^11.0.0",
     "sql.js": "^1.14.0",
     "tailwindcss": "^4.1.13",

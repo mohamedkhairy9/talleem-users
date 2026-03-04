@@ -1,10 +1,35 @@
-import React, { useEffect, useRef } from 'react';
-import { Control, FieldValues, useWatch, UseFormSetValue } from 'react-hook-form';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Control, Controller, FieldValues, useWatch, UseFormSetValue } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { AsyncPaginate } from 'react-select-async-paginate';
 import { JoinRequestFormField } from '../types/registration.types';
-import { FormInput, FormSelect, FormTextarea, FormFile, FormCheckbox, MapPicker } from '@/globals/components';
-import { useRegistrationFormOptions, useNeighborhoodsOptions, useEntitiesOptions } from '../hooks/useRegistrationFormOptions';
+import { FormInput, FormSelect, FormAsyncPaginate, FormTextarea, FormFile, FormCheckbox, MapPicker } from '@/globals/components';
+import type { AsyncPaginateOption } from '@/globals/components/forms/FormAsyncPaginate';
+import { registrationService } from '../services/registration.service';
 import { extractLabel } from '../utils/extractLabel';
+
+const PER_PAGE = 20;
+
+/** Transform API item to { value, label } using current lang for bilingual name */
+function itemToOption(item: any, currentLang: string): AsyncPaginateOption {
+    const value = item.id ?? item.value ?? '';
+    let label = '';
+    if (typeof item.name === 'object' && item.name !== null) {
+        label = currentLang === 'ar' && item.name.ar ? item.name.ar : (item.name.en || '');
+    } else if (item.name) {
+        label = String(item.name);
+    } else if (item.label) {
+        label = String(item.label);
+    } else {
+        label = String(value);
+    }
+    return { value, label };
+}
+
+function transformPaginatedResponse(data: any[] | undefined, currentLang: string): AsyncPaginateOption[] {
+    if (!data) return [];
+    return data.map((item) => itemToOption(item, currentLang));
+}
 
 /** Get form value by key, supporting nested path (prefix.key) and root */
 function getFormValueByKey(formValues: Record<string, any> | undefined, key: string, prefix?: string): any {
@@ -89,14 +114,126 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
         prevDepValuesRef.current['_main_program_id'] = mainProgramId;
     }, [formValues, setValueFn, dependsOnList, branchId, mainProgramId]);
 
-    // Fetch all form options (nationalities, cities, etc.)
-    const options = useRegistrationFormOptions();
+    // Show entity_id validation error only after user has opened (blurred) the entity select
+    const [entityIdTouched, setEntityIdTouched] = useState(false);
+    const setEntityIdTouchedTrue = useCallback(() => setEntityIdTouched(true), []);
 
-    // Fetch neighborhoods based on city_id (city is independent from branch)
-    const neighborhoodsOptions = useNeighborhoodsOptions(cityId);
+    const { i18n } = useTranslation();
+    const currentLang = i18n.language || 'ar';
 
-    // Fetch entities for teacher join form (requires branch_id and main_program_id)
-    const entitiesOptions = useEntitiesOptions(branchId, mainProgramId);
+    // Paginated loadOptions (same approach as booking-pro-dashboard-dev)
+    const loadBranches = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getBranches({ page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang]
+    );
+    const loadMainPrograms = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getMainPrograms({ page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang]
+    );
+    const loadCities = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getCities({ page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang]
+    );
+    const loadSessionModes = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getSessionModes({ page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang]
+    );
+    const loadNationalities = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getNationalities({ page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang]
+    );
+    const loadMajors = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getMajors({ page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang]
+    );
+    const loadAcademicQualifications = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getAcademicQualifications({ page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang]
+    );
+    const loadMemorizationProgramEntityTypes = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getMemorizationProgramEntityTypes({ page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang]
+    );
+    const loadNeighborhoods = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            if (!cityId) return { options: [], hasMore: false, additional: { page: 1 } };
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getNeighborhoods({ city_id: cityId, page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang, cityId]
+    );
+    const loadEntities = useCallback(
+        async (search: string, _loaded: unknown, additional?: { page?: number }) => {
+            if (!branchId || !mainProgramId) return { options: [], hasMore: false, additional: { page: 1 } };
+            const page = additional?.page ?? 1;
+            const res = await registrationService.getEntities({ branch_id: branchId, main_program_id: mainProgramId, page, per_page: PER_PAGE, search: search || undefined });
+            const options = transformPaginatedResponse(res.data, currentLang);
+            const meta = res.meta;
+            const hasMore = !!(meta?.current_page != null && meta?.last_page != null && meta.current_page < meta.last_page);
+            return { options, hasMore, additional: { page: page + 1 } };
+        },
+        [currentLang, branchId, mainProgramId]
+    );
 
     // Check if field should be visible based on visible_when conditions
     // visible_when: { "session_mode_id": ["5", "6"] } => show when session_mode_id is one of these values
@@ -275,68 +412,98 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                     );
                 }
 
-                // Handle dynamic select with API call
-                let dynamicOptions: Array<{ value: string | number; label: string }> = [];
-                let isLoadingOptions = false;
+                // Handle dynamic select with paginated API (same approach as booking-pro-dashboard-dev)
+                const loadOptionsMap: Record<string, typeof loadBranches> = {
+                    branch_id: loadBranches,
+                    main_program_id: loadMainPrograms,
+                    city_id: loadCities,
+                    session_mode_id: loadSessionModes,
+                    nationality_id: loadNationalities,
+                    major_id: loadMajors,
+                    academic_qualification_id: loadAcademicQualifications,
+                    memorization_program_entity_type_id: loadMemorizationProgramEntityTypes,
+                    neighborhood_id: loadNeighborhoods,
+                    entity_id: loadEntities
+                };
+                const loadOptions = loadOptionsMap[field.key];
 
-                // Map field keys to options (works for top-level and nested group fields e.g. manager.nationality_id)
-                switch (field.key) {
-                    case 'branch_id':
-                        dynamicOptions = options.branch_id;
-                        isLoadingOptions = options.isLoading;
-                        break;
-                    case 'city_id':
-                        dynamicOptions = options.city_id;
-                        isLoadingOptions = options.isLoading;
-                        break;
-                    case 'main_program_id':
-                        dynamicOptions = options.main_program_id;
-                        isLoadingOptions = options.isLoading;
-                        break;
-                    case 'session_mode_id':
-                        dynamicOptions = options.session_mode_id;
-                        isLoadingOptions = options.isLoading;
-                        break;
-                    case 'nationality_id':
-                        dynamicOptions = options.nationality_id;
-                        isLoadingOptions = options.isLoading;
-                        break;
-                    case 'major_id':
-                        dynamicOptions = options.major_id;
-                        isLoadingOptions = options.isLoading;
-                        break;
-                    case 'academic_qualification_id':
-                        dynamicOptions = options.academic_qualification_id;
-                        isLoadingOptions = options.isLoading;
-                        break;
-                    case 'memorization_program_entity_type_id':
-                        dynamicOptions = options.memorization_program_entity_type_id;
-                        isLoadingOptions = options.isLoading;
-                        break;
-                    case 'neighborhood_id':
-                        dynamicOptions = neighborhoodsOptions.neighborhood_id;
-                        isLoadingOptions = neighborhoodsOptions.isLoading;
-                        break;
-                    case 'entity_id':
-                        dynamicOptions = entitiesOptions.entity_id;
-                        isLoadingOptions = entitiesOptions.isLoading;
-                        break;
-                    default:
-                        dynamicOptions = [];
+                if (!loadOptions) {
+                    return null;
+                }
+
+                // entity_id: show validation error only after user has opened the dropdown and blurred without selecting
+                if (field.key === 'entity_id') {
+                    return (
+                        <Controller
+                            key={field.key}
+                            name={fieldName as any}
+                            control={control}
+                            render={({ field: f }) => {
+                                const entityValue: AsyncPaginateOption | null =
+                                    f.value != null && f.value !== ''
+                                        ? { value: f.value, label: String(f.value) }
+                                        : null;
+                                return (
+                                    <div>
+                                        {extractLabel(field.label) && (
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                {extractLabel(field.label)}
+                                                {field.required && <span className="text-red-500 ml-1">*</span>}
+                                            </label>
+                                        )}
+                                        <AsyncPaginate<AsyncPaginateOption, import('react-select').GroupBase<AsyncPaginateOption>, { page: number }, false>
+                                            value={entityValue}
+                                            loadOptions={loadOptions}
+                                            onChange={(option) => {
+                                                const single = option as AsyncPaginateOption | null;
+                                                f.onChange(single?.value ?? null);
+                                            }}
+                                            onBlur={() => {
+                                                f.onBlur();
+                                                setEntityIdTouchedTrue();
+                                            }}
+                                            additional={{ page: 1 }}
+                                            defaultAdditional={{ page: 1 }}
+                                            getOptionLabel={(o) => o.label}
+                                            getOptionValue={(o) => String(o.value)}
+                                            isClearable
+                                            isDisabled={isDisabled}
+                                            placeholder={t('common.select', 'Select an option')}
+                                            classNamePrefix="react-select"
+                                            debounceTimeout={300}
+                                            styles={{
+                                                control: (base: any, state: any) => ({
+                                                    ...base,
+                                                    borderColor: entityIdTouched && fieldError ? '#ef4444' : state.isFocused ? '#004247' : '#d1d5db',
+                                                    minHeight: '48px',
+                                                    backgroundColor: isDisabled ? '#f3f4f6' : 'white'
+                                                }),
+                                                menu: (base: any) => ({ ...base, zIndex: 9999 })
+                                            }}
+                                        />
+                                        {entityIdTouched && (fieldError?.message) && (
+                                            <p className="mt-1 h-4 text-xs text-red-600">{fieldError.message}</p>
+                                        )}
+                                    </div>
+                                );
+                            }}
+                        />
+                    );
                 }
 
                 return (
-                    <FormSelect
+                    <FormAsyncPaginate
                         key={field.key}
                         name={fieldName}
                         control={control}
                         label={extractLabel(field.label)}
                         required={field.required}
-                        options={dynamicOptions}
+                        loadOptions={loadOptions}
                         error={fieldError?.message}
+                        isDisabled={isDisabled}
                         isMulti={field.type === 'multiselect'}
-                        isDisabled={isDisabled || isLoadingOptions}
-                        placeholder={isLoadingOptions ? t('common.loading', 'Loading...') : undefined}
+                        placeholder={t('common.select', 'Select an option')}
+                        defaultAdditional={{ page: 1 }}
                     />
                 );
 

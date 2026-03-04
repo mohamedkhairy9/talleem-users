@@ -9,6 +9,13 @@ export interface SelectOption {
     [key: string]: any;
 }
 
+/** Pagination params for async-paginate selects */
+export interface ListParams {
+    page?: number;
+    per_page?: number;
+    search?: string;
+}
+
 /**
  * Registration Service
  * Uses /api/front/join-request-forms endpoints
@@ -51,79 +58,79 @@ export const registrationService = {
     },
 
     /**
-     * Get cities
+     * Get cities (paginated)
      */
-    getCities: async (): Promise<{ data: SelectOption[] }> => {
-        return axiosInstance.get('/cities');
+    getCities: async (params?: ListParams & Record<string, unknown>): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
+        return axiosInstance.get('/cities', { params });
     },
 
     /**
-     * Get neighborhoods (with optional city_id filter)
+     * Get neighborhoods (with optional city_id filter, paginated)
      */
-    getNeighborhoods: async (params?: { city_id?: number | string }): Promise<{ data: SelectOption[] }> => {
+    getNeighborhoods: async (params?: { city_id?: number | string } & ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
         return axiosInstance.get('/neighborhoods', { params });
     },
 
     /**
-     * Get branches
+     * Get branches (paginated)
      */
-    getBranches: async (): Promise<{ data: SelectOption[] }> => {
-        return axiosInstance.get('/branches');
+    getBranches: async (params?: ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
+        return axiosInstance.get('/branches', { params });
     },
 
     /**
-     * Get session modes
+     * Get session modes (paginated)
      */
-    getSessionModes: async (): Promise<{ data: SelectOption[] }> => {
-        return axiosInstance.get('/session-modes');
+    getSessionModes: async (params?: ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
+        return axiosInstance.get('/session-modes', { params });
     },
 
     /**
-     * Get nationalities
+     * Get nationalities (paginated)
      */
-    getNationalities: async (): Promise<{ data: SelectOption[] }> => {
-        return axiosInstance.get('/nationalities');
+    getNationalities: async (params?: ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
+        return axiosInstance.get('/nationalities', { params });
     },
 
     /**
-     * Get majors
+     * Get majors (paginated)
      */
-    getMajors: async (): Promise<{ data: SelectOption[] }> => {
-        return axiosInstance.get('/majors');
+    getMajors: async (params?: ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
+        return axiosInstance.get('/majors', { params });
     },
 
     /**
-     * Get academic qualifications
+     * Get academic qualifications (paginated)
      */
-    getAcademicQualifications: async (): Promise<{ data: SelectOption[] }> => {
-        return axiosInstance.get('/academic-qualifications');
+    getAcademicQualifications: async (params?: ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
+        return axiosInstance.get('/academic-qualifications', { params });
     },
 
     /**
-     * Get remotely attendance platforms
+     * Get remotely attendance platforms (paginated)
      */
-    getRemotelyAttendancePlatforms: async (): Promise<{ data: SelectOption[] }> => {
-        return axiosInstance.get('/remotely-attendance-platforms');
+    getRemotelyAttendancePlatforms: async (params?: ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
+        return axiosInstance.get('/remotely-attendance-platforms', { params });
     },
 
     /**
-     * Get memorization program entity types
+     * Get memorization program entity types (paginated)
      */
-    getMemorizationProgramEntityTypes: async (): Promise<{ data: SelectOption[] }> => {
-        return axiosInstance.get('/memorization-program-entity-types');
+    getMemorizationProgramEntityTypes: async (params?: ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
+        return axiosInstance.get('/memorization-program-entity-types', { params });
     },
 
     /**
-     * Get main programs
+     * Get main programs (paginated)
      */
-    getMainPrograms: async (): Promise<{ data: SelectOption[] }> => {
-        return axiosInstance.get('/main-programs');
+    getMainPrograms: async (params?: ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
+        return axiosInstance.get('/main-programs', { params });
     },
 
     /**
-     * Get entities (filtered by branch_id and main_program_id)
+     * Get entities (filtered by branch_id and main_program_id, paginated)
      */
-    getEntities: async (params?: { branch_id?: number | string; main_program_id?: number | string }): Promise<{ data: SelectOption[] }> => {
+    getEntities: async (params?: { branch_id?: number | string; main_program_id?: number | string } & ListParams): Promise<{ data: SelectOption[]; meta?: { current_page?: number; last_page?: number } }> => {
         return axiosInstance.get('/entities', { params });
     }
 };
