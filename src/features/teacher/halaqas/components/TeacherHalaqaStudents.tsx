@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { toast } from 'react-toastify';
 import { UsersIcon, UserIcon, AlertTriangleIcon, XIcon, CheckIcon, BookIcon, ClipboardCheckIcon } from '@/globals/icons';
 import type { HalaqaStudent, BilingualName, AttendanceType, TeacherStudentPlan } from '../types/students.types';
 import { useStudentPlan } from '../hooks/useStudentPlan';
@@ -11,6 +12,7 @@ import { Button } from '@/globals/components';
 import MushafPageModal from '@/features/entity-manager/halaqas/components/MushafPageModal';
 import { loadSurahData, getVerseKeyDisplay } from '@/utils/helpers/surahHelper';
 import type { SurahDataMap } from '@/utils/helpers/surahHelper';
+import { getErrorMessage } from '@/utils/helpers/errorHandler';
 
 interface TeacherHalaqaStudentsProps {
     students: HalaqaStudent[];
@@ -45,6 +47,8 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
         studentName: string;
         isPresent: boolean;
     } | null>(null);
+    /** Tracks which student/action is currently submitting (for button loading state) */
+    const [pendingAttendance, setPendingAttendance] = useState<{ studentId: number; isPresent: boolean } | null>(null);
     const [selectedAttendanceType, setSelectedAttendanceType] = useState<number | null>(null);
 
     const [gradeModal, setGradeModal] = useState<{
@@ -114,10 +118,15 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
             return teacherHalaqasService.submitAttendance(halaqaId!, data);
         },
         onSuccess: () => {
-            // Invalidate and refetch students data
             queryClient.invalidateQueries({ queryKey: ['teacher-halaqa-students', halaqaId] });
             setAttendanceModal(null);
             setSelectedAttendanceType(null);
+        },
+        onError: (error) => {
+            toast.error(getErrorMessage(error));
+        },
+        onSettled: () => {
+            setPendingAttendance(null);
         }
     });
 
@@ -157,13 +166,12 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
 
     const handleMarkAttendance = (studentId: number, studentName: string, isPresent: boolean) => {
         if (isPresent) {
-            // Mark as present - no need for attendance type
+            setPendingAttendance({ studentId, isPresent: true });
             attendanceMutation.mutate({
                 student_id: studentId,
                 is_present: true
             });
         } else {
-            // Mark as absent - need to show modal to select attendance type
             setAttendanceModal({ studentId, studentName, isPresent: false });
             setSelectedAttendanceType(null);
         }
@@ -176,12 +184,12 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
 
     const handleSubmitAttendance = () => {
         if (!attendanceModal) return;
-        
+
         if (!attendanceModal.isPresent && !selectedAttendanceType) {
-            // Show error or validation message
             return;
         }
 
+        setPendingAttendance({ studentId: attendanceModal.studentId, isPresent: attendanceModal.isPresent });
         attendanceMutation.mutate({
             student_id: attendanceModal.studentId,
             is_present: attendanceModal.isPresent,
@@ -413,7 +421,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                     onClick={() => handleMarkAttendance(student.id, getLocalizedText(student.name) || `Student #${student.id}`, true)}
                                                     size="sm"
                                                     variant="success"
-                                                    loading={attendanceMutation.isPending && attendanceModal?.studentId === student.id && attendanceModal?.isPresent === true}
+                                                    loading={attendanceMutation.isPending && pendingAttendance?.studentId === student.id && pendingAttendance?.isPresent === true}
                                                     className="flex items-center gap-1.5"
                                                 >
                                                     <CheckIcon width={14} height={14} />
@@ -424,7 +432,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                     onClick={() => handleMarkAttendance(student.id, getLocalizedText(student.name) || `Student #${student.id}`, false)}
                                                     size="sm"
                                                     variant="danger"
-                                                    loading={attendanceMutation.isPending && attendanceModal?.studentId === student.id && attendanceModal?.isPresent === false}
+                                                    loading={attendanceMutation.isPending && pendingAttendance?.studentId === student.id && pendingAttendance?.isPresent === false}
                                                     className="flex items-center gap-1.5"
                                                 >
                                                     <XIcon width={14} height={14} />
