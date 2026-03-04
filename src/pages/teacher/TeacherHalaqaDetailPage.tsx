@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-toastify';
 import { PageHeader, Button } from '@/globals/components';
 import type { PageHeaderBadge } from '@/globals/components';
 import { AlertTriangleIcon, CalendarIcon, CircleIcon, XIcon } from '@/globals/icons';
@@ -11,6 +12,7 @@ import TeacherHalaqaStudents from '@/features/teacher/halaqas/components/Teacher
 import type { BilingualName } from '@/features/teacher/halaqas/types/list.types';
 import { getDisplayDate } from '@/utils';
 import { useDateFormatStore } from '@/stores';
+import { getErrorMessage } from '@/utils/helpers/errorHandler';
 import HalaqaBasicInfo from '@/features/entity-manager/halaqas/components/HalaqaBasicInfo';
 import HalaqaQuickStats from '@/features/entity-manager/halaqas/components/HalaqaQuickStats';
 import HalaqaAdditionalInfo from '@/features/entity-manager/halaqas/components/HalaqaAdditionalInfo';
@@ -33,7 +35,7 @@ const TeacherHalaqaDetailPage: React.FC = () => {
     const [showTeacherAbsenceModal, setShowTeacherAbsenceModal] = useState(false);
     const [selectedReason, setSelectedReason] = useState<'teacher_absence' | 'force_majeure' | null>(null);
 
-    // Mutation for submitting bulk attendance
+    // Mutation for submitting bulk attendance (teacher marks self absent - POST /attendance/all)
     const bulkAttendanceMutation = useMutation({
         mutationFn: (data: {
             special_reason: 'teacher_absence' | 'force_majeure';
@@ -42,10 +44,12 @@ const TeacherHalaqaDetailPage: React.FC = () => {
             return teacherHalaqasService.submitBulkAttendance(id!, data);
         },
         onSuccess: () => {
-            // Invalidate and refetch students data
             queryClient.invalidateQueries({ queryKey: ['teacher-halaqa-students', id] });
             setShowTeacherAbsenceModal(false);
             setSelectedReason(null);
+        },
+        onError: (error) => {
+            toast.error(getErrorMessage(error));
         }
     });
 
