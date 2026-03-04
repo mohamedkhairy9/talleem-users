@@ -1,6 +1,6 @@
 import { RouteConfig } from '@/globals/types';
 import { ROUTE_PATHS } from '@/config';
-import { MyHalaqasPage, TeacherHalaqaDetailPage } from '@/pages/teacher';
+import { MyHalaqasPage, TeacherHalaqaDetailPage, TeacherRequestsPage, TeacherWarningsPage } from '@/pages/teacher';
 
 /**
  * Teacher Routes Configuration
@@ -17,6 +17,18 @@ export const teacherRoutes: RouteConfig[] = [
     {
         path: ROUTE_PATHS.TEACHER_HALAQA_DETAIL,
         element: <TeacherHalaqaDetailPage />,
+        roles: ['teacher']
+    },
+    // Teacher Requests
+    {
+        path: ROUTE_PATHS.TEACHER_REQUESTS,
+        element: <TeacherRequestsPage />,
+        roles: ['teacher']
+    },
+    // Teacher Warnings (read-only)
+    {
+        path: ROUTE_PATHS.TEACHER_WARNINGS,
+        element: <TeacherWarningsPage />,
         roles: ['teacher']
     }
 ];

@@ -52,6 +52,28 @@
         "title": "Dashboard",
         "welcome": "Welcome to the dashboard"
     },
+    "teacherRequests": {
+        "title": "My Requests",
+        "subtitle": "View your requests and submit new ones",
+        "listTitle": "Requests",
+        "createRequest": "Create Request",
+        "requestType": "Request Type",
+        "status": "Status",
+        "currentPhase": "Current Phase",
+        "currentStep": "Current Step",
+        "createdAt": "Created At",
+        "noRequests": "No requests yet.",
+        "loadError": "Error loading requests. Please try again.",
+        "fillRequired": "Please select request type and enter national ID.",
+        "createSuccess": "Request submitted successfully.",
+        "nationalId": "National ID",
+        "nationalIdPlaceholder": "e.g. 298062515001",
+        "submit": "Submit"
+    },
+    "teacherWarnings": {
+        "title": "My Warnings",
+        "subtitle": "View your recorded warnings"
+    },
     "menu": {
         "home": "Home",
         "studyPlan": "My Study Plan",
@@ -68,6 +90,7 @@
         "entityManagers": "Entity Managers",
         "halaqas": "Halaqas",
         "halaqaty": "My Halaqas",
+        "teacherRequests": "My Requests",
         "createHalaqa": "Create Halaqa",
         "warningsManagement": "Warnings Management",
         "joinRequests": "Join Requests"
@@ -255,7 +278,8 @@
         "searchTeacher": "Search and select teacher...",
         "missingEntityData": "Branch and program information is missing. Please contact support.",
         "missingEntityDataAccount": "Branch and program information is missing from your account. Please contact support.",
-        "createdBy": "Created By"
+        "createdBy": "Created By",
+        "createdAt": "Created At"
     },
     "unauthorized": {
         "title": "Access Denied",

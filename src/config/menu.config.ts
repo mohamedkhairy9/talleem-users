@@ -69,6 +69,18 @@ export const TEACHER_MENU_ITEMS: MenuItem[] = [
         labelKey: 'menu.halaqaty',
         icon: 'CircleIcon',
         roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.TEACHER_REQUESTS,
+        labelKey: 'menu.teacherRequests',
+        icon: 'ClipboardCheckIcon',
+        roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.TEACHER_WARNINGS,
+        labelKey: 'menu.warnings',
+        icon: 'AlertTriangleIcon',
+        roles: ['teacher']
     }
 ];
 

@@ -52,6 +52,28 @@
         "title": "لوحة التحكم",
         "welcome": "مرحبا بك في لوحة التحكم"
     },
+    "teacherRequests": {
+        "title": "طلباتي",
+        "subtitle": "عرض الطلبات وإرسال طلبات جديدة",
+        "listTitle": "الطلبات",
+        "createRequest": "إنشاء طلب",
+        "requestType": "نوع الطلب",
+        "status": "الحالة",
+        "currentPhase": "المرحلة الحالية",
+        "currentStep": "الخطوة الحالية",
+        "createdAt": "تاريخ الإنشاء",
+        "noRequests": "لا توجد طلبات.",
+        "loadError": "تعذر تحميل الطلبات. يرجى المحاولة مرة أخرى.",
+        "fillRequired": "يرجى اختيار نوع الطلب وإدخال رقم الهوية.",
+        "createSuccess": "تم إرسال الطلب بنجاح.",
+        "nationalId": "رقم الهوية الوطنية",
+        "nationalIdPlaceholder": "مثال: 298062515001",
+        "submit": "إرسال"
+    },
+    "teacherWarnings": {
+        "title": "إنذاراتي",
+        "subtitle": "عرض إنذاراتي المسجلة"
+    },
     "menu": {
         "home": "الصفحة الرئيسية",
         "studyPlan": "خطتي الدراسية",
@@ -68,6 +90,7 @@
         "entityManagers": "مديرو الجهات",
         "halaqas": "الحلقات",
         "halaqaty": "حلقاتي",
+        "teacherRequests": "طلباتي",
         "createHalaqa": "إنشاء حلقة",
         "warningsManagement": "إدارة الإنذارات",
         "joinRequests": "طلبات الانضمام"
@@ -255,7 +278,8 @@
         "searchTeacher": "ابحث واختر معلماً...",
         "missingEntityData": "معلومات الفرع والبرنامج غير متوفرة. يرجى التواصل مع الدعم.",
         "missingEntityDataAccount": "معلومات الفرع والبرنامج غير متوفرة في حسابك. يرجى التواصل مع الدعم.",
-        "createdBy": "أنشئ بواسطة"
+        "createdBy": "أنشئ بواسطة",
+        "createdAt": "تاريخ الإنشاء"
     },
     "unauthorized": {
         "title": "الوصول مرفوض",
