@@ -152,6 +152,55 @@ export const useNeighborhoodsOptions = (cityId: number | string | null | undefin
     };
 };
 
+/**
+ * Hook to fetch entities with branch_id and main_program_id filter
+ * Used for teacher join form entity_id field
+ */
+export const useEntitiesOptions = (
+    branchId: number | string | null | undefined,
+    mainProgramId: number | string | null | undefined
+) => {
+    const { i18n } = useTranslation();
+    const currentLang = i18n.language || 'ar';
+
+    const query = useQuery({
+        queryKey: ['formOptions', 'entities', branchId, mainProgramId],
+        queryFn: () =>
+            registrationService.getEntities(
+                branchId && mainProgramId
+                    ? { branch_id: branchId, main_program_id: mainProgramId }
+                    : undefined
+            ),
+        enabled: !!(branchId && mainProgramId),
+        staleTime: 5 * 60 * 1000
+    });
+
+    const transformOptions = (data: any[]): Array<{ value: string | number; label: string }> => {
+        if (!data) return [];
+        return data.map((item: any) => {
+            let label = '';
+            const value = item.id || item.value || '';
+
+            if (typeof item.name === 'object' && item.name !== null) {
+                label = currentLang === 'ar' && item.name.ar ? item.name.ar : (item.name.en || '');
+            } else if (item.name) {
+                label = String(item.name);
+            } else if (item.label) {
+                label = String(item.label);
+            } else {
+                label = String(value);
+            }
+
+            return { value, label };
+        });
+    };
+
+    return {
+        entity_id: transformOptions(query.data?.data || []),
+        isLoading: query.isLoading
+    };
+};
+
 
 
 

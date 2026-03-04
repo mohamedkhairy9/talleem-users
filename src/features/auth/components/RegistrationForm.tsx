@@ -9,7 +9,6 @@ import { Button } from '@/globals/components';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ROUTE_PATHS } from '@/config';
-import { useWatch } from 'react-hook-form';
 
 interface RegistrationFormProps {
     userType: UserRoleType;
@@ -49,22 +48,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
         defaultValues
     });
 
-    // Watch main_program_id and city_id for dependent field resets
-    const mainProgramId = useWatch({ control, name: 'main_program_id' });
-    const cityId = useWatch({ control, name: 'city_id' });
-
-    // Reset neighborhood when city changes (city is independent from branch)
-    React.useEffect(() => {
-        setValue('neighborhood_id', '');
-    }, [cityId, setValue]);
-
-    // Reset dependent fields when main_program_id changes
-    React.useEffect(() => {
-        if (mainProgramId) {
-            setValue('memorization_program_entity_type_id', '');
-            setValue('education_program_entity_type_id', '');
-        }
-    }, [mainProgramId, setValue]);
+    // Visibility (visible_when) and dependencies (depends_on, clear when dependency changes) are
+    // handled in DynamicFormRenderer for both teacher and entity manager forms.
 
     const onSubmit = async (data: any) => {
         if (!formData) return;

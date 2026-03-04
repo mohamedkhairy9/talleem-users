@@ -118,6 +118,13 @@ export const registrationService = {
      */
     getMainPrograms: async (): Promise<{ data: SelectOption[] }> => {
         return axiosInstance.get('/main-programs');
+    },
+
+    /**
+     * Get entities (filtered by branch_id and main_program_id)
+     */
+    getEntities: async (params?: { branch_id?: number | string; main_program_id?: number | string }): Promise<{ data: SelectOption[] }> => {
+        return axiosInstance.get('/entities', { params });
     }
 };
 

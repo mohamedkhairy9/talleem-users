@@ -1,10 +1,38 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Control, FieldValues, useWatch, UseFormSetValue } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { JoinRequestFormField } from '../types/registration.types';
 import { FormInput, FormSelect, FormTextarea, FormFile, FormCheckbox, MapPicker } from '@/globals/components';
-import { useRegistrationFormOptions, useNeighborhoodsOptions } from '../hooks/useRegistrationFormOptions';
+import { useRegistrationFormOptions, useNeighborhoodsOptions, useEntitiesOptions } from '../hooks/useRegistrationFormOptions';
 import { extractLabel } from '../utils/extractLabel';
+
+/** Get form value by key, supporting nested path (prefix.key) and root */
+function getFormValueByKey(formValues: Record<string, any> | undefined, key: string, prefix?: string): any {
+    if (!formValues) return undefined;
+    if (prefix) {
+        const nested = formValues[prefix];
+        if (nested && typeof nested === 'object' && key in nested) return nested[key];
+    }
+    return formValues[key];
+}
+
+/** Collect all field paths that have depends_on (including nested in groups) */
+function collectDependsOnFields(
+    fields: JoinRequestFormField[],
+    prefix = ''
+): Array<{ fieldPath: string; depFieldKey: string; prefix: string }> {
+    const result: Array<{ fieldPath: string; depFieldKey: string; prefix: string }> = [];
+    for (const field of fields) {
+        const fieldPath = prefix ? `${prefix}.${field.key}` : field.key;
+        if (field.depends_on) {
+            result.push({ fieldPath, depFieldKey: field.depends_on.field, prefix });
+        }
+        if (field.type === 'group' && field.fields?.length) {
+            result.push(...collectDependsOnFields(field.fields, fieldPath));
+        }
+    }
+    return result;
+}
 
 interface DynamicFormRendererProps<T extends FieldValues = FieldValues> {
     fields: JoinRequestFormField[];
@@ -32,8 +60,34 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     // Watch form values for dependencies
     const formValues = useWatch({ control });
     const cityId = formValues?.city_id;
+    const branchId = formValues?.branch_id;
+    const mainProgramId = formValues?.main_program_id;
     const latitude = formValues?.latitude;
     const longitude = formValues?.longitude;
+
+    // Clear dependent fields when their dependency value changes (e.g. city_id -> neighborhood_id)
+    const prevDepValuesRef = useRef<Record<string, any>>({});
+    const dependsOnList = React.useMemo(() => collectDependsOnFields(fields), [fields]);
+    useEffect(() => {
+        if (!setValueFn || typeof setValueFn !== 'function') return;
+        for (const { fieldPath, depFieldKey, prefix } of dependsOnList) {
+            const depValue = getFormValueByKey(formValues, depFieldKey, prefix || undefined);
+            const refKey = fieldPath;
+            const prev = prevDepValuesRef.current[refKey];
+            if (prev !== undefined && prev !== depValue) {
+                setValueFn(fieldPath, null, { shouldValidate: true });
+            }
+            prevDepValuesRef.current[refKey] = depValue;
+        }
+        // Clear entity_id when branch_id or main_program_id changes (entity depends on both)
+        const prevBranch = prevDepValuesRef.current['_branch_id'];
+        const prevMainProgram = prevDepValuesRef.current['_main_program_id'];
+        if (prevBranch !== undefined && (prevBranch !== branchId || prevMainProgram !== mainProgramId)) {
+            setValueFn('entity_id', null, { shouldValidate: true });
+        }
+        prevDepValuesRef.current['_branch_id'] = branchId;
+        prevDepValuesRef.current['_main_program_id'] = mainProgramId;
+    }, [formValues, setValueFn, dependsOnList, branchId, mainProgramId]);
 
     // Fetch all form options (nationalities, cities, etc.)
     const options = useRegistrationFormOptions();
@@ -41,33 +95,45 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     // Fetch neighborhoods based on city_id (city is independent from branch)
     const neighborhoodsOptions = useNeighborhoodsOptions(cityId);
 
+    // Fetch entities for teacher join form (requires branch_id and main_program_id)
+    const entitiesOptions = useEntitiesOptions(branchId, mainProgramId);
+
     // Check if field should be visible based on visible_when conditions
-    const isFieldVisible = (field: JoinRequestFormField) : boolean => {
+    // visible_when: { "session_mode_id": ["5", "6"] } => show when session_mode_id is one of these values
+    const isFieldVisible = (field: JoinRequestFormField, prefix?: string): boolean => {
         if (!field.visible_when) return true;
 
+        const allowedValuesNormalized = (val: string[]) => (val || []).map((v) => String(v));
         for (const [depField, allowedValues] of Object.entries(field.visible_when)) {
-            const currentValue = formValues?.[depField];
-            
-            if (!currentValue || !allowedValues.includes(String(currentValue))) {
-                return false;
-            }
+            const currentValue = getFormValueByKey(formValues, depField, prefix);
+            const allowed = allowedValuesNormalized(Array.isArray(allowedValues) ? allowedValues : []);
+            if (currentValue === undefined || currentValue === null || currentValue === '') return false;
+            if (!allowed.includes(String(currentValue))) return false;
         }
         return true;
     };
 
     // Check if field should be disabled
-    const isFieldDisabled = (field: JoinRequestFormField) : boolean => {
+    // depends_on: { "field": "city_id" } => disabled until city_id is selected; options API uses city_id filter
+    const isFieldDisabled = (field: JoinRequestFormField, prefix?: string): boolean => {
         if (field.disabled) return true;
 
-        // Disable neighborhood_id when city_id is not selected (neighborhood depends on city, not branch)
+        // Disable neighborhood_id when city_id is not selected (neighborhood depends on city)
         if (field.key === 'neighborhood_id') {
-            return !cityId;
+            const depVal = getFormValueByKey(formValues, 'city_id', prefix);
+            return !depVal;
         }
 
-        // Handle depends_on
+        // Disable entity_id until branch_id and main_program_id are selected
+        if (field.key === 'entity_id') {
+            const branch = getFormValueByKey(formValues, 'branch_id', prefix);
+            const mainProgram = getFormValueByKey(formValues, 'main_program_id', prefix);
+            return !branch || !mainProgram;
+        }
+
         if (field.depends_on) {
             const depFieldName = field.depends_on.field;
-            const depValue = formValues?.[depFieldName];
+            const depValue = getFormValueByKey(formValues, depFieldName, prefix);
             return !depValue;
         }
 
@@ -80,12 +146,12 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
             ? errors[prefix]?.[field.key]
             : errors[field.key];
 
-        // Check visibility
-        if (!isFieldVisible(field)) {
+        // Check visibility (e.g. visible_when: { session_mode_id: ["5","6"] })
+        if (!isFieldVisible(field, prefix)) {
             return null;
         }
 
-        const isDisabled = isFieldDisabled(field);
+        const isDisabled = isFieldDisabled(field, prefix);
 
         switch (field.type) {
             case 'text':
@@ -251,6 +317,10 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                         dynamicOptions = neighborhoodsOptions.neighborhood_id;
                         isLoadingOptions = neighborhoodsOptions.isLoading;
                         break;
+                    case 'entity_id':
+                        dynamicOptions = entitiesOptions.entity_id;
+                        isLoadingOptions = entitiesOptions.isLoading;
+                        break;
                     default:
                         dynamicOptions = [];
                 }
@@ -290,9 +360,10 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
         }
     };
 
-    // Section order: entity first, then location, then manager, then rest (program, facilities, etc.)
+    // Section order: entity first, then branch + main_program (before entity_id), then entity_id, then rest, then location (branch already shown), then manager
     const ENTITY_KEYS = ['name', 'registration_date', 'license_number', 'phone', 'email', 'address', 'area', 'status', 'activities'];
     const LOCATION_KEYS = ['branch_id', 'city_id', 'neighborhood_id', 'location_type', 'latitude', 'longitude'];
+    const BRANCH_MAIN_PROGRAM_KEYS = ['branch_id', 'main_program_id']; // shown before entity_id for teacher join form
     const orderedFields = React.useMemo(() => {
         const entityFields: JoinRequestFormField[] = [];
         const locationFields: JoinRequestFormField[] = [];
@@ -336,11 +407,19 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     };
 
     const entityFields = orderedFields.filter((f) => ENTITY_KEYS.includes(f.key));
-    const locationFields = orderedFields.filter((f) => LOCATION_KEYS.includes(f.key));
-    const managerFields = orderedFields.filter((f) => f.key === 'manager');
+    // Branch and main_program before entity_id (teacher join form: entity_id depends on both)
+    const branchMainProgramFields = BRANCH_MAIN_PROGRAM_KEYS.map((key) => fields.find((f) => f.key === key)).filter(Boolean) as JoinRequestFormField[];
+    const entityIdFields = orderedFields.filter((f) => f.key === 'entity_id');
     const restFields = orderedFields.filter(
-        (f) => !ENTITY_KEYS.includes(f.key) && !LOCATION_KEYS.includes(f.key) && f.key !== 'manager'
+        (f) =>
+            !ENTITY_KEYS.includes(f.key) &&
+            !LOCATION_KEYS.includes(f.key) &&
+            f.key !== 'manager' &&
+            !BRANCH_MAIN_PROGRAM_KEYS.includes(f.key) &&
+            f.key !== 'entity_id'
     );
+    const locationFields = orderedFields.filter((f) => LOCATION_KEYS.includes(f.key) && f.key !== 'branch_id');
+    const managerFields = orderedFields.filter((f) => f.key === 'manager');
 
     const mapPickerBlock = hasMapFields ? (
         <div key="map-picker" className="col-span-full mt-6 space-y-3">
@@ -372,6 +451,8 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
         <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {entityFields.map((field) => renderFieldWrapper(field))}
+                {branchMainProgramFields.map((field) => renderFieldWrapper(field))}
+                {entityIdFields.map((field) => renderFieldWrapper(field))}
                 {restFields.map((field) => renderFieldWrapper(field))}
 
                 {locationFields.map((field) => renderFieldWrapper(field))}
