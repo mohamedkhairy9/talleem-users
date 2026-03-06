@@ -1,42 +1,14 @@
 import { TableColumn } from '@/globals/types';
 import type { TeacherLeaveItem } from '../types/teacher-leaves.types';
-import { getDisplayDate } from '@/utils';
+import { getDisplayDate, formatTimePart } from '@/utils';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/globals/components';
-
-/** Format time "16:17:25" -> "16:17" or leave as-is */
-function formatTimePart(timeStr: string | undefined): string {
-    if (!timeStr) return '-';
-    const parts = timeStr.split(':');
-    if (parts.length >= 2) return `${parts[0]}:${parts[1]}`;
-    return timeStr;
-}
-
-/** Time at end of string: HH:MM or HH:MM:SS (ASCII or Arabic numerals) */
-const TIME_AT_END_REGEX = /\s+([\d\u0660-\u0669]{1,2}:[\d\u0660-\u0669]{2}(?::[\d\u0660-\u0669]{2})?)\s*$/;
+import { Button, DateCell } from '@/globals/components';
 
 export const LEAVE_SUB_TYPES = [
     { key: 'sick', labelKey: 'leaves.subType.sick' },
     { key: 'annual', labelKey: 'leaves.subType.annual' },
-    { key: 'unpaid', labelKey: 'leaves.subType.unpaid' },
     { key: 'other', labelKey: 'leaves.subType.other' }
 ];
-
-/**
- * Get date line and time line from created_at (string or AppDate).
- * Uses current date format preference; time is extracted from the end of the display string.
- */
-function getCreatedDateAndTime(createdAt: TeacherLeaveItem['created_at']): { dateLine: string; timeLine: string } {
-    const displayStr = getDisplayDate(createdAt);
-    if (!displayStr || displayStr === '-') return { dateLine: '-', timeLine: '-' };
-    const timeMatch = displayStr.match(TIME_AT_END_REGEX);
-    if (timeMatch) {
-        const timePart = timeMatch[1];
-        const datePart = displayStr.slice(0, timeMatch.index).trim();
-        return { dateLine: datePart || '-', timeLine: formatTimePart(timePart) };
-    }
-    return { dateLine: displayStr, timeLine: '-' };
-}
 
 export const createTeacherLeavesListColumns = (params: {
     t: ReturnType<typeof useTranslation>['t'];
@@ -102,15 +74,7 @@ export const createTeacherLeavesListColumns = (params: {
         {
             header: t('leaves.createdAt', 'Created'),
             cellClassName: 'whitespace-normal align-top',
-            accessor: (row: TeacherLeaveItem) => {
-                const { dateLine, timeLine } = getCreatedDateAndTime(row.created_at);
-                return (
-                    <div className="flex flex-col gap-0.5">
-                        <span>{dateLine}</span>
-                        <span className="text-gray-500">{timeLine}</span>
-                    </div>
-                );
-            }
+            accessor: (row: TeacherLeaveItem) => <DateCell value={row.created_at} />
         },
         {
             header: t('common.actions', 'Actions'),

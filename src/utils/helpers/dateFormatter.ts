@@ -67,3 +67,36 @@ export function getDisplayDate(
     if (typeof value === 'string') return formatDate(value);
     return formatDate(value);
 }
+
+/**
+ * Format time string to HH:MM (drops seconds).
+ * e.g. "16:17:25" -> "16:17", "09:00" -> "09:00"
+ */
+export function formatTimePart(timeStr: string | undefined): string {
+    if (!timeStr) return '-';
+    const parts = timeStr.split(':');
+    if (parts.length >= 2) return `${parts[0].trim()}:${parts[1].trim()}`;
+    return timeStr;
+}
+
+/** Time at end of display string: HH:MM or HH:MM:SS (ASCII or Arabic numerals) */
+const TIME_AT_END_REGEX = /\s+([\d\u0660-\u0669]{1,2}:[\d\u0660-\u0669]{2}(?::[\d\u0660-\u0669]{2})?)\s*$/;
+
+/**
+ * Split a date value into date line and time line for two-line table display.
+ * Uses current date format preference; time is extracted from the end of the display string when present.
+ */
+export function getDateAndTimeLines(
+    value: AppDate | string | Date | null | undefined,
+    format?: DateFormatPreference
+): { dateLine: string; timeLine: string } {
+    const displayStr = getDisplayDate(value, format);
+    if (!displayStr || displayStr === '-') return { dateLine: '-', timeLine: '-' };
+    const timeMatch = displayStr.match(TIME_AT_END_REGEX);
+    if (timeMatch) {
+        const timePart = timeMatch[1];
+        const datePart = displayStr.slice(0, timeMatch.index).trim();
+        return { dateLine: datePart || '-', timeLine: formatTimePart(timePart) };
+    }
+    return { dateLine: displayStr, timeLine: '-' };
+}

@@ -1,20 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader, Button, Table, Pagination } from '@/globals/components';
-import { PlusIcon, XIcon } from '@/globals/icons';
+import { PageHeader, Button, Table, Pagination, DateCell } from '@/globals/components';
+import { PlusIcon, EyeIcon } from '@/globals/icons';
 import type { TableColumn } from '@/globals/types';
-import { useTeacherRequests, useRequestTypes, useCreateTeacherRequest } from '@/features/teacher/requests/hooks/useTeacherRequests';
+import { useTeacherRequests } from '@/features/teacher/requests/hooks/useTeacherRequests';
+import CreateRequestModal from '@/features/teacher/requests/components/CreateRequestModal';
+import RequestDetailModal from '@/features/teacher/requests/components/RequestDetailModal';
 import type { TeacherRequestItem } from '@/features/teacher/requests/types/teacher-requests.types';
-import { getDisplayDate, getLocalizedText as getLocalizedTextHelper } from '@/utils';
+import { getLocalizedText as getLocalizedTextHelper } from '@/utils';
 import { useDateFormatStore } from '@/stores';
-import { toast } from 'react-toastify';
-import { getErrorMessage } from '@/utils/helpers/errorHandler';
 
 const PER_PAGE = 15;
 
 /**
  * Teacher Requests Page
- * List teacher requests and create new ones (dynamic form by request type)
+ * List teacher requests and create new ones via modal (RHF + Yup, request types from /teacher-requests/request-types)
  */
 const TeacherRequestsPage: React.FC = () => {
     const { t, i18n } = useTranslation();
@@ -23,15 +23,11 @@ const TeacherRequestsPage: React.FC = () => {
 
     const [page, setPage] = useState(1);
     const [createModalOpen, setCreateModalOpen] = useState(false);
-    const [formRequestTypeId, setFormRequestTypeId] = useState<number | ''>('');
-    const [formNationalId, setFormNationalId] = useState('');
+    const [detailRequestId, setDetailRequestId] = useState<number | null>(null);
 
     const params = useMemo(() => ({ page, per_page: PER_PAGE }), [page]);
     const { list, meta, isLoading, error } = useTeacherRequests(params);
-    const { data: requestTypesData, isLoading: isLoadingTypes } = useRequestTypes();
-    const createMutation = useCreateTeacherRequest();
 
-    const requestTypes = requestTypesData?.data ?? [];
     const total = meta?.total ?? 0;
     const totalPages = meta?.last_page ?? 1;
     const currentPage = meta?.current_page ?? page;
@@ -69,43 +65,26 @@ const TeacherRequestsPage: React.FC = () => {
             },
             {
                 header: t('teacherRequests.createdAt', 'Created At'),
-                accessor: (row) => getDisplayDate(row.created_at)
+                cellClassName: 'whitespace-normal align-top',
+                accessor: (row) => <DateCell value={row.created_at} />
+            },
+            {
+                header: t('teacherRequests.actions', 'Actions'),
+                accessor: (row) => (
+                    <button
+                        type="button"
+                        onClick={() => setDetailRequestId(row.id)}
+                        className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                        aria-label={t('teacherRequests.viewDetails', 'View details')}
+                    >
+                        <EyeIcon width={18} height={18} />
+                        {t('teacherRequests.viewDetails', 'View')}
+                    </button>
+                )
             }
         ],
         [t, currentLang]
     );
-
-    const handleCreateSubmit = () => {
-        if (formRequestTypeId === '' || !formNationalId.trim()) {
-            toast.error(t('teacherRequests.fillRequired', 'Please select request type and enter national ID.'));
-            return;
-        }
-        createMutation.mutate(
-            {
-                request_type_id: Number(formRequestTypeId),
-                submitted_data: [{ national_id: formNationalId.trim() }]
-            },
-            {
-                onSuccess: () => {
-                    toast.success(t('teacherRequests.createSuccess', 'Request submitted successfully.'));
-                    setCreateModalOpen(false);
-                    setFormRequestTypeId('');
-                    setFormNationalId('');
-                },
-                onError: (err) => {
-                    toast.error(getErrorMessage(err));
-                }
-            }
-        );
-    };
-
-    const handleCloseCreateModal = () => {
-        if (!createMutation.isPending) {
-            setCreateModalOpen(false);
-            setFormRequestTypeId('');
-            setFormNationalId('');
-        }
-    };
 
     if (error) {
         return (
@@ -167,81 +146,17 @@ const TeacherRequestsPage: React.FC = () => {
                 )}
             </div>
 
-            {/* Create Request Modal */}
-            {createModalOpen && (
-                <div className="fixed inset-0 z-[60] overflow-y-auto">
-                    <div
-                        className="fixed inset-0 bg-black/50"
-                        aria-hidden="true"
-                        onClick={handleCloseCreateModal}
-                    />
-                    <div className="relative flex min-h-full items-center justify-center p-4 pt-20 md:pt-24">
-                        <div className="relative w-full max-w-md rounded-lg bg-white shadow-xl z-10">
-                            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-                                <h3 className="text-lg font-semibold text-gray-900">
-                                    {t('teacherRequests.createRequest', 'Create Request')}
-                                </h3>
-                                <button
-                                    type="button"
-                                    onClick={handleCloseCreateModal}
-                                    className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                                    aria-label={t('common.closeAria')}
-                                >
-                                    <XIcon width={20} height={20} />
-                                </button>
-                            </div>
+            <CreateRequestModal
+                isOpen={createModalOpen}
+                onClose={() => setCreateModalOpen(false)}
+                onSuccess={() => setCreateModalOpen(false)}
+            />
 
-                            <div className="px-6 py-4 space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        {t('teacherRequests.requestType', 'Request Type')} <span className="text-red-500">*</span>
-                                    </label>
-                                    <select
-                                        value={formRequestTypeId}
-                                        onChange={(e) => setFormRequestTypeId(e.target.value === '' ? '' : Number(e.target.value))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                                        disabled={isLoadingTypes}
-                                    >
-                                        <option value="">{t('common.select', 'Select an option')}</option>
-                                        {requestTypes.map((type) => (
-                                            <option key={type.id} value={type.id}>
-                                                {getLocalized(type.name)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        {t('teacherRequests.nationalId', 'National ID')} <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formNationalId}
-                                        onChange={(e) => setFormNationalId(e.target.value)}
-                                        placeholder={t('teacherRequests.nationalIdPlaceholder', 'e.g. 298062515001')}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
-                                <Button variant="outline" onClick={handleCloseCreateModal} disabled={createMutation.isPending}>
-                                    {t('common.cancel')}
-                                </Button>
-                                <Button
-                                    variant="primary"
-                                    onClick={handleCreateSubmit}
-                                    loading={createMutation.isPending}
-                                    disabled={!formRequestTypeId || !formNationalId.trim()}
-                                >
-                                    {t('teacherRequests.submit', 'Submit')}
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <RequestDetailModal
+                isOpen={detailRequestId != null}
+                requestId={detailRequestId}
+                onClose={() => setDetailRequestId(null)}
+            />
         </div>
     );
 };

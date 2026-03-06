@@ -3,12 +3,14 @@ import type {
     TeacherRequestsListResponse,
     TeacherRequestsListParams,
     RequestTypesListResponse,
-    CreateTeacherRequestPayload
+    CreateTeacherRequestPayload,
+    JoinRequestFormResponse,
+    TeacherRequestDetailResponse
 } from '../types/teacher-requests.types';
 
 /**
  * Teacher Requests Service
- * GET /teacher-requests, POST /teacher-requests, GET /request-types
+ * GET /teacher-requests, POST /teacher-requests, GET /teacher-requests/request-types, GET /join-request-forms/:id
  */
 export const teacherRequestsService = {
     /**
@@ -29,9 +31,25 @@ export const teacherRequestsService = {
 
     /**
      * Get request types (for create form dropdown)
-     * GET /request-types
+     * GET /teacher-requests/request-types
      */
     getRequestTypes: (): Promise<RequestTypesListResponse> => {
-        return axiosInstance.get('/request-types');
+        return axiosInstance.get('/teacher-requests/request-types');
+    },
+
+    /**
+     * Get join request form by id (dynamic form fields for selected request type)
+     * GET /join-request-forms/:id
+     */
+    getJoinRequestForm: (id: number): Promise<JoinRequestFormResponse> => {
+        return axiosInstance.get(`/join-request-forms/${id}`);
+    },
+
+    /**
+     * Get teacher request detail by id
+     * GET /teacher-requests/:id
+     */
+    getTeacherRequestById: (id: number): Promise<TeacherRequestDetailResponse> => {
+        return axiosInstance.get(`/teacher-requests/${id}`);
     }
 };

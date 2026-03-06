@@ -1,6 +1,6 @@
 import { TableColumn } from '@/globals/types';
 import type { TeacherWarningResponse } from '../types/teacher-warnings.types';
-import { getDisplayDate } from '@/utils';
+import { DateCell } from '@/globals/components';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -15,7 +15,8 @@ export const createTeacherWarningsListColumns = (params: {
     return [
         {
             header: t('warning.date', 'Date'),
-            accessor: (row: TeacherWarningResponse) => getDisplayDate(row.date)
+            cellClassName: 'whitespace-normal align-top',
+            accessor: (row: TeacherWarningResponse) => <DateCell value={row.date} />
         },
         {
             header: t('warning.warningReason', 'Warning Reason'),
@@ -47,7 +48,8 @@ export const createTeacherWarningsListColumns = (params: {
         },
         {
             header: t('warning.createdAt', 'Created At'),
-            accessor: (row: TeacherWarningResponse) => getDisplayDate(row.created_at)
+            cellClassName: 'whitespace-normal align-top',
+            accessor: (row: TeacherWarningResponse) => <DateCell value={row.created_at} />
         }
     ];
 };

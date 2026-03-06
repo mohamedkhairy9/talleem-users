@@ -14,3 +14,5 @@ export { default as PageHeader } from './PageHeader';
 export type { PageHeaderAction, PageHeaderBadge } from './PageHeader';
 export { default as FormattedDate } from './FormattedDate';
 export type { FormattedDateProps } from './FormattedDate';
+export { default as DateCell } from './DateCell';
+export type { DateCellProps } from './DateCell';

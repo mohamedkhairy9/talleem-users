@@ -1,6 +1,6 @@
 import type { TableColumn } from '@/globals/types';
 import type { JoinRequestResponse } from '../types/join-requests.types';
-import { getDisplayDate } from '@/utils';
+import { DateCell } from '@/globals/components';
 
 export const PROCESS_STEP_STATUS_OPTIONS = [
     { value: 1 as const, labelKey: 'joinRequests.statusOptions.approved' },
@@ -65,7 +65,8 @@ export function createJoinRequestsColumns(params: {
         },
         {
             header: t('joinRequests.createdAt', 'Created At'),
-            accessor: (row: JoinRequestResponse) => getDisplayDate(row.created_at)
+            cellClassName: 'whitespace-normal align-top',
+            accessor: (row: JoinRequestResponse) => <DateCell value={row.created_at} />
         }
     ];
 }

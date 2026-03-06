@@ -1,6 +1,6 @@
 import { TableColumn } from '@/globals/types';
 import type { WarningResponse } from '../services/warnings.service';
-import { getDisplayDate } from '@/utils';
+import { DateCell } from '@/globals/components';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -16,7 +16,8 @@ export const createWarningsListColumns = (params: {
     return [
         {
             header: t('warning.date', 'Date'),
-            accessor: (row: WarningResponse) => getDisplayDate(row.date)
+            cellClassName: 'whitespace-normal align-top',
+            accessor: (row: WarningResponse) => <DateCell value={row.date} />
         },
         {
             header: t('warning.warningType', 'Warning Type'),

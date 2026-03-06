@@ -63,13 +63,25 @@
         "currentPhase": "المرحلة الحالية",
         "currentStep": "الخطوة الحالية",
         "createdAt": "تاريخ الإنشاء",
+        "updatedAt": "تاريخ التحديث",
+        "actions": "إجراءات",
+        "viewDetails": "عرض",
+        "requestDetails": "تفاصيل الطلب",
+        "detailLoadError": "تعذر تحميل تفاصيل الطلب.",
+        "submittedData": "البيانات المقدمة",
+        "assignedTo": "معين إلى",
         "noRequests": "لا توجد طلبات.",
         "loadError": "تعذر تحميل الطلبات. يرجى المحاولة مرة أخرى.",
         "fillRequired": "يرجى اختيار نوع الطلب وإدخال رقم الهوية.",
         "createSuccess": "تم إرسال الطلب بنجاح.",
         "nationalId": "رقم الهوية الوطنية",
         "nationalIdPlaceholder": "مثال: 298062515001",
-        "submit": "إرسال"
+        "submit": "إرسال",
+        "validation": {
+            "requestTypeRequired": "نوع الطلب مطلوب",
+            "nationalIdRequired": "رقم الهوية الوطنية مطلوب",
+            "fieldRequired": "هذا الحقل مطلوب"
+        }
     },
     "teacherWarnings": {
         "title": "إنذاراتي",
