@@ -51,7 +51,7 @@ export const createLeaveFormSchema = yup.object({
             otherwise: (schema) => schema.optional().nullable()
         }),
     medical_report: yup
-        .mixed<File | null>()
+        .mixed<File>()
         .nullable()
         .when(['leave_type', 'leave_sub_type'], {
             is: (leave_type: string, leave_sub_type: string) => leave_type === 'leave' && leave_sub_type === 'sick',
