@@ -87,6 +87,28 @@
         "title": "My Warnings",
         "subtitle": "View your recorded warnings"
     },
+    "certificates": {
+        "title": "My Certificates",
+        "subtitle": "View your students and their certificates",
+        "studentsList": "Students",
+        "studentName": "Student",
+        "nationalId": "National ID",
+        "halaqas": "Halaqas",
+        "viewCertificates": "Certificates",
+        "loadError": "Error loading students. Please try again.",
+        "noStudents": "No students yet.",
+        "studentCertificates": "Student Certificates",
+        "phone": "Phone",
+        "identity": "Identity",
+        "mainProgram": "Main Program",
+        "branch": "Branch",
+        "certificatesList": "Certificates",
+        "certificateName": "Certificate",
+        "issuedFrom": "Issued From",
+        "issuedDate": "Issued Date",
+        "status": "Status",
+        "noCertificates": "No certificates."
+    },
     "leaves": {
         "title": "My Leaves",
         "subtitle": "View and request leaves",

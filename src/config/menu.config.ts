@@ -87,6 +87,12 @@ export const TEACHER_MENU_ITEMS: MenuItem[] = [
         labelKey: 'menu.leaves',
         icon: 'CalendarIcon',
         roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.TEACHER_CERTIFICATES,
+        labelKey: 'menu.certificates',
+        icon: 'AwardIcon',
+        roles: ['teacher']
     }
 ];
 

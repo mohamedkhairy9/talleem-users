@@ -24,6 +24,7 @@ export const ROUTE_PATHS = {
     TEACHER_REQUESTS: 'teacher-requests',
     TEACHER_WARNINGS: 'teacher/warnings',
     TEACHER_LEAVES: 'teacher/leaves',
+    TEACHER_CERTIFICATES: 'teacher/certificates',
     SETTINGS: 'settings'
 } as const;
 

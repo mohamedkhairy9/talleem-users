@@ -87,6 +87,28 @@
         "title": "إنذاراتي",
         "subtitle": "عرض إنذاراتي المسجلة"
     },
+    "certificates": {
+        "title": "شهاداتي",
+        "subtitle": "عرض طلابك وشهاداتهم",
+        "studentsList": "الطلاب",
+        "studentName": "الطالب",
+        "nationalId": "رقم الهوية",
+        "halaqas": "الحلقات",
+        "viewCertificates": "الشهادات",
+        "loadError": "تعذر تحميل الطلاب. يرجى المحاولة مرة أخرى.",
+        "noStudents": "لا يوجد طلاب بعد.",
+        "studentCertificates": "شهادات الطالب",
+        "phone": "الهاتف",
+        "identity": "الهوية",
+        "mainProgram": "البرنامج الرئيسي",
+        "branch": "الفرع",
+        "certificatesList": "الشهادات",
+        "certificateName": "الشهادة",
+        "issuedFrom": "صادرة من",
+        "issuedDate": "تاريخ الإصدار",
+        "status": "الحالة",
+        "noCertificates": "لا توجد شهادات."
+    },
     "leaves": {
         "title": "إجازاتي",
         "subtitle": "عرض طلبات الإجازة وإنشاء طلب جديد",
