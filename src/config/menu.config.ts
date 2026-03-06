@@ -65,6 +65,12 @@ export const EDUCATION_MENU_ITEMS: MenuItem[] = [
  */
 export const TEACHER_MENU_ITEMS: MenuItem[] = [
     {
+        path: ROUTE_PATHS.TEACHER_CALENDAR,
+        labelKey: 'menu.calendar',
+        icon: 'CalendarIcon',
+        roles: ['teacher']
+    },
+    {
         path: ROUTE_PATHS.TEACHER_HALAQAS,
         labelKey: 'menu.halaqaty',
         icon: 'CircleIcon',
@@ -92,6 +98,12 @@ export const TEACHER_MENU_ITEMS: MenuItem[] = [
         path: ROUTE_PATHS.TEACHER_CERTIFICATES,
         labelKey: 'menu.certificates',
         icon: 'AwardIcon',
+        roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.TEACHER_LICENSES,
+        labelKey: 'menu.licenses',
+        icon: 'BookOpenIcon',
         roles: ['teacher']
     }
 ];

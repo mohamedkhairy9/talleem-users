@@ -18,13 +18,15 @@ export const ROUTE_PATHS = {
     EDIT_HALAQA: 'halaqas/:id/edit',
     WARNINGS_MANAGEMENT: 'warnings-management',
     JOIN_REQUESTS: 'join-requests',
-    // Teacher menu items
+    // Teacher menu items (TEACHER_CALENDAR is default home for teacher)
+    TEACHER_CALENDAR: 'teacher/calendar',
     TEACHER_HALAQAS: 'halaqaty',
     TEACHER_HALAQA_DETAIL: 'halaqaty/:id',
     TEACHER_REQUESTS: 'teacher-requests',
     TEACHER_WARNINGS: 'teacher/warnings',
     TEACHER_LEAVES: 'teacher/leaves',
     TEACHER_CERTIFICATES: 'teacher/certificates',
+    TEACHER_LICENSES: 'teacher/licenses',
     SETTINGS: 'settings'
 } as const;
 

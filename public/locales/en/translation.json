@@ -109,6 +109,30 @@
         "status": "Status",
         "noCertificates": "No certificates."
     },
+    "calendar": {
+        "title": "My Calendar",
+        "subtitle": "Your halaqas and schedule",
+        "halaqa": "Halaqa",
+        "sessionTime": "Session time",
+        "loadError": "Error loading calendar. Please try again.",
+        "noHalaqas": "No halaqas in your calendar."
+    },
+    "licenses": {
+        "title": "My Licenses",
+        "subtitle": "View your teaching licenses",
+        "currentLicense": "Current License",
+        "listTitle": "All Licenses",
+        "licenseNumber": "License Number",
+        "licenseType": "License Type",
+        "issueDate": "Issue Date",
+        "expirationDate": "Expiration Date",
+        "status": "Status",
+        "expired": "Expired",
+        "notes": "Notes",
+        "creator": "Created By",
+        "loadError": "Error loading licenses. Please try again.",
+        "noLicenses": "No licenses found."
+    },
     "leaves": {
         "title": "My Leaves",
         "subtitle": "View and request leaves",
@@ -175,7 +199,9 @@
         "leaves": "My Leaves",
         "createHalaqa": "Create Halaqa",
         "warningsManagement": "Warnings Management",
-        "joinRequests": "Join Requests"
+        "joinRequests": "Join Requests",
+        "licenses": "My Licenses",
+        "calendar": "Calendar"
     },
     "auth": {
         "email": {

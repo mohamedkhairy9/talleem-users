@@ -109,6 +109,30 @@
         "status": "الحالة",
         "noCertificates": "لا توجد شهادات."
     },
+    "calendar": {
+        "title": "تقويمي",
+        "subtitle": "حلقاتك وجدولك",
+        "halaqa": "حلقة",
+        "sessionTime": "وقت الحصة",
+        "loadError": "تعذر تحميل التقويم. يرجى المحاولة مرة أخرى.",
+        "noHalaqas": "لا توجد حلقات في تقويمك."
+    },
+    "licenses": {
+        "title": "رخصي",
+        "subtitle": "عرض رخصك التدريسية",
+        "currentLicense": "الرخصة الحالية",
+        "listTitle": "جميع الرخص",
+        "licenseNumber": "رقم الرخصة",
+        "licenseType": "نوع الرخصة",
+        "issueDate": "تاريخ الإصدار",
+        "expirationDate": "تاريخ الانتهاء",
+        "status": "الحالة",
+        "expired": "منتهية",
+        "notes": "ملاحظات",
+        "creator": "أنشئ بواسطة",
+        "loadError": "تعذر تحميل الرخص. يرجى المحاولة مرة أخرى.",
+        "noLicenses": "لا توجد رخص."
+    },
     "leaves": {
         "title": "إجازاتي",
         "subtitle": "عرض طلبات الإجازة وإنشاء طلب جديد",
@@ -175,7 +199,9 @@
         "leaves": "إجازاتي",
         "createHalaqa": "إنشاء حلقة",
         "warningsManagement": "إدارة الإنذارات",
-        "joinRequests": "طلبات الانضمام"
+        "joinRequests": "طلبات الانضمام",
+        "licenses": "رخصي",
+        "calendar": "التقويم"
     },
     "auth": {
         "email": {

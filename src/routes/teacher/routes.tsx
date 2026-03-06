@@ -1,13 +1,19 @@
 import { RouteConfig } from '@/globals/types';
 import { ROUTE_PATHS } from '@/config';
-import { MyHalaqasPage, TeacherHalaqaDetailPage, TeacherRequestsPage, TeacherWarningsPage, TeacherLeavesPage, TeacherCertificatesPage } from '@/pages/teacher';
+import { TeacherCalendarPage, MyHalaqasPage, TeacherHalaqaDetailPage, TeacherRequestsPage, TeacherWarningsPage, TeacherLeavesPage, TeacherCertificatesPage, TeacherLicensesPage } from '@/pages/teacher';
 
 /**
  * Teacher Routes Configuration
  * All routes specific to teachers
  */
 export const teacherRoutes: RouteConfig[] = [
-    // My Halaqas (index for teacher)
+    // Calendar (home for teacher)
+    {
+        path: ROUTE_PATHS.TEACHER_CALENDAR,
+        element: <TeacherCalendarPage />,
+        roles: ['teacher']
+    },
+    // My Halaqas
     {
         path: ROUTE_PATHS.TEACHER_HALAQAS,
         element: <MyHalaqasPage />,
@@ -41,6 +47,12 @@ export const teacherRoutes: RouteConfig[] = [
     {
         path: ROUTE_PATHS.TEACHER_CERTIFICATES,
         element: <TeacherCertificatesPage />,
+        roles: ['teacher']
+    },
+    // Teacher Licenses
+    {
+        path: ROUTE_PATHS.TEACHER_LICENSES,
+        element: <TeacherLicensesPage />,
         roles: ['teacher']
     }
 ];
