@@ -148,6 +148,8 @@ export interface TableColumn<T = any> {
     header: string;
     accessor?: string | ((row: T) => React.ReactNode);
     cell?: (row: T) => React.ReactNode;
+    /** Optional class for the td (e.g. whitespace-normal for wrapping) */
+    cellClassName?: string;
 }
 
 export interface TableActionButtons<T = any> {

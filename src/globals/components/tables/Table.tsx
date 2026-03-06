@@ -78,15 +78,21 @@ const Table = <T = any>({
     
     const allColumns: TableColumn<T>[] = actionColumn ? [...columns, actionColumn] : columns;
 
+    const colWidth = `${100 / allColumns.length}%`;
     const tableContent = (
         <>
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full w-full table-fixed divide-y divide-gray-200">
+                <colgroup>
+                    {allColumns.map((_, index) => (
+                        <col key={index} style={{ width: colWidth }} />
+                    ))}
+                </colgroup>
                 <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
                     <tr>
                         {allColumns.map((column, index) => (
                             <th
                                 key={index}
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider"
                             >
                                 {column.header}
                             </th>
@@ -99,7 +105,7 @@ const Table = <T = any>({
                             {allColumns.map((column, colIndex) => (
                                 <td
                                     key={colIndex}
-                                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                                    className={`px-6 py-4 text-sm text-gray-900 text-start ${column.cellClassName ?? 'whitespace-nowrap'}`}
                                 >
                                     {column.accessor
                                         ? typeof column.accessor === 'function'

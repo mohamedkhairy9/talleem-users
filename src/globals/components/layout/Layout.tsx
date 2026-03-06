@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
+import { useDateFormatStore } from '@/stores';
 
 /**
  * Main Layout Component
@@ -10,6 +11,7 @@ import Sidebar from './Sidebar';
  */
 const Layout: React.FC = () => {
     const { lang } = useParams<{ lang: string }>();
+    useDateFormatStore((s) => s.dateFormat); // re-render when date format changes so all dates update
     const direction = lang === 'ar' ? 'rtl' : 'ltr';
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 

@@ -36,7 +36,8 @@
         "id": "المعرف",
         "saveChanges": "حفظ التغييرات",
         "refresh": "تحديث",
-        "saving": "جاري الحفظ..."
+        "saving": "جاري الحفظ...",
+        "optional": "اختياري"
     },
     "navbar": {
         "title": "لوحة تحكم مستخدمي تعليم",
@@ -74,6 +75,52 @@
         "title": "إنذاراتي",
         "subtitle": "عرض إنذاراتي المسجلة"
     },
+    "leaves": {
+        "title": "إجازاتي",
+        "subtitle": "عرض طلبات الإجازة وإنشاء طلب جديد",
+        "listTitle": "الإجازات",
+        "createLeave": "إنشاء طلب إجازة",
+        "leaveType": "نوع الإجازة",
+        "type": {
+            "leave": "إجازة",
+            "pto": "مغادرة (ساعات)"
+        },
+        "subType": "النوع الفرعي",
+        "subType.sick": "مرضية",
+        "subType.annual": "سنوية",
+        "subType.unpaid": "بدون أجر",
+        "subType.other": "أخرى",
+        "period": "الفترة",
+        "duration": "المدة",
+        "status": "الحالة",
+        "createdAt": "تاريخ الإنشاء",
+        "fromDate": "من تاريخ",
+        "toDate": "إلى تاريخ",
+        "date": "التاريخ",
+        "fromTime": "من الساعة",
+        "toTime": "إلى الساعة",
+        "notes": "ملاحظات",
+        "notesPlaceholder": "ملاحظات اختيارية",
+        "medicalReport": "التقرير الطبي",
+        "noLeaves": "لا توجد إجازات.",
+        "loadError": "تعذر تحميل الإجازات. يرجى المحاولة مرة أخرى.",
+        "cancel": "إلغاء الطلب",
+        "cancelSuccess": "تم إلغاء طلب الإجازة.",
+        "createSuccess": "تم إرسال طلب الإجازة.",
+        "submit": "إرسال",
+        "validation": {
+            "fromDateRequired": "تاريخ البداية مطلوب",
+            "toDateRequired": "تاريخ النهاية مطلوب",
+            "fromDateNotBeforeToday": "تاريخ البداية لا يمكن أن يكون قبل اليوم",
+            "toDateNotBeforeToday": "تاريخ النهاية لا يمكن أن يكون قبل اليوم",
+            "toDateAfterStart": "تاريخ النهاية يجب أن يكون بعد تاريخ البداية",
+            "medicalReportRequired": "التقرير الطبي مطلوب للإجازة المرضية",
+            "leave_sub_type_required": "النوع الفرعي مطلوب",
+            "dateRequired": "التاريخ مطلوب",
+            "fromTimeRequired": "وقت البداية مطلوب",
+            "toTimeRequired": "وقت النهاية مطلوب"
+        }
+    },
     "menu": {
         "home": "الصفحة الرئيسية",
         "studyPlan": "خطتي الدراسية",
@@ -91,6 +138,7 @@
         "halaqas": "الحلقات",
         "halaqaty": "حلقاتي",
         "teacherRequests": "طلباتي",
+        "leaves": "إجازاتي",
         "createHalaqa": "إنشاء حلقة",
         "warningsManagement": "إدارة الإنذارات",
         "joinRequests": "طلبات الانضمام"

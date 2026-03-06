@@ -23,6 +23,7 @@ export const ROUTE_PATHS = {
     TEACHER_HALAQA_DETAIL: 'halaqaty/:id',
     TEACHER_REQUESTS: 'teacher-requests',
     TEACHER_WARNINGS: 'teacher/warnings',
+    TEACHER_LEAVES: 'teacher/leaves',
     SETTINGS: 'settings'
 } as const;
 

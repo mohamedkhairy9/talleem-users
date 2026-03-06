@@ -36,7 +36,8 @@
         "id": "ID",
         "saveChanges": "Save Changes",
         "refresh": "Refresh",
-        "saving": "Saving..."
+        "saving": "Saving...",
+        "optional": "optional"
     },
     "navbar": {
         "title": "Tallem Users Dashboard",
@@ -74,6 +75,52 @@
         "title": "My Warnings",
         "subtitle": "View your recorded warnings"
     },
+    "leaves": {
+        "title": "My Leaves",
+        "subtitle": "View and request leaves",
+        "listTitle": "Leaves",
+        "createLeave": "Create Leave Request",
+        "leaveType": "Type",
+        "type": {
+            "leave": "Leave",
+            "pto": "PTO (Hourly)"
+        },
+        "subType": "Sub type",
+        "subType.sick": "Sick",
+        "subType.annual": "Annual",
+        "subType.unpaid": "Unpaid",
+        "subType.other": "Other",
+        "period": "Period",
+        "duration": "Duration",
+        "status": "Status",
+        "createdAt": "Created",
+        "fromDate": "From date",
+        "toDate": "To date",
+        "date": "Date",
+        "fromTime": "From time",
+        "toTime": "To time",
+        "notes": "Notes",
+        "notesPlaceholder": "Optional notes",
+        "medicalReport": "Medical report",
+        "noLeaves": "No leaves yet.",
+        "loadError": "Error loading leaves. Please try again.",
+        "cancel": "Cancel",
+        "cancelSuccess": "Leave request cancelled.",
+        "createSuccess": "Leave request submitted.",
+        "submit": "Submit",
+        "validation": {
+            "fromDateRequired": "Start date is required",
+            "toDateRequired": "End date is required",
+            "fromDateNotBeforeToday": "Start date cannot be before today",
+            "toDateNotBeforeToday": "End date cannot be before today",
+            "toDateAfterStart": "End date must be after start date",
+            "medicalReportRequired": "Medical report is required for sick leave",
+            "leave_sub_type_required": "Sub type is required",
+            "dateRequired": "Date is required",
+            "fromTimeRequired": "From time is required",
+            "toTimeRequired": "To time is required"
+        }
+    },
     "menu": {
         "home": "Home",
         "studyPlan": "My Study Plan",
@@ -91,6 +138,7 @@
         "halaqas": "Halaqas",
         "halaqaty": "My Halaqas",
         "teacherRequests": "My Requests",
+        "leaves": "My Leaves",
         "createHalaqa": "Create Halaqa",
         "warningsManagement": "Warnings Management",
         "joinRequests": "Join Requests"

@@ -81,6 +81,12 @@ export const TEACHER_MENU_ITEMS: MenuItem[] = [
         labelKey: 'menu.warnings',
         icon: 'AlertTriangleIcon',
         roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.TEACHER_LEAVES,
+        labelKey: 'menu.leaves',
+        icon: 'CalendarIcon',
+        roles: ['teacher']
     }
 ];
 
