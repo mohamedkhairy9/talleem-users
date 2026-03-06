@@ -16,3 +16,5 @@ export { default as FormattedDate } from './FormattedDate';
 export type { FormattedDateProps } from './FormattedDate';
 export { default as DateCell } from './DateCell';
 export type { DateCellProps } from './DateCell';
+export { default as ImageWithViewer } from './ImageWithViewer';
+export type { ImageWithViewerProps } from './ImageWithViewer';

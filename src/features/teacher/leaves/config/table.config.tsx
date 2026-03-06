@@ -2,7 +2,7 @@ import { TableColumn } from '@/globals/types';
 import type { TeacherLeaveItem } from '../types/teacher-leaves.types';
 import { getDisplayDate, formatTimePart } from '@/utils';
 import { useTranslation } from 'react-i18next';
-import { Button, DateCell } from '@/globals/components';
+import { Button, DateCell, ImageWithViewer } from '@/globals/components';
 
 export const LEAVE_SUB_TYPES = [
     { key: 'sick', labelKey: 'leaves.subType.sick' },
@@ -26,6 +26,17 @@ export const createTeacherLeavesListColumns = (params: {
             header: t('leaves.subType', 'Sub type'),
             accessor: (row: TeacherLeaveItem) =>
                 row.leave_sub_type?.label ?? row.leave_sub_type?.key ?? '-'
+        },
+        {
+            header: t('leaves.medicalReport', 'Medical Report'),
+            accessor: (row: TeacherLeaveItem) => (
+                <ImageWithViewer
+                    src={row.medical_report_url}
+                    alt={t('leaves.medicalReport', 'Medical Report')}
+                    imgClassName="w-10 h-10 object-cover rounded-full"
+                    fallback="-"
+                />
+            )
         },
         {
             header: t('leaves.period', 'Period'),
