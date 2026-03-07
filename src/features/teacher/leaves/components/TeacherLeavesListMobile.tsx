@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TeacherLeaveItem } from '../types/teacher-leaves.types';
 import { getDisplayDate } from '@/utils';
+import { ImageWithViewer } from '@/globals/components';
 
 interface TeacherLeavesListMobileProps {
     list: TeacherLeaveItem[];
@@ -57,13 +58,12 @@ const TeacherLeavesListMobile: React.FC<TeacherLeavesListMobileProps> = ({
                 <div key={row.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                     <div className="mb-2 flex items-start justify-between gap-2">
                         <span
-                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                                row.status === 'approved'
-                                    ? 'bg-green-100 text-green-800'
-                                    : row.status === 'rejected' || row.status === 'cancelled'
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${row.status === 'approved'
+                                ? 'bg-green-100 text-green-800'
+                                : row.status === 'rejected' || row.status === 'cancelled'
                                     ? 'bg-red-100 text-red-800'
                                     : 'bg-amber-100 text-amber-800'
-                            }`}
+                                }`}
                         >
                             {row.status}
                         </span>
@@ -76,6 +76,19 @@ const TeacherLeavesListMobile: React.FC<TeacherLeavesListMobileProps> = ({
                                 {row.leave_sub_type?.label ?? row.leave_sub_type?.key ?? '-'}
                             </span>
                         </div>
+                        {row.medical_report_url && <div className="flex justify-between gap-2">
+                            <span className="text-gray-500">{t('leaves.medicalReport', 'Medical Report')}</span>
+                            <span className="text-end text-gray-900">
+                                <ImageWithViewer
+                                    src={row.medical_report_url}
+                                    alt={t('leaves.medicalReport', 'Medical Report')}
+                                    imgClassName="w-10 h-10 object-cover rounded-full"
+                                    fallback="-"
+                                />
+                            </span>
+
+                        </div>
+                        }
                         <div className="flex justify-between gap-2">
                             <span className="text-gray-500">{t('leaves.period', 'Period')}</span>
                             <span className="text-end text-gray-900">{row.period?.display ?? '-'}</span>
