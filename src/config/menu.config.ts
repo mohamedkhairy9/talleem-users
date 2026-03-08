@@ -105,6 +105,24 @@ export const TEACHER_MENU_ITEMS: MenuItem[] = [
         labelKey: 'menu.licenses',
         icon: 'BookOpenIcon',
         roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.TEACHER_EVALUATIONS_RECEIVED,
+        labelKey: 'menu.evaluations',
+        icon: 'StarIcon',
+        roles: ['teacher'],
+        subItems: [
+            {
+                path: ROUTE_PATHS.TEACHER_EVALUATIONS_RECEIVED,
+                labelKey: 'menu.receivedEvaluations',
+                icon: 'StarIcon'
+            },
+            {
+                path: ROUTE_PATHS.TEACHER_EVALUATIONS_GIVEN,
+                labelKey: 'menu.givenEvaluations',
+                icon: 'StarIcon'
+            }
+        ]
     }
 ];
 

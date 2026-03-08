@@ -1,6 +1,6 @@
 import { RouteConfig } from '@/globals/types';
 import { ROUTE_PATHS } from '@/config';
-import { TeacherCalendarPage, MyHalaqasPage, TeacherHalaqaDetailPage, TeacherRequestsPage, TeacherWarningsPage, TeacherLeavesPage, TeacherCertificatesPage, TeacherLicensesPage } from '@/pages/teacher';
+import { TeacherCalendarPage, MyHalaqasPage, TeacherHalaqaDetailPage, TeacherRequestsPage, TeacherWarningsPage, TeacherLeavesPage, TeacherCertificatesPage, TeacherLicensesPage, TeacherEvaluationsReceivedPage, TeacherEvaluationsGivenPage } from '@/pages/teacher';
 
 /**
  * Teacher Routes Configuration
@@ -53,6 +53,17 @@ export const teacherRoutes: RouteConfig[] = [
     {
         path: ROUTE_PATHS.TEACHER_LICENSES,
         element: <TeacherLicensesPage />,
+        roles: ['teacher']
+    },
+    // Teacher Evaluations (received / given)
+    {
+        path: ROUTE_PATHS.TEACHER_EVALUATIONS_RECEIVED,
+        element: <TeacherEvaluationsReceivedPage />,
+        roles: ['teacher']
+    },
+    {
+        path: ROUTE_PATHS.TEACHER_EVALUATIONS_GIVEN,
+        element: <TeacherEvaluationsGivenPage />,
         roles: ['teacher']
     }
 ];

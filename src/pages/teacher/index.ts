@@ -6,4 +6,6 @@ export { default as TeacherWarningsPage } from './TeacherWarningsPage';
 export { default as TeacherLeavesPage } from './TeacherLeavesPage';
 export { default as TeacherCertificatesPage } from './TeacherCertificatesPage';
 export { default as TeacherLicensesPage } from './TeacherLicensesPage';
+export { default as TeacherEvaluationsReceivedPage } from './TeacherEvaluationsReceivedPage';
+export { default as TeacherEvaluationsGivenPage } from './TeacherEvaluationsGivenPage';
 

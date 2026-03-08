@@ -109,6 +109,38 @@
         "status": "الحالة",
         "noCertificates": "لا توجد شهادات."
     },
+    "evaluations": {
+        "receivedTitle": "التقييمات المستلمة",
+        "receivedSubtitle": "التقييمات التي قدمها الآخرون لك",
+        "givenTitle": "التقييمات المقدمة",
+        "givenSubtitle": "التقييمات التي قدمتها",
+        "listTitle": "التقييمات",
+        "createEvaluation": "إنشاء تقييم",
+        "evaluationName": "التقييم",
+        "date": "التاريخ",
+        "submittedBy": "قدم بواسطة",
+        "evaluated": "المقيّم",
+        "entity": "الجهة",
+        "totalScore": "الدرجة الكلية",
+        "loadError": "تعذر تحميل التقييمات. يرجى المحاولة مرة أخرى.",
+        "noEvaluations": "لا توجد تقييمات.",
+        "noGivenEvaluations": "لم تُقدّم أي تقييمات بعد.",
+        "comingSoon": "هذا القسم سيكون متاحاً قريباً.",
+        "template": "قالب التقييم",
+        "changeTemplate": "تغيير القالب",
+        "evaluateWho": "تقييم",
+        "evaluationDate": "تاريخ التقييم",
+        "criteriaScores": "درجات المعايير",
+        "maxDegree": "حد أقصى",
+        "score": "الدرجة",
+        "notes": "ملاحظات",
+        "notesPlaceholder": "اختياري",
+        "attachments": "المرفقات",
+        "submit": "إرسال",
+        "submitSuccess": "تم إرسال التقييم بنجاح.",
+        "selectEvaluated": "يرجى اختيار من يتم تقييمه.",
+        "noEntitiesToEvaluate": "لا يوجد أحد متاح لتقييمه لهذا القالب."
+    },
     "calendar": {
         "title": "تقويمي",
         "subtitle": "حلقاتك وجدولك",
@@ -201,7 +233,10 @@
         "warningsManagement": "إدارة الإنذارات",
         "joinRequests": "طلبات الانضمام",
         "licenses": "رخصي",
-        "calendar": "التقويم"
+        "calendar": "التقويم",
+        "evaluations": "التقييمات",
+        "receivedEvaluations": "المستلمة",
+        "givenEvaluations": "المقدمة"
     },
     "auth": {
         "email": {

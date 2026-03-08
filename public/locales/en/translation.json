@@ -109,6 +109,38 @@
         "status": "Status",
         "noCertificates": "No certificates."
     },
+    "evaluations": {
+        "receivedTitle": "Received Evaluations",
+        "receivedSubtitle": "Evaluations others have given you",
+        "givenTitle": "Given Evaluations",
+        "givenSubtitle": "Evaluations you have submitted",
+        "listTitle": "Evaluations",
+        "createEvaluation": "Create Evaluation",
+        "evaluationName": "Evaluation",
+        "date": "Date",
+        "submittedBy": "Submitted By",
+        "evaluated": "Evaluated",
+        "entity": "Entity",
+        "totalScore": "Total Score",
+        "loadError": "Error loading evaluations. Please try again.",
+        "noEvaluations": "No evaluations found.",
+        "noGivenEvaluations": "No evaluations submitted yet.",
+        "comingSoon": "This section will be available soon.",
+        "template": "Evaluation template",
+        "changeTemplate": "Change template",
+        "evaluateWho": "Evaluate",
+        "evaluationDate": "Evaluation date",
+        "criteriaScores": "Criteria scores",
+        "maxDegree": "max",
+        "score": "Score",
+        "notes": "Notes",
+        "notesPlaceholder": "Optional",
+        "attachments": "Attachments",
+        "submit": "Submit",
+        "submitSuccess": "Evaluation submitted successfully.",
+        "selectEvaluated": "Please select who to evaluate.",
+        "noEntitiesToEvaluate": "No one available to evaluate for this template."
+    },
     "calendar": {
         "title": "My Calendar",
         "subtitle": "Your halaqas and schedule",
@@ -201,7 +233,10 @@
         "warningsManagement": "Warnings Management",
         "joinRequests": "Join Requests",
         "licenses": "My Licenses",
-        "calendar": "Calendar"
+        "calendar": "Calendar",
+        "evaluations": "Evaluations",
+        "receivedEvaluations": "Received",
+        "givenEvaluations": "Given"
     },
     "auth": {
         "email": {
