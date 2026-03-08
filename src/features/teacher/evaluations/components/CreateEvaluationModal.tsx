@@ -222,6 +222,8 @@ const CreateEvaluationModal: React.FC<CreateEvaluationModalProps> = ({
                                     options={templateOptions}
                                     placeholder={t('common.select', 'Select an option')}
                                     isDisabled={isLoadingTemplates}
+                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                    menuPosition="fixed"
                                 />
                             </div>
                             <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
@@ -272,6 +274,8 @@ const CreateEvaluationModal: React.FC<CreateEvaluationModalProps> = ({
                                     options={entityOptions}
                                     placeholder={t('common.select', 'Select an option')}
                                     error={errors.evaluated_id?.message as string | undefined}
+                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                    menuPosition="fixed"
                                 />
                             )}
 

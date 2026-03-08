@@ -14,6 +14,10 @@ export interface ReactSelectProps {
     isDisabled?: boolean;
     error?: string;
     className?: string;
+    /** Portal the menu to document.body so it isn't clipped by overflow:hidden parents (e.g. modals) */
+    menuPortalTarget?: HTMLElement | null;
+    /** Use with menuPortalTarget for correct positioning */
+    menuPosition?: 'absolute' | 'fixed';
 }
 
 /**
@@ -30,7 +34,9 @@ const ReactSelectComponent: React.FC<ReactSelectProps> = ({
     isMulti = false,
     isDisabled = false,
     error,
-    className = ''
+    className = '',
+    menuPortalTarget,
+    menuPosition = 'fixed'
 }) => {
     const { t } = useTranslation();
 
@@ -49,6 +55,9 @@ const ReactSelectComponent: React.FC<ReactSelectProps> = ({
             ...base,
             zIndex: 9999
         }),
+        ...(menuPortalTarget && {
+            menuPortal: (base: any) => ({ ...base, zIndex: 100 })
+        }),
         option: (base: any, state: any) => ({
             ...base,
             backgroundColor: state.isSelected
@@ -63,7 +72,7 @@ const ReactSelectComponent: React.FC<ReactSelectProps> = ({
                 color: 'white'
             }
         })
-    }), [error, isDisabled]);
+    }), [error, isDisabled, menuPortalTarget]);
 
     // Convert options to react-select format
     const reactSelectOptions = options.map(option => ({
@@ -112,6 +121,8 @@ const ReactSelectComponent: React.FC<ReactSelectProps> = ({
                 styles={customStyles}
                 classNamePrefix="react-select"
                 noOptionsMessage={() => t('common.noOptions', 'No options found')}
+                menuPortalTarget={menuPortalTarget}
+                menuPosition={menuPortalTarget ? menuPosition : undefined}
             />
             {error && (
                 <p className="mt-1 h-4 text-xs text-red-600">{error}</p>
