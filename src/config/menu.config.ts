@@ -37,6 +37,12 @@ export const MEMORIZATION_MENU_ITEMS: MenuItem[] = [
         roles: ['admin', 'entity_manager']
     },
     {
+        path: ROUTE_PATHS.ENTITY_LICENSES,
+        labelKey: 'menu.licenses',
+        icon: 'BookOpenIcon',
+        roles: ['entity_manager']
+    },
+    {
         path: ROUTE_PATHS.JOIN_REQUESTS,
         labelKey: 'menu.joinRequests',
         icon: 'UsersIcon',

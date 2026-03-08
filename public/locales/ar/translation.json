@@ -163,7 +163,9 @@
         "notes": "ملاحظات",
         "creator": "أنشئ بواسطة",
         "loadError": "تعذر تحميل الرخص. يرجى المحاولة مرة أخرى.",
-        "noLicenses": "لا توجد رخص."
+        "noLicenses": "لا توجد رخص.",
+        "entityTitle": "الرخص",
+        "entitySubtitle": "عرض رخص الجهة"
     },
     "leaves": {
         "title": "إجازاتي",

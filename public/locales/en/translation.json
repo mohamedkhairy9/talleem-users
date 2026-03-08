@@ -163,7 +163,9 @@
         "notes": "Notes",
         "creator": "Created By",
         "loadError": "Error loading licenses. Please try again.",
-        "noLicenses": "No licenses found."
+        "noLicenses": "No licenses found.",
+        "entityTitle": "Licenses",
+        "entitySubtitle": "View your entity licenses"
     },
     "leaves": {
         "title": "My Leaves",
