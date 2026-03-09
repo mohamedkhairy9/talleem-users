@@ -265,6 +265,24 @@ export function getJuzFirstVerseKey(juzNumber: number): string | null {
 }
 
 /**
+ * Get juz number (1–30) for a verse key (e.g. "2:255") using canonical juz boundaries.
+ * Does not require mushaf/juz pages to be loaded.
+ */
+export function getJuzNumberForVerseKey(verseKey: string): number {
+    const key = verseKey?.trim();
+    if (!key) return 1;
+    for (let j = 1; j <= 30; j++) {
+        const first = getJuzFirstVerseKey(j);
+        if (!first) continue;
+        if (compareVerseKeys(key, first) < 0) return Math.max(1, j - 1);
+        if (j === 30) return 30;
+        const nextFirst = getJuzFirstVerseKey(j + 1);
+        if (nextFirst && compareVerseKeys(key, nextFirst) < 0) return j;
+    }
+    return 30;
+}
+
+/**
  * Get the first verse key of a surah (surah_id:1).
  * Used when unit is "surahs" to send start_verse_key to the plan API.
  */

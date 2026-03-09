@@ -69,6 +69,42 @@ export function getDisplayDate(
 }
 
 /**
+ * Normalize date to ISO format (YYYY-MM-DD) for API payloads and form inputs.
+ * Pass-through if already YYYY-MM-DD or empty; otherwise parses and formats.
+ */
+export function normalizeDate(dateStr: string): string {
+    if (!dateStr) return dateStr;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toISOString().split('T')[0];
+}
+
+/**
+ * Normalize session time to 24-hour format (HH:MM-HH:MM).
+ * Pass-through if already in that format or empty; parses AM/PM if present.
+ */
+export function normalizeSessionTime(timeStr: string): string {
+    if (!timeStr) return timeStr;
+    if (/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(timeStr)) return timeStr;
+    const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?-(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+    if (match) {
+        let startHour = parseInt(match[1], 10);
+        const startMin = match[2];
+        const startPeriod = match[3]?.toUpperCase();
+        let endHour = parseInt(match[4], 10);
+        const endMin = match[5];
+        const endPeriod = match[6]?.toUpperCase();
+        if (startPeriod === 'PM' && startHour !== 12) startHour += 12;
+        if (startPeriod === 'AM' && startHour === 12) startHour = 0;
+        if (endPeriod === 'PM' && endHour !== 12) endHour += 12;
+        if (endPeriod === 'AM' && endHour === 12) endHour = 0;
+        return `${String(startHour).padStart(2, '0')}:${startMin}-${String(endHour).padStart(2, '0')}:${endMin}`;
+    }
+    return timeStr;
+}
+
+/**
  * Format time string to HH:MM (drops seconds).
  * e.g. "16:17:25" -> "16:17", "09:00" -> "09:00"
  */

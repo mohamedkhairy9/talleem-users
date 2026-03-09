@@ -20,8 +20,8 @@ import { createPlanSchema, CreatePlanFormData } from '../schemas/plan.schema';
 import type { QuranSegment } from '../services/quran-segments.service';
 import MushafPageModal from './MushafPageModal';
 import InlineMushafSegmentPicker from './InlineMushafSegmentPicker';
+import PlanPreviewCard from './PlanPreviewCard';
 import { loadSurahData, getJuzFirstVerseKey, getSurahFirstVerseKey, type SurahDataMap } from '@/utils/helpers/surahHelper';
-import { BookOpenIcon } from '@/globals/icons';
 
 interface CreatePlanFormProps {
     halaqaId: number | string;
@@ -358,104 +358,6 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Plan preview: data from API with save_or_not: 0 — not created yet. Shown for both daily_amount and start_end. */}
-            {planPreviewData && (() => {
-                const isStartEndPlan = planPreviewData.plan_type === 'start_end';
-                const daysNeeded = planPreviewData.days_needed ?? 0;
-                const availableDays = planPreviewData.available_study_days ?? 0;
-                // Only for start_end: validate days; otherwise allow submit and show only API warning
-                const isOverflow = isStartEndPlan && daysNeeded > availableDays;
-                const hasEmptyDays = isStartEndPlan && daysNeeded < availableDays;
-                const canConfirmSave = !isOverflow;
-                const hasApiWarning = !!planPreviewData.warning;
-                return (
-                    <div ref={planPreviewRef} className="rounded-lg border-2 border-primary-200 bg-primary-50 p-4 space-y-3">
-                        <h3 className="text-sm font-semibold text-primary-900">
-                            {t('plan.previewTitle', 'Plan preview (not created yet)')}
-                        </h3>
-                        {planPreviewData.plan_type === 'start_end' ? (
-                            <>
-                                <p className="text-sm text-primary-800">
-                                    {t('quran.startSegment', 'Start')}: <strong>{planPreviewData.start_verse_key}</strong>
-                                </p>
-                                <p className="text-sm text-primary-800">
-                                    {t('quran.endSegment', 'End')}: <strong>{planPreviewData.end_verse_key ?? planPreviewData.computed_last_verse_key}</strong>
-                                </p>
-                            </>
-                        ) : (
-                            <p className="text-sm text-primary-800">
-                                {t('plan.computedEnd', 'Computed end')}: <strong>{planPreviewData.computed_last_verse_key}</strong>
-                            </p>
-                        )}
-                        {planPreviewData.daily_schedule?.length > 0 && (
-                            <div className="text-xs text-primary-700">
-                                <span className="font-medium">{t('plan.dailySchedule', 'Daily schedule')}:</span>{' '}
-                                {planPreviewData.daily_schedule.length} {t('plan.days', 'days')}
-                                {hasEmptyDays && (
-                                    <span className="ml-2 text-amber-700">({t('plan.hasEmptyDays', 'Has empty days')})</span>
-                                )}
-                            </div>
-                        )}
-                        {/* For start_end only: days_needed > available_study_days → error, disable submit */}
-                        {isOverflow && (
-                            <div className="rounded-lg border border-red-300 bg-red-50 p-3">
-                                <p className="text-sm font-medium text-red-800">
-                                    {t('plan.errorPlanDoesNotFit', { daysNeeded, availableDays })}
-                                </p>
-                                {hasApiWarning && (
-                                    <p className="text-sm text-red-700 mt-1">{planPreviewData.warning}</p>
-                                )}
-                            </div>
-                        )}
-                        {/* For start_end only: days_needed < available_study_days → empty days warning; allow submit */}
-                        {hasEmptyDays && !isOverflow && (
-                            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
-                                <p className="text-sm font-medium text-amber-800">
-                                    {t('plan.warningEmptyDays', 'There will be empty days. You can still submit the plan.')}
-                                </p>
-                                {hasApiWarning && (
-                                    <p className="text-sm text-amber-700 mt-1">{planPreviewData.warning}</p>
-                                )}
-                            </div>
-                        )}
-                        {/* API warning only (no days validation): show when response has warning and we didn't show it above */}
-                        {hasApiWarning && !isOverflow && !hasEmptyDays && (
-                            <p className="text-sm text-amber-700">{planPreviewData.warning}</p>
-                        )}
-                        <div className="flex flex-wrap items-center gap-2 pt-2">
-                            <Button
-                                type="button"
-                                variant="primary"
-                                loading={createPlanMutation.isPending}
-                                disabled={createPlanMutation.isPending || !canConfirmSave}
-                                onClick={handleConfirmSave}
-                            >
-                                {createPlanMutation.isPending ? t('common.loading', 'Loading...') : t('plan.confirmAndSave', 'Confirm & Save')}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                disabled={createPlanMutation.isPending}
-                                onClick={() => setPlanPreviewData(null)}
-                            >
-                                {t('plan.backToEdit', 'Back to edit')}
-                            </Button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setPlanStartVerseKey(planPreviewData.start_verse_key ?? undefined);
-                                    setPlanEndVerseKey(planPreviewData.end_verse_key ?? planPreviewData.computed_last_verse_key ?? undefined);
-                                    setShowPlanMushafViewer(true);
-                                }}
-                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-700 bg-primary-100 rounded-lg hover:bg-primary-200 transition-colors"
-                            >
-                                <BookOpenIcon width={18} height={18} />
-                                {t('quran.viewFullPlan', 'View Full Plan in Mushaf')}
-                            </button>
-                        </div>
-                    </div>
-                );
-            })()}
 
             {/* Row 1: Activity, Plan Type (2 cols on md) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -602,6 +504,24 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                     }}
                     startVerseKey={planStartVerseKey}
                     endVerseKey={planEndVerseKey}
+                />
+            )}
+
+            {/* Plan preview: data from API with save_or_not: 0 — not created yet. Shown for both daily_amount and start_end. */}
+            {planPreviewData && (
+                <PlanPreviewCard
+                    planPreviewData={planPreviewData}
+                    surahData={surahData}
+                    currentLang={currentLang}
+                    isSaving={createPlanMutation.isPending}
+                    onConfirmSave={handleConfirmSave}
+                    onBackToEdit={() => setPlanPreviewData(null)}
+                    onViewInMushaf={() => {
+                        setPlanStartVerseKey(planPreviewData.start_verse_key ?? undefined);
+                        setPlanEndVerseKey(planPreviewData.end_verse_key ?? planPreviewData.computed_last_verse_key ?? undefined);
+                        setShowPlanMushafViewer(true);
+                    }}
+                    planPreviewRef={planPreviewRef}
                 />
             )}
 

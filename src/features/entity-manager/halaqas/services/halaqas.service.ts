@@ -46,10 +46,14 @@ export interface UpdateHalaqaPayload {
     };
     teacher_id: number;
     period: 'morning' | 'evening';
-    start_date: string;
-    end_date: string;
     activities: Array<'tasbit' | 'hifz' | 'murajaa'>;
-    student_ids: number[];
+    weekly_holiday?: string;
+    evaluation_system_type: 'رقمي' | 'مئوي';
+    custom_total_mark?: number | null;
+    max_students: number;
+    session_time: string;
+    platform_id?: number;
+    teaching_method: 'in_person' | 'remote' | 'hybrid';
 }
 
 /**
