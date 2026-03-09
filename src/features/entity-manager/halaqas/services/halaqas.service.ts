@@ -25,7 +25,11 @@ export interface CreateHalaqaPayload {
     start_date: string;
     end_date: string;
     activities: Array<'tasbit' | 'hifz' | 'murajaa'>;
-    student_ids: number[];
+    weekly_holiday?: string;
+    evaluation_system_type: 'رقمي' | 'مئوي';
+    custom_total_mark?: number;
+    max_students: number;
+    student_ids?: number[];
     session_time: string;
     platform_id?: number;
     teaching_method: 'in_person' | 'remote' | 'hybrid';
@@ -116,7 +120,7 @@ export interface CreatePlanResponse {
  */
 export interface CheckAvailabilityPayload {
     teacher_id: number;
-    student_ids: number[];
+    student_ids?: number[];
     start_date: string;
     end_date: string;
     period: 'morning' | 'evening';

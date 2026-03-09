@@ -121,8 +121,7 @@ function SelectRFH<T extends FieldValues = FieldValues>({
     cacheOptions = true,
     isAsync = false
 }: SelectRFHProps<T>) {
-    const { t, i18n } = useTranslation();
-    const isRTL = i18n.language === 'ar';
+    const { t } = useTranslation();
 
     const optionsList = options ?? [];
     // State to store loaded selected option for async selects (keyed by field value)
@@ -174,32 +173,13 @@ function SelectRFH<T extends FieldValues = FieldValues>({
     const commonStyles = {
         control: (base: any, state: any) => ({
             ...base,
-            padding: !isRTL
-                ? '6px 0px 6px 16px'
-                : '6px 16px 6px 0px',
-            minHeight: '44px',
-            borderRadius: '8px',
-            boxShadow: state.isFocused
-                ? (error ? '0 0 0 1px #ef4444' : `0 0 0 1px ${PRIMARY_COLOR}`)
-                : 'none',
             borderColor: error ? '#ef4444' : state.isFocused ? PRIMARY_COLOR : '#d1d5db',
+            boxShadow: state.isFocused ? (error ? '0 0 0 1px #ef4444' : '0 0 0 1px #004247') : 'none',
             '&:hover': {
-                borderColor: error ? '#ef4444' : PRIMARY_COLOR
-            }
-        }),
-        valueContainer: (base: any) => ({
-            ...base,
-            padding: '0'
-        }),
-        input: (base: any) => ({
-            ...base,
-            margin: '0',
-            padding: '0'
-        }),
-        placeholder: (base: any) => ({
-            ...base,
-            margin: '0',
-            color: '#9ca3af'
+                borderColor: error ? '#ef4444' : '#004247'
+            },
+            minHeight: '48px',
+            backgroundColor: disabled ? '#f3f4f6' : 'white',
         }),
         menu: (base: any) => ({
             ...base,
@@ -222,18 +202,12 @@ function SelectRFH<T extends FieldValues = FieldValues>({
                 backgroundColor: PRIMARY_COLOR,
                 color: 'white'
             }
-        }),
-        singleValue: (base: any, state: any) => ({
-            ...base,
-            color: state.isDisabled
-                ? '#000000'
-                : base.color
         })
     };
 
     const commonProps = {
         isMulti,
-        className: `react-select ${width ?? 'w-full min-w-[300px]'} ${classes}`,
+        className: `react-select ${width ?? 'w-full'} ${classes}`,
         classNamePrefix: 'react-select',
         isDisabled: disabled,
         placeholder: loading
@@ -249,16 +223,14 @@ function SelectRFH<T extends FieldValues = FieldValues>({
     };
 
     return (
-        <div className="flex flex-col gap-px">
+        <div>
             {label && (
                 <label
                     htmlFor={String(name)}
-                    className="flex items-center gap-2 font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                    <span>
-                        {typeof label === 'string' && label.startsWith('common.') ? t(label) : label}
-                        {required && <span className="text-red-500 ml-1">*</span>}
-                    </span>
+                    {typeof label === 'string' && label.startsWith('common.') ? t(label) : label}
+                    {required && <span className="text-red-500 ml-1">*</span>}
                 </label>
             )}
             <Controller

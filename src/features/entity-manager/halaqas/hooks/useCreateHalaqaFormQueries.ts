@@ -17,11 +17,15 @@ const STALE_TIME_MS = 2 * 60 * 1000;
 /** API list response shape: { data: Item[] } */
 type ListResponse = { data?: Record<string, unknown>[] };
 
+interface UseCreateHalaqaFormQueriesOptions {
+    includeStudents?: boolean;
+}
+
 /**
- * Fetches form-level options for create halaqa (teachers, students, platforms).
+ * Fetches form-level options for halaqa forms.
  * Teachers and students are filtered by entity_id from the logged-in user's entity.
  */
-export function useCreateHalaqaFormQueries() {
+export function useCreateHalaqaFormQueries({ includeStudents = true }: UseCreateHalaqaFormQueriesOptions = {}) {
     const entityId = useAuthStore((s) => s.user?.entity?.id);
 
     const teachersQuery = useQuery({
@@ -45,7 +49,7 @@ export function useCreateHalaqaFormQueries() {
                 ...(entityId != null && { entity_id: entityId })
             }),
         staleTime: STALE_TIME_MS,
-        enabled: entityId != null,
+        enabled: includeStudents && entityId != null,
     });
 
     const platformsQuery = useQuery({
@@ -61,16 +65,16 @@ export function useCreateHalaqaFormQueries() {
     const teachersOptions: SelectRFHOption[] = generateOptions(
         (teachersQuery.data as ListResponse)?.data
     );
-    const studentsOptions: SelectRFHOption[] = generateOptions(
-        (studentsQuery.data as ListResponse)?.data
-    );
+    const studentsOptions: SelectRFHOption[] = includeStudents
+        ? generateOptions((studentsQuery.data as ListResponse)?.data)
+        : [];
     const platformsOptions: SelectRFHOption[] = generateOptions(
         (platformsQuery.data as ListResponse)?.data
     );
 
     const isLoading =
         teachersQuery.isLoading ||
-        studentsQuery.isLoading ||
+        (includeStudents && studentsQuery.isLoading) ||
         platformsQuery.isLoading;
 
     return {
@@ -78,7 +82,7 @@ export function useCreateHalaqaFormQueries() {
         studentsOptions,
         platformsOptions,
         isLoadingTeachers: teachersQuery.isLoading,
-        isLoadingStudents: studentsQuery.isLoading,
+        isLoadingStudents: includeStudents ? studentsQuery.isLoading : false,
         isLoadingPlatforms: platformsQuery.isLoading,
         isLoading,
     };

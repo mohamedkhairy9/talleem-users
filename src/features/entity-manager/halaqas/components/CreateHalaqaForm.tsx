@@ -15,11 +15,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
     HALAQA_PERIODS,
     HALAQA_ACTIVITIES,
-    HALAQA_TEACHING_METHODS
+    HALAQA_TEACHING_METHODS,
+    HALAQA_WEEKLY_HOLIDAYS,
+    HALAQA_EVALUATION_SYSTEM_TYPES
 } from '../config';
 import { createHalaqaSchema, CreateHalaqaFormData } from '../schemas/halaqa.schema';
-import { AlertTriangleIcon, ClipboardCheckIcon, CircleIcon, ChevronRightIcon } from '@/globals/icons';
-import CreatePlanForm from './CreatePlanForm';
+import { AlertTriangleIcon, ClipboardCheckIcon, CircleIcon } from '@/globals/icons';
 
 /**
  * Normalize date to ISO format (YYYY-MM-DD) - ensures 24-hour system compatibility
@@ -66,16 +67,11 @@ const normalizeSessionTime = (timeStr: string): string => {
  * Create Halaqa Form Component
  */
 const CreateHalaqaForm: React.FC = () => {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { lang } = useParams<{ lang: string }>();
     const queryClient = useQueryClient();
     const createHalaqaMutation = useCreateHalaqa();
-    const currentLang = i18n.language || lang || 'ar';
-    
-    // Multi-step form state
-    const [currentStep, setCurrentStep] = useState<1 | 2>(1);
-    const [createdHalaqa, setCreatedHalaqa] = useState<any>(null);
 
     const {
         control,
@@ -91,7 +87,10 @@ const CreateHalaqaForm: React.FC = () => {
             start_date: '',
             end_date: '',
             activities: [],
-            student_ids: [],
+            weekly_holiday: [],
+            evaluation_system_type: 'رقمي',
+            custom_total_mark: undefined,
+            max_students: undefined,
             session_time: '',
             platform_id: undefined,
             teaching_method: 'in_person'
@@ -103,10 +102,13 @@ const CreateHalaqaForm: React.FC = () => {
         control,
         name: 'teaching_method'
     });
+    const evaluationSystemType = useWatch({
+        control,
+        name: 'evaluation_system_type'
+    });
 
     // Watch fields needed for availability check
     const teacherId = useWatch({ control, name: 'teacher_id' });
-    const studentIds = useWatch({ control, name: 'student_ids' });
     const startDate = useWatch({ control, name: 'start_date' });
     const endDate = useWatch({ control, name: 'end_date' });
     const period = useWatch({ control, name: 'period' });
@@ -123,16 +125,22 @@ const CreateHalaqaForm: React.FC = () => {
         }
     }, [teachingMethod, setValue]);
 
+    useEffect(() => {
+        if (evaluationSystemType !== 'رقمي') {
+            setValue('custom_total_mark', undefined);
+        }
+    }, [evaluationSystemType, setValue]);
+
     // Force tasbit to be included when hifz is selected (handled in Controller onChange)
     // Keeping this as a backup in case the direct onChange doesn't catch all cases
     useEffect(() => {
         if (Array.isArray(activities) && activities.length > 0) {
             const hasHifz = activities.includes('hifz');
             const hasTasbit = activities.includes('tasbit');
-            
+
             if (hasHifz && !hasTasbit) {
                 // If hifz is selected but tasbit is not, add tasbit
-                setValue('activities', [...activities, 'tasbit'], { 
+                setValue('activities', [...activities, 'tasbit'], {
                     shouldValidate: true,
                     shouldDirty: true,
                     shouldTouch: false
@@ -144,7 +152,7 @@ const CreateHalaqaForm: React.FC = () => {
     // Clear availability result when form fields change
     useEffect(() => {
         setAvailabilityResult(null);
-    }, [teacherId, studentIds, startDate, endDate, period, sessionTime]);
+    }, [teacherId, startDate, endDate, period, sessionTime]);
 
     // Check availability mutation
     const checkAvailabilityMutation = useCheckAvailability();
@@ -153,14 +161,12 @@ const CreateHalaqaForm: React.FC = () => {
     const canCheckAvailability = useMemo(() => {
         return !!(
             teacherId &&
-            Array.isArray(studentIds) &&
-            studentIds.length > 0 &&
             startDate &&
             endDate &&
             period &&
             sessionTime
         );
-    }, [teacherId, studentIds, startDate, endDate, period, sessionTime]);
+    }, [teacherId, startDate, endDate, period, sessionTime]);
 
     // Handle availability check button click
     const handleCheckAvailability = useCallback(() => {
@@ -168,7 +174,6 @@ const CreateHalaqaForm: React.FC = () => {
 
         const payload: CheckAvailabilityPayload = {
             teacher_id: teacherId,
-            student_ids: studentIds,
             start_date: normalizeDate(startDate),
             end_date: normalizeDate(endDate),
             period: period as 'morning' | 'evening',
@@ -186,7 +191,7 @@ const CreateHalaqaForm: React.FC = () => {
                 toast.error(t('halaqa.availabilityCheckError', 'Unable to check availability. Please try again.'));
             }
         });
-    }, [canCheckAvailability, teacherId, studentIds, startDate, endDate, period, sessionTime, checkAvailabilityMutation, t]);
+    }, [canCheckAvailability, teacherId, startDate, endDate, period, sessionTime, checkAvailabilityMutation, t]);
 
     // Check availability status - API returns 200 even with conflicts
     const isAvailable = useMemo(() => {
@@ -210,41 +215,58 @@ const CreateHalaqaForm: React.FC = () => {
     const entity = useAuthStore((s) => s.user?.entity);
     const {
         teachersOptions,
-        studentsOptions,
         platformsOptions,
         isLoadingTeachers,
-        isLoadingStudents,
         isLoadingPlatforms,
-    } = useCreateHalaqaFormQueries();
+    } = useCreateHalaqaFormQueries({ includeStudents: false });
 
     // Get localized options for static fields (memoized)
-    const periodOptions = useMemo(() => 
+    const periodOptions = useMemo(() =>
         HALAQA_PERIODS.map(period => ({
             value: period.value,
             label: t(period.labelKey, period.value)
         })), [t]
     );
 
-    const activityOptions = useMemo(() => 
+    const activityOptions = useMemo(() =>
         HALAQA_ACTIVITIES.map(activity => ({
             value: activity.value,
             label: t(activity.labelKey, activity.value)
         })), [t]
     );
 
-    const teachingMethodOptions = useMemo(() => 
+    const teachingMethodOptions = useMemo(() =>
         HALAQA_TEACHING_METHODS.map(method => ({
             value: method.value,
             label: t(method.labelKey, method.value)
         })), [t]
     );
 
+    const weeklyHolidayOptions = useMemo(() =>
+        HALAQA_WEEKLY_HOLIDAYS.map((day) => ({
+            value: day.value,
+            label: t(day.labelKey, day.label)
+        })), [t]
+    );
+
+    const evaluationSystemOptions = useMemo(() =>
+        HALAQA_EVALUATION_SYSTEM_TYPES.map((item) => ({
+            value: item.value,
+            label: t(item.labelKey, item.label)
+        })), [t]
+    );
+
+    const getErrorMessage = useCallback(
+        (message?: string) => (message ? t(message, message) : undefined),
+        [t]
+    );
+
     const onSubmit = async (data: CreateHalaqaFormData) => {
         const memorization_program_entity_type_id = entity?.memorization_program_entity_type?.id ?? 0;
         const session_mode_id = entity?.session_mode?.id;
-        
+
         // Build payload, excluding platform_id if teaching method is in_person
-        const { platform_id, ...restData } = data;
+        const { platform_id, weekly_holiday, custom_total_mark, ...restData } = data;
         const payload: CreateHalaqaPayload = {
             ...restData,
             start_date: normalizeDate(data.start_date),
@@ -252,18 +274,20 @@ const CreateHalaqaForm: React.FC = () => {
             session_time: normalizeSessionTime(data.session_time),
             memorization_program_entity_type_id,
             ...(session_mode_id != null && { session_mode_id }),
+            ...(Array.isArray(weekly_holiday) && weekly_holiday.length > 0
+                ? { weekly_holiday: weekly_holiday.join(',') }
+                : {}),
+            ...(data.evaluation_system_type === 'رقمي' && typeof custom_total_mark === 'number'
+                ? { custom_total_mark }
+                : {}),
             // Only include platform_id if teaching method is not in_person and it has a value
             ...(data.teaching_method !== 'in_person' && platform_id ? { platform_id } : {})
         };
         createHalaqaMutation.mutate(payload, {
-            onSuccess: (response: any) => {
-                // Extract halaqa data from response (API returns { data: { data: {...} } })
-                const halaqaData = response?.data?.data || response?.data || response;
-                setCreatedHalaqa(halaqaData);
+            onSuccess: () => {
                 toast.success(t('halaqa.createSuccess', 'Halaqa created successfully'));
                 queryClient.invalidateQueries({ queryKey: ['halaqas'] });
-                // Move to step 2 (plan creation)
-                setCurrentStep(2);
+                navigate(`/${lang || 'ar'}/halaqas`);
             },
             onError: (error: any) => {
                 toast.error(error?.message || t('halaqa.createError', 'Error creating halaqa. Please try again.'));
@@ -271,14 +295,7 @@ const CreateHalaqaForm: React.FC = () => {
         });
     };
 
-    // Handle finish (skip plan creation or finish after creating plans)
-    const handleFinish = () => {
-        queryClient.invalidateQueries({ queryKey: ['halaqas'] });
-        navigate(`/${lang || 'ar'}/halaqas`);
-    };
-
-    // Render step 1: Halaqa creation form
-    const renderStep1 = () => (
+    return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Name Fields (Arabic and English) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -287,38 +304,39 @@ const CreateHalaqaForm: React.FC = () => {
                     control={control}
                     label={t('halaqa.nameEn', 'Name (English)')}
                     required
-                    error={errors.name?.en?.message}
+                    error={getErrorMessage(errors.name?.en?.message)}
                 />
                 <FormInput
                     name="name.ar"
                     control={control}
                     label={t('halaqa.nameAr', 'Name (Arabic)')}
                     required
-                    error={errors.name?.ar?.message}
+                    error={getErrorMessage(errors.name?.ar?.message)}
                 />
             </div>
 
-            {/* Teacher */}
-            <SelectRFH
-                name="teacher_id"
-                control={control}
-                label={t('halaqa.teacher', 'Teacher')}
-                required
-                options={teachersOptions}
-                loading={isLoadingTeachers}
-                error={errors.teacher_id?.message}
-                placeholder={t('halaqa.selectTeacher', 'Select a teacher')}
-            />
-
-            {/* Period */}
-            <FormSelect
-                name="period"
-                control={control}
-                label={t('halaqa.period', 'Period')}
-                required
-                options={periodOptions}
-                error={errors.period?.message}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                {/* Teacher */}
+                <SelectRFH
+                    name="teacher_id"
+                    control={control}
+                    label={t('halaqa.teacher', 'Teacher')}
+                    required
+                    options={teachersOptions}
+                    loading={isLoadingTeachers}
+                    error={getErrorMessage(errors.teacher_id?.message)}
+                    placeholder={t('halaqa.selectTeacher', 'Select a teacher')}
+                />
+                <SelectRFH
+                    name="weekly_holiday"
+                    control={control}
+                    label={t('halaqa.weeklyHoliday', 'Weekly holiday')}
+                    isMulti
+                    options={weeklyHolidayOptions}
+                    error={getErrorMessage(errors.weekly_holiday?.message)}
+                    placeholder={t('halaqa.selectWeeklyHoliday', 'Select weekly holidays')}
+                />
+            </div>
 
             {/* Dates */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -328,7 +346,7 @@ const CreateHalaqaForm: React.FC = () => {
                     label={t('halaqa.startDate', 'Start Date')}
                     required
                     type="date"
-                    error={errors.start_date?.message}
+                    error={getErrorMessage(errors.start_date?.message)}
                 />
                 <FormInput
                     name="end_date"
@@ -336,21 +354,27 @@ const CreateHalaqaForm: React.FC = () => {
                     label={t('halaqa.endDate', 'End Date')}
                     required
                     type="date"
-                    error={errors.end_date?.message}
+                    error={getErrorMessage(errors.end_date?.message)}
                 />
             </div>
 
-            {/* Activities (Multi-select) */}
-            <div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+                <FormSelect
+                    name="period"
+                    control={control}
+                    label={t('halaqa.period', 'Period')}
+                    required
+                    options={periodOptions}
+                    error={getErrorMessage(errors.period?.message)}
+                    className="w-full "
+                />
                 <Controller
                     name="activities"
                     control={control}
                     render={({ field, fieldState }) => {
-                        // Intercept onChange to add tasbit when hifz is selected
                         const handleChange = (selectedOptions: any) => {
-                            // Convert selected options to array of values
                             let selectedValues: string[] = [];
-                            
+
                             if (selectedOptions) {
                                 if (Array.isArray(selectedOptions)) {
                                     selectedValues = selectedOptions.map((opt: any) => opt.value || opt.id);
@@ -358,38 +382,32 @@ const CreateHalaqaForm: React.FC = () => {
                                     selectedValues = [selectedOptions.value || selectedOptions.id];
                                 }
                             }
-                            
-                            // If hifz is selected, ensure tasbit is also included
+
                             const hasHifz = selectedValues.includes('hifz');
                             const hasTasbit = selectedValues.includes('tasbit');
-                            
+
                             if (hasHifz && !hasTasbit) {
-                                // Add tasbit immediately before updating the field
                                 selectedValues = [...selectedValues, 'tasbit'];
                             }
-                            
-                            // Update the field value with the corrected array
+
                             field.onChange(selectedValues);
                         };
-                        
-                        // Get current value as options for react-select
+
                         const currentValue = field.value || [];
                         const selectedOptions = Array.isArray(currentValue)
                             ? currentValue
                                 .map(val => activityOptions.find(opt => opt.value === val))
                                 .filter(Boolean)
                             : [];
-                        
+
                         return (
-                            <div className="flex flex-col gap-px">
+                            <div>
                                 <label
                                     htmlFor="activities"
-                                    className="flex items-center gap-2 font-medium text-gray-700 mb-1"
+                                    className="block text-sm font-medium text-gray-700 mb-1"
                                 >
-                                    <span>
-                                        {t('halaqa.activities', 'Activities')}
-                                        <span className="text-red-500 ml-1">*</span>
-                                    </span>
+                                    {t('halaqa.activities', 'Activities')}
+                                    <span className="text-red-500 ml-1">*</span>
                                 </label>
                                 <Select
                                     isMulti
@@ -399,7 +417,7 @@ const CreateHalaqaForm: React.FC = () => {
                                     onBlur={field.onBlur}
                                     name={field.name}
                                     placeholder={t('halaqa.selectActivities', 'Select activities')}
-                                    className="react-select w-full min-w-[300px]"
+                                    className="react-select w-full"
                                     classNamePrefix="react-select"
                                     menuPortalTarget={document.body}
                                     menuPosition="fixed"
@@ -408,13 +426,11 @@ const CreateHalaqaForm: React.FC = () => {
                                     styles={{
                                         control: (base: any, state: any) => ({
                                             ...base,
-                                            padding: '6px 0px 6px 16px',
-                                            minHeight: '44px',
-                                            borderRadius: '8px',
+                                            borderColor: fieldState.error ? '#ef4444' : state.isFocused ? '#004247' : '#d1d5db',
                                             boxShadow: state.isFocused
                                                 ? (fieldState.error ? '0 0 0 1px #ef4444' : '0 0 0 1px #004247')
                                                 : 'none',
-                                            borderColor: fieldState.error ? '#ef4444' : state.isFocused ? '#004247' : '#d1d5db',
+                                            minHeight: '48px',
                                             '&:hover': {
                                                 borderColor: fieldState.error ? '#ef4444' : '#004247'
                                             }
@@ -426,11 +442,25 @@ const CreateHalaqaForm: React.FC = () => {
                                         menuPortal: (base: any) => ({
                                             ...base,
                                             zIndex: 9999
+                                        }),
+                                        option: (base: any, state: any) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                                ? '#004247'
+                                                : state.isFocused
+                                                    ? '#f0f9fa'
+                                                    : 'white',
+                                            color: state.isSelected ? 'white' : '#374151',
+                                            cursor: 'pointer',
+                                            '&:active': {
+                                                backgroundColor: '#004247',
+                                                color: 'white'
+                                            }
                                         })
                                     }}
                                 />
                                 <p className="mt-1 h-4 text-xs text-red-600" role="alert">
-                                    {(fieldState.error?.message || errors.activities?.message) ?? ''}
+                                    {getErrorMessage((fieldState.error?.message || errors.activities?.message) ?? '') ?? ''}
                                 </p>
                                 {Array.isArray(field.value) && field.value.includes('hifz') && (
                                     <p className="mt-1 text-xs text-blue-600">
@@ -443,18 +473,35 @@ const CreateHalaqaForm: React.FC = () => {
                 />
             </div>
 
-            {/* Students (Multi-select) */}
-            <SelectRFH
-                name="student_ids"
-                control={control}
-                label={t('halaqa.students', 'Students')}
-                required
-                isMulti
-                options={studentsOptions}
-                loading={isLoadingStudents}
-                error={errors.student_ids?.message}
-                placeholder={t('halaqa.selectStudents', 'Select students')}
-            />
+            <div className={`grid grid-cols-1 gap-4 items-start ${evaluationSystemType === 'رقمي' ? 'xl:grid-cols-3' : 'xl:grid-cols-2'}`}>
+                    <FormSelect
+                        name="evaluation_system_type"
+                        control={control}
+                        label={t('halaqa.evaluationSystemType', 'Evaluation system type')}
+                        required
+                        options={evaluationSystemOptions}
+                        error={getErrorMessage(errors.evaluation_system_type?.message)}
+                        placeholder={t('halaqa.selectEvaluationSystemType', 'Select evaluation system type')}
+                    />
+                {evaluationSystemType === 'رقمي' && (
+                    <FormInput
+                        name="custom_total_mark"
+                        control={control}
+                        label={t('halaqa.customTotalMark', 'Custom total mark')}
+                        required
+                        type="number"
+                        error={getErrorMessage(errors.custom_total_mark?.message)}
+                    />
+                )}
+                <FormInput
+                    name="max_students"
+                    control={control}
+                    label={t('halaqa.maxStudents', 'Maximum students')}
+                    required
+                    type="number"
+                    error={getErrorMessage(errors.max_students?.message)}
+                />
+            </div>
 
             {/* Session Time (time range picker) */}
             <div>
@@ -481,9 +528,8 @@ const CreateHalaqaForm: React.FC = () => {
                                             field.onChange(start ? `${start}-${end}` : '');
                                         }}
                                         onBlur={field.onBlur}
-                                        className={`w-full px-4 py-3 border outline-none rounded-lg focus:border-primary-600 transition-colors duration-200 ${
-                                            fieldState.error ? 'border-red-300 focus:border-red-500' : 'border-gray-300'
-                                        }`}
+                                        className={`w-full px-4 py-3 border outline-none rounded-lg focus:border-primary-600 transition-colors duration-200 ${fieldState.error ? 'border-red-300 focus:border-red-500' : 'border-gray-300'
+                                            }`}
                                         aria-label={t('halaqa.sessionStartTime', 'Start time')}
                                     />
                                     <span className="block text-xs text-gray-500 mt-0.5">
@@ -502,9 +548,8 @@ const CreateHalaqaForm: React.FC = () => {
                                             field.onChange(end ? `${start}-${end}` : '');
                                         }}
                                         onBlur={field.onBlur}
-                                        className={`w-full px-4 py-3 border outline-none rounded-lg focus:border-primary-600 transition-colors duration-200 ${
-                                            fieldState.error ? 'border-red-300 focus:border-red-500' : 'border-gray-300'
-                                        }`}
+                                        className={`w-full px-4 py-3 border outline-none rounded-lg focus:border-primary-600 transition-colors duration-200 ${fieldState.error ? 'border-red-300 focus:border-red-500' : 'border-gray-300'
+                                            }`}
                                         aria-label={t('halaqa.sessionEndTime', 'End time')}
                                     />
                                     <span className="block text-xs text-gray-500 mt-0.5">
@@ -516,33 +561,36 @@ const CreateHalaqaForm: React.FC = () => {
                     }}
                 />
                 {errors.session_time?.message && (
-                    <p className="mt-1 text-xs text-red-600">{errors.session_time.message}</p>
+                    <p className="mt-1 text-xs text-red-600">{getErrorMessage(errors.session_time.message)}</p>
                 )}
             </div>
 
-            {/* Teaching Method */}
-            <FormSelect
-                name="teaching_method"
-                control={control}
-                label={t('halaqa.teachingMethod', 'Teaching Method')}
-                required
-                options={teachingMethodOptions}
-                error={errors.teaching_method?.message}
-            />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+                <div className={teachingMethod && teachingMethod !== 'in_person' ? '' : 'xl:col-span-2'}>
+                    <FormSelect
+                        name="teaching_method"
+                        control={control}
+                        label={t('halaqa.teachingMethod', 'Teaching Method')}
+                        required
+                        options={teachingMethodOptions}
+                        error={getErrorMessage(errors.teaching_method?.message)}
+                    />
+                </div>
 
-            {/* Platform - Only show if teaching method is not in_person */}
-            {teachingMethod && teachingMethod !== 'in_person' && (
-                <SelectRFH
-                    name="platform_id"
-                    control={control}
-                    label={t('halaqa.platform', 'Platform')}
-                    required
-                    options={platformsOptions}
-                    loading={isLoadingPlatforms}
-                    error={errors.platform_id?.message}
-                    placeholder={t('halaqa.selectPlatform', 'Select a platform')}
-                />
-            )}
+                {/* Platform - Only show if teaching method is not in_person */}
+                {teachingMethod && teachingMethod !== 'in_person' && (
+                    <SelectRFH
+                        name="platform_id"
+                        control={control}
+                        label={t('halaqa.platform', 'Platform')}
+                        required
+                        options={platformsOptions}
+                        loading={isLoadingPlatforms}
+                        error={getErrorMessage(errors.platform_id?.message)}
+                        placeholder={t('halaqa.selectPlatform', 'Select a platform')}
+                    />
+                )}
+            </div>
 
             {/* Availability Check Button */}
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -552,7 +600,7 @@ const CreateHalaqaForm: React.FC = () => {
                             {t('halaqa.checkAvailability', 'Check Availability')}
                         </h3>
                         <p className="text-xs text-gray-600">
-                            {t('halaqa.checkAvailabilityDescription', 'Verify teacher and student availability before creating the halaqa')}
+                            {t('halaqa.checkAvailabilityDescription', 'Verify teacher availability before creating the halaqa')}
                         </p>
                     </div>
                     <Button
@@ -562,8 +610,8 @@ const CreateHalaqaForm: React.FC = () => {
                         disabled={!canCheckAvailability || isCheckingAvailability}
                         loading={isCheckingAvailability}
                     >
-                        {isCheckingAvailability 
-                            ? t('halaqa.checking', 'Checking...') 
+                        {isCheckingAvailability
+                            ? t('halaqa.checking', 'Checking...')
                             : t('halaqa.checkAvailability', 'Check Availability')}
                     </Button>
                 </div>
@@ -586,11 +634,10 @@ const CreateHalaqaForm: React.FC = () => {
                 {availabilityResult && (
                     <div className="space-y-4 mt-4">
                         {/* Availability Status */}
-                        <div className={`flex items-center gap-3 p-4 rounded-lg border-2 ${
-                            isAvailable 
-                                ? 'bg-green-50 border-green-300' 
+                        <div className={`flex items-center gap-3 p-4 rounded-lg border-2 ${isAvailable
+                                ? 'bg-green-50 border-green-300'
                                 : 'bg-red-50 border-red-300'
-                        }`}>
+                            }`}>
                             {isAvailable ? (
                                 <>
                                     <ClipboardCheckIcon width={24} height={24} className="text-green-600 flex-shrink-0" />
@@ -628,26 +675,11 @@ const CreateHalaqaForm: React.FC = () => {
                                         <div className="flex items-start gap-2">
                                             <span className="font-semibold text-red-800 min-w-[80px]">{t('halaqa.teacher', 'Teacher')}:</span>
                                             <span className="text-red-700 font-medium">
-                                                {currentLang === 'ar' 
-                                                    ? availabilityResult.conflicts.teacher.ar 
-                                                    : availabilityResult.conflicts.teacher.en}
+                                                {availabilityResult.conflicts.teacher.ar || availabilityResult.conflicts.teacher.en}
                                             </span>
                                         </div>
                                     )}
-                                    {Array.isArray(availabilityResult.conflicts.students) && availabilityResult.conflicts.students.length > 0 && (
-                                        <div className="flex items-start gap-2">
-                                            <span className="font-semibold text-red-800 min-w-[80px]">{t('halaqa.students', 'Students')}:</span>
-                                            <div className="flex-1">
-                                                <span className="text-red-700 font-medium">
-                                                    {availabilityResult.conflicts.students.map((student: { ar: string; en: string }) => 
-                                                        currentLang === 'ar' ? student.ar : student.en
-                                                    ).join(', ')}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {!availabilityResult.conflicts.teacher && 
-                                     (!Array.isArray(availabilityResult.conflicts.students) || availabilityResult.conflicts.students.length === 0) && (
+                                    {!availabilityResult.conflicts.teacher && (
                                         <p className="text-red-700">{t('halaqa.conflictsUnknown', 'Conflicts detected but details are not available')}</p>
                                     )}
                                 </div>
@@ -689,116 +721,10 @@ const CreateHalaqaForm: React.FC = () => {
                     loading={createHalaqaMutation.isPending}
                     disabled={createHalaqaMutation.isPending || !isAvailable}
                 >
-                    {createHalaqaMutation.isPending ? t('common.loading', 'Loading...') : t('halaqa.createAndContinue', 'Create Halaqa & Continue')}
+                    {createHalaqaMutation.isPending ? t('common.loading', 'Loading...') : t('halaqa.createTitle', 'Create Halaqa')}
                 </Button>
             </div>
         </form>
-    );
-
-    // Step 2: number of plan form slots (user can add another plan)
-    const [planFormCount, setPlanFormCount] = useState(1);
-
-    // Render step 2: Plan creation for students (multi-student per plan; multiple plans via "Add another plan")
-    const renderStep2 = () => {
-        if (!createdHalaqa) return null;
-
-        const students = createdHalaqa.students || [];
-        const activities = createdHalaqa.activities || [];
-
-        return (
-            <div className="space-y-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                        {t('halaqa.createPlans', 'Create Plans for Students')}
-                    </h3>
-                    <p className="text-sm text-blue-700">
-                        {t('halaqa.createPlansDescription', 'You can create plans for one or more students. This step is optional - you can skip it and create plans later.')}
-                    </p>
-                </div>
-
-                {students.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                        <p>{t('halaqa.noStudents', 'No students in this halaqa')}</p>
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        {Array.from({ length: planFormCount }, (_, index) => (
-                            <div key={index} className="border border-gray-200 rounded-lg p-6 bg-white">
-                                {planFormCount > 1 && (
-                                    <div className="flex items-center justify-between mb-4">
-                                        <span className="text-sm font-medium text-gray-500">
-                                            {t('plan.planNumber', 'Plan')} {index + 1}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setPlanFormCount((c) => Math.max(1, c - 1))}
-                                            className="text-sm text-red-600 hover:text-red-700"
-                                        >
-                                            {t('plan.removePlan', 'Remove this plan')}
-                                        </button>
-                                    </div>
-                                )}
-                                <CreatePlanForm
-                                    halaqaId={createdHalaqa.id}
-                                    students={students}
-                                    activities={activities}
-                                    onSuccess={() => {
-                                        queryClient.invalidateQueries({ queryKey: ['halaqa', createdHalaqa.id] });
-                                    }}
-                                />
-                            </div>
-                        ))}
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => setPlanFormCount((c) => c + 1)}
-                        >
-                            <ClipboardCheckIcon width={16} height={16} className="me-2" />
-                            {t('plan.addAnotherPlan', 'Add another plan')}
-                        </Button>
-                    </div>
-                )}
-
-                {/* Navigation Buttons */}
-                <div className="flex justify-between gap-4 pt-4 border-t border-gray-200">
-                    <Button
-                        type="button"
-                        variant="primary"
-                        onClick={handleFinish}
-                    >
-                        {t('common.finish', 'Finish')}
-                    </Button>
-                </div>
-            </div>
-        );
-    };
-
-    return (
-        <div className="space-y-6">
-            {/* Step Indicator */}
-            <div className="flex items-center justify-center gap-4 pb-6 border-b border-gray-200">
-                <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-primary-600' : 'text-gray-400'}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
-                        currentStep >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'
-                    }`}>
-                        1
-                    </div>
-                    <span className="text-sm font-medium">{t('halaqa.step1', 'Halaqa Details')}</span>
-                </div>
-                <ChevronRightIcon width={20} height={20} className="text-gray-400" />
-                <div className={`flex items-center gap-2 ${currentStep >= 2 ? 'text-primary-600' : 'text-gray-400'}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
-                        currentStep >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'
-                    }`}>
-                        2
-                    </div>
-                    <span className="text-sm font-medium">{t('halaqa.step2', 'Create Plans (Optional)')}</span>
-                </div>
-            </div>
-
-            {/* Step Content */}
-            {currentStep === 1 ? renderStep1() : renderStep2()}
-        </div>
     );
 };
 
