@@ -274,7 +274,7 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
                         </div>
                         <div className="text-sm font-medium text-emerald-900">
                             {selectedStartSegment
-                                ? `${t('quran.segment', 'Segment')} ${selectedStartSegment.segment_number} (${surahData ? formatSegmentVerseLabel(selectedStartSegment, surahData, currentLang, t) : segmentLabel(selectedStartSegment)})`
+                                ? `${t('quran.segment', 'Segment')} ${selectedStartSegment.segment_number}${selectedStartSegment.page_number != null ? ` · ${t('quran.page', 'Page')} ${selectedStartSegment.page_number}` : ''} (${surahData ? formatSegmentVerseLabel(selectedStartSegment, surahData, currentLang, t) : segmentLabel(selectedStartSegment)})`
                                 : `— ${t('quran.notSet', 'Not set')}`}
                         </div>
                     </div>
@@ -285,82 +285,12 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
                             </div>
                             <div className="text-sm font-medium text-blue-900">
                                 {selectedEndSegment
-                                    ? `${t('quran.segment', 'Segment')} ${selectedEndSegment.segment_number} (${surahData ? formatSegmentVerseLabel(selectedEndSegment, surahData, currentLang, t) : segmentLabel(selectedEndSegment)})`
+                                    ? `${t('quran.segment', 'Segment')} ${selectedEndSegment.segment_number}${selectedEndSegment.page_number != null ? ` · ${t('quran.page', 'Page')} ${selectedEndSegment.page_number}` : ''} (${surahData ? formatSegmentVerseLabel(selectedEndSegment, surahData, currentLang, t) : segmentLabel(selectedEndSegment)})`
                                     : `— ${t('quran.notSet', 'Not set')}`}
                             </div>
                         </div>
                     )}
                 </div>
-
-                {/* Row 2: Current selection + Set as Start / Set as End */}
-                {(() => {
-                    const isCurrentStart = currentSelection && isSameSegment(currentSelection, selectedStartSegment);
-                    const isCurrentEnd = planType === 'start_end' && currentSelection && isSameSegment(currentSelection, selectedEndSegment);
-                    return (
-                        <div className="space-y-2 pt-1 border-t border-gray-100">
-                            <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-sm font-medium text-gray-600">
-                                    {t('quran.selectSegment', 'Select segment')}:
-                                </span>
-                                {currentSelection ? (
-                                    <>
-                                        <span className="text-sm text-gray-800 font-medium px-2 py-1 rounded bg-gray-100">
-                                            {t('quran.selected', 'Selected')}: {t('quran.segment', 'Segment')} {currentSelection.segment_number} ({surahData ? formatSegmentVerseLabel(currentSelection, surahData, currentLang, t) : segmentLabel(currentSelection)})
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={handleSetStart}
-                                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium shadow-sm transition-colors ${
-                                                isCurrentStart
-                                                    ? 'bg-emerald-100 text-emerald-800 ring-2 ring-emerald-400 cursor-default'
-                                                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                            }`}
-                                        >
-                                            {isCurrentStart && <CheckIcon width={16} height={16} className="shrink-0" />}
-                                            {isCurrentStart ? t('quran.alreadySetAsStart', '✓ Set as Start') : t('quran.setAsStart', 'Set as Start')}
-                                        </button>
-                                        {planType === 'start_end' && (
-                                            <button
-                                                type="button"
-                                                onClick={handleSetEnd}
-                                                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium shadow-sm transition-colors ${
-                                                    isCurrentEnd
-                                                        ? 'bg-blue-100 text-blue-800 ring-2 ring-blue-400 cursor-default'
-                                                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                                                }`}
-                                            >
-                                                {isCurrentEnd && <CheckIcon width={16} height={16} className="shrink-0" />}
-                                                {isCurrentEnd ? t('quran.alreadySetAsEnd', '✓ Set as End') : t('quran.setAsEnd', 'Set as End')}
-                                            </button>
-                                        )}
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className="text-sm text-gray-500 italic">{t('quran.clickSegmentFirst', 'Click a segment in the page or list')}</span>
-                                        <button type="button" disabled className="rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-300 text-gray-500 cursor-not-allowed">
-                                            {t('quran.setAsStart', 'Set as Start')}
-                                        </button>
-                                        {planType === 'start_end' && (
-                                            <button type="button" disabled className="rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-300 text-gray-500 cursor-not-allowed">
-                                                {t('quran.setAsEnd', 'Set as End')}
-                                            </button>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                            {currentSelection && (isCurrentStart || isCurrentEnd) && (
-                                <p className="text-xs text-gray-600 flex items-center gap-1.5">
-                                    <CheckIcon width={14} height={14} className="text-emerald-600 shrink-0" />
-                                    {isCurrentStart && isCurrentEnd
-                                        ? t('quran.thisSegmentIsStartAndEnd', 'This segment is set as both Start and End.')
-                                        : isCurrentStart
-                                            ? t('quran.thisSegmentIsStart', 'This segment is currently the start.')
-                                            : t('quran.thisSegmentIsEnd', 'This segment is currently the end.')}
-                                </p>
-                            )}
-                        </div>
-                    );
-                })()}
 
                 <div className="flex justify-end border-t border-gray-100 pt-3">
                     <MushafPageNavigator value={currentPage} onChange={setCurrentPage} />
@@ -373,70 +303,150 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
                     : t('quran.clickSegmentThenStartEnd', 'Click on a segment in the page or list, then use Start to set it.')}
             </p>
 
-            {/* Grid: mushaf page and segments on the same row */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(220px,280px)] gap-4 items-start">
-                {/* Mushaf page */}
-                <div className="rounded-xl border border-gray-200 overflow-hidden bg-white min-w-0">
-                    {isLoadingSegments && currentPageSegments.length === 0 ? (
-                        <div className="flex justify-center py-12">
-                            <div className="spinner" />
+            {/* Grid: mushaf page, segments list, and selection actions (3 columns on lg) */}
+            {(() => {
+                const isCurrentStart = currentSelection && isSameSegment(currentSelection, selectedStartSegment);
+                const isCurrentEnd = planType === 'start_end' && currentSelection && isSameSegment(currentSelection, selectedEndSegment);
+                return (
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(220px,280px)_minmax(200px,260px)] gap-4 items-start">
+                        {/* Mushaf page */}
+                        <div className="rounded-xl border border-gray-200 overflow-hidden bg-white min-w-0">
+                            {isLoadingSegments && currentPageSegments.length === 0 ? (
+                                <div className="flex justify-center py-12">
+                                    <div className="spinner" />
+                                </div>
+                            ) : (
+                                <MushafPage
+                                    pageLines={pageLines}
+                                    currentPage={currentPage}
+                                    wordsDb={wordsDb}
+                                    surahData={surahData}
+                                    selectedAyahs={selectedAyahs}
+                                    onWordClick={handleWordClick}
+                                    isFontLoading={isFontLoading}
+                                />
+                            )}
                         </div>
-                    ) : (
-                        <MushafPage
-                            pageLines={pageLines}
-                            currentPage={currentPage}
-                            wordsDb={wordsDb}
-                            surahData={surahData}
-                            selectedAyahs={selectedAyahs}
-                            onWordClick={handleWordClick}
-                            isFontLoading={isFontLoading}
-                        />
-                    )}
-                </div>
 
-                {/* Segments list for current page (same row) */}
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 min-w-0">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                        {t('quran.segmentsForPage', 'Segments for Page')} {currentPage}
-                    </h4>
-                    {currentPageSegments.length > 0 ? (
-                        <div className="flex flex-col gap-2 max-h-[min(70vh,520px)] overflow-y-auto">
-                            {currentPageSegments.map((seg) => {
-                                const isStart = selectedStartSegment?.id === seg.id;
-                                const isEnd = selectedEndSegment?.id === seg.id;
-                                const isSelected = isStart || isEnd;
-                                return (
-                                    <button
-                                        key={seg.id}
-                                        type="button"
-                                        onClick={() => setCurrentSelection(seg)}
-                                        className={`rounded-lg px-3 py-2 text-left text-sm border-2 transition-colors ${
-                                            isSelected
-                                                ? 'border-primary-500 bg-primary-50 text-primary-900'
-                                                : currentSelection?.id === seg.id
-                                                ? 'border-primary-400 bg-primary-50/70 text-primary-900'
-                                                : 'border-gray-200 bg-white hover:border-primary-300'
-                                        }`}
-                                    >
-                                        <span className="font-medium">{t('quran.segment', 'Segment')} {seg.segment_number}</span>
-                                        <span className="text-gray-500 ml-1">
-                                            ({seg.first_verse_key}
-                                            {seg.first_verse_key !== seg.last_verse_key ? ` – ${seg.last_verse_key}` : ''})
-                                        </span>
-                                        {(isStart || isEnd) && (
-                                            <span className="ml-1 text-primary-600 text-xs block mt-0.5">
-                                                {isStart ? ` [${t('quran.startSegment', 'Start')}]` : ` [${t('quran.endSegment', 'End')}]`}
+                        {/* Segments list for current page */}
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 min-w-0">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                                {t('quran.segmentsForPage', 'Segments for Page')} {currentPage}
+                            </h4>
+                            {currentPageSegments.length > 0 ? (
+                                <div className="flex flex-col gap-2 max-h-[min(70vh,520px)] overflow-y-auto">
+                                    {currentPageSegments.map((seg) => {
+                                        const isStart = selectedStartSegment?.id === seg.id;
+                                        const isEnd = selectedEndSegment?.id === seg.id;
+                                        const isSelected = isStart || isEnd;
+                                        return (
+                                            <button
+                                                key={seg.id}
+                                                type="button"
+                                                onClick={() => setCurrentSelection(seg)}
+                                                className={`rounded-lg px-3 py-2 text-left text-sm border-2 transition-colors ${
+                                                    isSelected
+                                                        ? 'border-primary-500 bg-primary-50 text-primary-900'
+                                                        : currentSelection?.id === seg.id
+                                                        ? 'border-primary-400 bg-primary-50/70 text-primary-900'
+                                                        : 'border-gray-200 bg-white hover:border-primary-300'
+                                                }`}
+                                            >
+                                                <span className="font-medium">{t('quran.segment', 'Segment')} {seg.segment_number}</span>
+                                                <span className="text-gray-500 ml-1">
+                                                    ({seg.first_verse_key}
+                                                    {seg.first_verse_key !== seg.last_verse_key ? ` – ${seg.last_verse_key}` : ''})
+                                                </span>
+                                                {(isStart || isEnd) && (
+                                                    <span className="ml-1 text-primary-600 text-xs block mt-0.5">
+                                                        {isStart ? ` [${t('quran.startSegment', 'Start')}]` : ` [${t('quran.endSegment', 'End')}]`}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-500 py-2">{t('quran.noSegmentsFound', 'No segments found for this page')}</p>
+                            )}
+                        </div>
+
+                        {/* Third column: current selection + Set as Start / Set as End */}
+                        <div className="rounded-lg border border-gray-200 bg-white p-3 min-w-0 space-y-3">
+                            <h4 className="text-sm font-semibold text-gray-700">
+                                {t('quran.selectSegment', 'Select segment')}
+                            </h4>
+                            {currentSelection ? (
+                                <>
+                                    <div className="text-sm text-gray-800">
+                                        <span className="font-medium">{t('quran.segment', 'Segment')} {currentSelection.segment_number}</span>
+                                        {currentSelection.page_number != null && (
+                                            <span className="text-gray-500 font-normal ml-1">
+                                                · {t('quran.page', 'Page')} {currentSelection.page_number}
                                             </span>
                                         )}
+                                        <p className="text-gray-600 mt-0.5 text-xs leading-snug">
+                                            {surahData ? formatSegmentVerseLabel(currentSelection, surahData, currentLang, t) : segmentLabel(currentSelection)}
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleSetStart}
+                                            className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium shadow-sm transition-colors w-full ${
+                                                isCurrentStart
+                                                    ? 'bg-emerald-100 text-emerald-800 ring-2 ring-emerald-400 cursor-default'
+                                                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                            }`}
+                                        >
+                                            {isCurrentStart && <CheckIcon width={16} height={16} className="shrink-0" />}
+                                            {isCurrentStart ? t('quran.alreadySetAsStart', '✓ Set as Start') : t('quran.setAsStart', 'Set as Start')}
+                                        </button>
+                                        {planType === 'start_end' && (
+                                            <button
+                                                type="button"
+                                                onClick={handleSetEnd}
+                                                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium shadow-sm transition-colors w-full ${
+                                                    isCurrentEnd
+                                                        ? 'bg-blue-100 text-blue-800 ring-2 ring-blue-400 cursor-default'
+                                                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                }`}
+                                            >
+                                                {isCurrentEnd && <CheckIcon width={16} height={16} className="shrink-0" />}
+                                                {isCurrentEnd ? t('quran.alreadySetAsEnd', '✓ Set as End') : t('quran.setAsEnd', 'Set as End')}
+                                            </button>
+                                        )}
+                                    </div>
+                                    {currentSelection && (isCurrentStart || isCurrentEnd) && (
+                                        <p className="text-xs text-gray-600 flex items-start gap-1.5">
+                                            <CheckIcon width={14} height={14} className="text-emerald-600 shrink-0 mt-0.5" />
+                                            <span>
+                                                {isCurrentStart && isCurrentEnd
+                                                    ? t('quran.thisSegmentIsStartAndEnd', 'This segment is set as both Start and End.')
+                                                    : isCurrentStart
+                                                        ? t('quran.thisSegmentIsStart', 'This segment is currently the start.')
+                                                        : t('quran.thisSegmentIsEnd', 'This segment is currently the end.')}
+                                            </span>
+                                        </p>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-sm text-gray-500 italic">{t('quran.clickSegmentFirst', 'Click a segment in the page or list')}</p>
+                                    <button type="button" disabled className="rounded-lg px-3 py-2 text-sm font-medium bg-gray-200 text-gray-500 cursor-not-allowed w-full">
+                                        {t('quran.setAsStart', 'Set as Start')}
                                     </button>
-                                );
-                            })}
+                                    {planType === 'start_end' && (
+                                        <button type="button" disabled className="rounded-lg px-3 py-2 text-sm font-medium bg-gray-200 text-gray-500 cursor-not-allowed w-full">
+                                            {t('quran.setAsEnd', 'Set as End')}
+                                        </button>
+                                    )}
+                                </>
+                            )}
                         </div>
-                    ) : (
-                        <p className="text-sm text-gray-500 py-2">{t('quran.noSegmentsFound', 'No segments found for this page')}</p>
-                    )}
-                </div>
-            </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 };
