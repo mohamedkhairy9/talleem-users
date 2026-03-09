@@ -81,6 +81,7 @@ const HalaqaPlansSection: React.FC<HalaqaPlansSectionProps> = ({
                         students={students}
                         activities={activities}
                         onSuccess={onPlanFormSuccess}
+                        onCancel={onTogglePlanForm}
                     />
                 </div>
             )}

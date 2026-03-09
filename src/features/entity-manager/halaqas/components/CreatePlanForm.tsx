@@ -28,13 +28,14 @@ interface CreatePlanFormProps {
     students?: Array<{ id: number; name?: { en?: string; ar?: string } }>;
     activities?: HalaqaActivity[];
     onSuccess?: () => void;
+    onCancel?: () => void;
 }
 
 /**
  * Create Plan Form Component
  * Creates a plan for a specific student in a halaqa
  */
-const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, activities, onSuccess }) => {
+const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, activities, onSuccess, onCancel }) => {
     const { t, i18n } = useTranslation();
     const queryClient = useQueryClient();
     const createPlanMutation = useCreatePlan();
@@ -532,8 +533,18 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 </div>
             )}
 
-            {/* Submit Button */}
+            {/* Submit / Cancel */}
             <div className="flex justify-end gap-4">
+                {onCancel && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onCancel}
+                        disabled={createPlanMutation.isPending}
+                    >
+                        {t('common.cancel', 'Cancel')}
+                    </Button>
+                )}
                 <Button
                     type="submit"
                     variant="primary"
