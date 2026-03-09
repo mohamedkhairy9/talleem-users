@@ -114,7 +114,7 @@ export const TEACHER_MENU_ITEMS: MenuItem[] = [
     },
     {
         path: ROUTE_PATHS.TEACHER_EVALUATIONS_RECEIVED,
-        labelKey: 'menu.evaluations',
+        labelKey: 'menu.myEvaluations',
         icon: 'StarIcon',
         roles: ['teacher'],
         subItems: [
