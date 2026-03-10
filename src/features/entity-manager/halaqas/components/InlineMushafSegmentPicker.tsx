@@ -2,9 +2,23 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { dbLoader } from '@/utils/helpers/databaseLoader';
 import { fontLoader } from '@/utils/helpers/fontLoader';
-import { compareVerseKeys, verseKeysBetween, getVerseKeyDisplay, getJuzNumberForVerseKey, type SurahDataMap } from '@/utils/helpers/surahHelper';
+import {
+    compareVerseKeys,
+    verseKeysBetween,
+    getVerseKeyDisplay,
+    getJuzNumberForVerseKey,
+    getSurahNumbersInJuz,
+    getPageNumbersForJuzAndSurah,
+    loadMushafPages,
+    loadJuzPages,
+    getSurahNameForPage,
+    type SurahDataMap,
+    type MushafPageEntry,
+    type JuzPageEntry
+} from '@/utils/helpers/surahHelper';
 import { quranSegmentsService, type QuranSegment } from '../services/quran-segments.service';
 import { CheckIcon } from '@/globals/icons';
+import { ReactSelect } from '@/globals/components';
 import MushafPage from './MushafPage';
 import MushafPageNavigator from './MushafPageNavigator';
 import type { Database } from 'sql.js';
@@ -93,6 +107,10 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'ar';
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedJuz, setSelectedJuz] = useState<number | 'all'>('all');
+    const [selectedSurah, setSelectedSurah] = useState<number | 'all'>('all');
+    const [mushafPages, setMushafPages] = useState<MushafPageEntry[]>([]);
+    const [juzPages, setJuzPages] = useState<JuzPageEntry[]>([]);
     const [pageLines, setPageLines] = useState<any[]>([]);
     const [linesDb, setLinesDb] = useState<Database | null>(null);
     const [wordsDb, setWordsDb] = useState<Database | null>(null);
@@ -130,6 +148,57 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
             });
         return () => { cancelled = true; };
     }, []);
+
+    // Load mushaf and juz page data for Juz/Surah filters
+    useEffect(() => {
+        let cancelled = false;
+        Promise.all([loadMushafPages(), loadJuzPages()])
+            .then(([mPages, jPages]) => {
+                if (cancelled) return;
+                setMushafPages(mPages);
+                setJuzPages(jPages);
+            });
+        return () => { cancelled = true; };
+    }, []);
+
+    // Page range from Juz + Surah selection
+    const pageNumbers = useMemo(() => {
+        if (!mushafPages.length) return Array.from({ length: 604 }, (_, i) => i + 1);
+        return getPageNumbersForJuzAndSurah(selectedJuz, selectedSurah, mushafPages, juzPages);
+    }, [selectedJuz, selectedSurah, mushafPages, juzPages]);
+
+    // Keep currentPage within selected range
+    useEffect(() => {
+        if (pageNumbers.length === 0) return;
+        if (!pageNumbers.includes(currentPage)) setCurrentPage(pageNumbers[0]);
+    }, [pageNumbers, currentPage]);
+
+    // When juz changes, if current surah not in that juz reset surah to 'all'
+    useEffect(() => {
+        if (selectedJuz === 'all' || selectedSurah === 'all') return;
+        const surahsInJuz = getSurahNumbersInJuz(selectedJuz);
+        if (!surahsInJuz.includes(selectedSurah)) setSelectedSurah('all');
+    }, [selectedJuz]);
+
+    // Surah options: ALL + surahs (all 114 if juz all, else surahs in selected juz)
+    const surahOptionsForSelect = useMemo(() => {
+        const allOption = { value: 'all' as const, label: t('quran.surahAll', 'All') };
+        const surahNums = selectedJuz === 'all' ? Array.from({ length: 114 }, (_, i) => i + 1) : getSurahNumbersInJuz(selectedJuz);
+        const surahOpts = surahNums.map((num) => ({
+            value: num as number,
+            label: getSurahNameForPage(num, surahData as SurahDataMap | null, currentLang) || `${t('quran.surah', 'Surah')} ${num}`
+        }));
+        return [allOption, ...surahOpts];
+    }, [selectedJuz, surahData, currentLang, t]);
+
+    const juzOptionsForSelect = useMemo(() => {
+        const allOption = { value: 'all' as const, label: t('quran.juzAll', 'All') };
+        const juzOpts = Array.from({ length: 30 }, (_, i) => i + 1).map((j) => ({
+            value: j as number,
+            label: `${t('quran.juz', 'Juz')} ${j}`
+        }));
+        return [allOption, ...juzOpts];
+    }, [t]);
 
     // Load page lines and font when currentPage or DB changes
     useEffect(() => {
@@ -292,8 +361,34 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
                     )}
                 </div>
 
-                <div className="flex justify-end border-t border-gray-100 pt-3">
-                    <MushafPageNavigator value={currentPage} onChange={setCurrentPage} />
+                <div className="border-t border-gray-100 pt-3 space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('quran.juz', 'Juz')}</label>
+                            <ReactSelect
+                                value={selectedJuz}
+                                onChange={(val) => setSelectedJuz(val === null || val === 'all' ? 'all' : Number(val))}
+                                options={juzOptionsForSelect as { value: string | number; label: string }[]}
+                                placeholder={t('quran.juz', 'Juz')}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('quran.surah', 'Surah')}</label>
+                            <ReactSelect
+                                value={selectedSurah}
+                                onChange={(val) => setSelectedSurah(val === null || val === 'all' ? 'all' : Number(val))}
+                                options={surahOptionsForSelect as { value: string | number; label: string }[]}
+                                placeholder={t('quran.surah', 'Surah')}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-end">
+                        <MushafPageNavigator
+                            value={currentPage}
+                            onChange={setCurrentPage}
+                            pageNumbers={pageNumbers.length > 0 ? pageNumbers : undefined}
+                        />
+                    </div>
                 </div>
             </div>
 

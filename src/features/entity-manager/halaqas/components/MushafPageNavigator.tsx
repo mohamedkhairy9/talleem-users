@@ -11,6 +11,7 @@ import {
     type JuzPageEntry,
     type SurahDataMap
 } from '@/utils/helpers/surahHelper';
+import { ReactSelect } from '@/globals/components';
 
 interface MushafPageNavigatorProps {
     value: number;
@@ -74,19 +75,15 @@ const MushafPageNavigator: React.FC<MushafPageNavigatorProps> = ({
     }
 
     return (
-        <select
-            value={value}
-            onChange={(e) => onChange(Number(e.target.value))}
-            disabled={disabled}
-            className={`rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-w-[12rem] max-w-full ${className}`}
-            aria-label={t('quran.selectPage', 'Select page')}
-        >
-            {options.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                </option>
-            ))}
-        </select>
+        <div className={`min-w-[12rem] max-w-full ${className}`}>
+            <ReactSelect
+                value={value}
+                onChange={(val) => onChange(val != null ? Number(val) : value)}
+                options={options}
+                placeholder={t('quran.selectPage', 'Select page')}
+                isDisabled={disabled}
+            />
+        </div>
     );
 };
 

@@ -503,6 +503,8 @@
         "nextPage": "الصفحة التالية",
         "page": "صفحة",
         "juz": "جزء",
+        "juzAll": "الكل",
+        "surahAll": "الكل",
         "selectPage": "اختر الصفحة",
         "clickSegmentToSelectStart": "انقر على أي مقطع في الصفحة لتعيينه كبداية.",
         "clickSegmentToSelectEnd": "انقر على أي مقطع في الصفحة لتعيينه كنهاية.",
@@ -545,6 +547,7 @@
         "studentCount": "{{count}} طلاب",
         "studentId": "طالب #{{id}}",
         "planType": "نوع الخطة",
+        "dailyAmountHelperText": "أدخل الكمية اليومية للمقاطع التي يجب قراءتها. هذا سيكون العدد اليومي للمقاطع التي يجب قراءتها.",
         "type": {
             "dailyAmount": "كمية يومية",
             "startEnd": "من بداية إلى نهاية",

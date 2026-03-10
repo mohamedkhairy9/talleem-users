@@ -69,7 +69,7 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             end_segment_verse_key: undefined,
             end_juz_number: undefined,
             end_surah_id: undefined,
-            daily_amount: 0
+            daily_amount: 1
         }
     });
 
@@ -264,7 +264,7 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             end_segment_verse_key: undefined,
             end_juz_number: undefined,
             end_surah_id: undefined,
-            daily_amount: 0
+            daily_amount: 1
         });
         setPageNumber(undefined);
         setEndPageNumber(undefined);
@@ -368,6 +368,9 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                         required
                         type="number"
                         error={errors.daily_amount?.message}
+                        min={1}
+                        
+                        helperText={t('plan.dailyAmountHelperText', 'Enter the daily amount of segments to read. This will be the number of segments read each day.')}
                     />
                 )}
             </div>

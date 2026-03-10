@@ -283,6 +283,46 @@ export function getJuzNumberForVerseKey(verseKey: string): number {
 }
 
 /**
+ * Verse key immediately before the given key (e.g. "2:142" -> "2:141", "3:1" -> "2:286").
+ */
+function verseBeforeVerseKey(verseKey: string): string {
+    const [surah, ayah] = verseKey.trim().split(':').map(Number);
+    if (ayah > 1) return `${surah}:${ayah - 1}`;
+    if (surah <= 1) return '1:1';
+    const prevSurahLast = VERSE_COUNT_PER_SURAH[surah - 2];
+    return `${surah - 1}:${prevSurahLast ?? 1}`;
+}
+
+/**
+ * Get the last verse key of a juz (1–30).
+ */
+export function getJuzLastVerseKey(juzNumber: number): string {
+    if (juzNumber >= 30) return '114:6';
+    const nextFirst = getJuzFirstVerseKey(juzNumber + 1);
+    if (!nextFirst) return '114:6';
+    return verseBeforeVerseKey(nextFirst);
+}
+
+/**
+ * Get surah numbers (1–114) that have at least one verse in the given juz (1–30).
+ */
+export function getSurahNumbersInJuz(juzNumber: number): number[] {
+    if (juzNumber < 1 || juzNumber > 30) return [];
+    const startKey = getJuzFirstVerseKey(juzNumber);
+    const endKey = getJuzLastVerseKey(juzNumber);
+    if (!startKey || !endKey) return [];
+    const surahs: number[] = [];
+    for (let s = 1; s <= 114; s++) {
+        const first = `${s}:1`;
+        const lastAyah = VERSE_COUNT_PER_SURAH[s - 1];
+        if (lastAyah == null) continue;
+        const last = `${s}:${lastAyah}`;
+        if (compareVerseKeys(first, endKey) <= 0 && compareVerseKeys(last, startKey) >= 0) surahs.push(s);
+    }
+    return surahs;
+}
+
+/**
  * Get the first verse key of a surah (surah_id:1).
  * Used when unit is "surahs" to send start_verse_key to the plan API.
  */
@@ -489,6 +529,69 @@ export function getSurahNumberForPage(pageNum: number, mushafPages: MushafPageEn
     if (!startKey) return 1;
     const surah = parseInt(startKey.split(':')[0], 10);
     return Number.isNaN(surah) ? 1 : Math.max(1, Math.min(114, surah));
+}
+
+export type JuzSurahSelection = { juz: number | 'all'; surah: number | 'all' };
+
+/**
+ * Get page numbers (1–604) for the given juz + surah selection.
+ * - all juz + all surah -> all 604 pages
+ * - all juz + specific surah -> pages that contain any verse of that surah
+ * - specific juz + all surah -> all pages in that juz
+ * - specific juz + specific surah -> pages in that juz that contain that surah
+ */
+export function getPageNumbersForJuzAndSurah(
+    juz: number | 'all',
+    surah: number | 'all',
+    mushafPages: MushafPageEntry[],
+    juzPages: JuzPageEntry[]
+): number[] {
+    if (!mushafPages.length) return Array.from({ length: 604 }, (_, i) => i + 1);
+
+    if (juz === 'all' && surah === 'all') {
+        return mushafPages.map((p) => p.page);
+    }
+
+    if (juz === 'all' && surah !== 'all') {
+        const surahFirst = `${surah}:1`;
+        const lastAyah = VERSE_COUNT_PER_SURAH[surah - 1];
+        const surahLast = lastAyah != null ? `${surah}:${lastAyah}` : surahFirst;
+        return mushafPages
+            .filter(
+                (p) =>
+                    compareVerseKeys(p.start_verse_key, surahLast) <= 0 &&
+                    compareVerseKeys(p.end_verse_key, surahFirst) >= 0
+            )
+            .map((p) => p.page);
+    }
+
+    if (juz !== 'all' && surah === 'all') {
+        const entry = juzPages.find((j) => j.juz === juz);
+        if (!entry) return mushafPages.map((p) => p.page);
+        return Array.from(
+            { length: entry.end_page - entry.start_page + 1 },
+            (_, i) => entry.start_page + i
+        );
+    }
+
+    // specific juz + specific surah
+    if (surah === 'all') return [];
+    const entry = juzPages.find((j) => j.juz === juz);
+    if (!entry) return [];
+    const surahFirst = `${surah}:1`;
+    const lastAyah = VERSE_COUNT_PER_SURAH[surah - 1];
+    const surahLast = lastAyah != null ? `${surah}:${lastAyah}` : surahFirst;
+    const pagesInJuz = mushafPages.filter(
+        (p) => p.page >= entry.start_page && p.page <= entry.end_page
+    );
+    return pagesInJuz
+        .filter(
+            (p) =>
+                compareVerseKeys(p.start_verse_key, surahLast) <= 0 &&
+                compareVerseKeys(p.end_verse_key, surahFirst) >= 0
+        )
+        .map((p) => p.page)
+        .sort((a, b) => a - b);
 }
 
 /**
