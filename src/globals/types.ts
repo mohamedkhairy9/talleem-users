@@ -156,6 +156,8 @@ export interface TableColumn<T = any> {
     cell?: (row: T) => React.ReactNode;
     /** Optional class for the td (e.g. whitespace-normal for wrapping) */
     cellClassName?: string;
+    /** Min width for the column (number = px, or string e.g. '8rem') so content doesn't overlap; enables horizontal scroll */
+    minWidth?: number | string;
 }
 
 export interface TableActionButtons<T = any> {

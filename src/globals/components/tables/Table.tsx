@@ -78,13 +78,18 @@ const Table = <T = any>({
     
     const allColumns: TableColumn<T>[] = actionColumn ? [...columns, actionColumn] : columns;
 
-    const colWidth = `${100 / allColumns.length}%`;
+    const DEFAULT_MIN_WIDTH_PX = 100;
+    const getMinWidthStyle = (col: TableColumn<T>) => {
+        const raw = col.minWidth != null ? col.minWidth : DEFAULT_MIN_WIDTH_PX;
+        const value = typeof raw === 'number' ? `${raw}px` : raw;
+        return { minWidth: value };
+    };
     const tableContent = (
         <>
-            <table className="min-w-full w-full table-fixed divide-y divide-gray-200">
+            <table className="w-max min-w-full table-auto divide-y divide-gray-200 border-collapse">
                 <colgroup>
-                    {allColumns.map((_, index) => (
-                        <col key={index} style={{ width: colWidth }} />
+                    {allColumns.map((col, index) => (
+                        <col key={index} style={getMinWidthStyle(col)} />
                     ))}
                 </colgroup>
                 <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
@@ -92,6 +97,7 @@ const Table = <T = any>({
                         {allColumns.map((column, index) => (
                             <th
                                 key={index}
+                                style={getMinWidthStyle(column)}
                                 className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider"
                             >
                                 {column.header}
@@ -105,6 +111,7 @@ const Table = <T = any>({
                             {allColumns.map((column, colIndex) => (
                                 <td
                                     key={colIndex}
+                                    style={getMinWidthStyle(column)}
                                     className={`px-6 py-4 text-sm text-gray-900 text-start ${column.cellClassName ?? 'whitespace-nowrap'}`}
                                 >
                                     {column.accessor
