@@ -1,60 +1,61 @@
 /* MushafPage Component Styles */
 
-
+/* 600:900 = 2:3 aspect ratio for standard mushaf page */
 .mushaf-page {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     background: #f5f5f5;
     direction: rtl;
+    width: 100%;
 }
 
 .mushaf-border {
     position: relative;
-    width: 600px;
-    min-height: 900px;
-    height: auto;
-    max-width: 90vw;
+    width: 100%;
+    max-width: min(650px, 90vw);
+    /* Keep border frame proportional at any size */
+    aspect-ratio: 650 / 975;
     background: #fefefe;
     background-image: url('/assets/images/mushaf_border.svg');
     background-size: 100% 100%;
     background-repeat: no-repeat;
     background-position: center;
+    object-fit: cover;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     border-radius: 4px;
     overflow: hidden;
-    /* Allow container to expand with content */
     display: flex;
     flex-direction: column;
     margin: 0 auto;
 }
 
-/* Smaller size for pages 1 and 2 to reduce white space */
+/* Smaller max-width for pages 1 and 2; same aspect ratio */
 .mushaf-border-large {
-    width: 450px;
-    min-height: 675px;
-    max-width: 85vw;
+    max-width: min(450px, 85vw);
+    aspect-ratio: 2 / 3;
 }
 
 .mushaf-border-large .page-content {
-    padding: 37px 30px;
-    min-height: 675px;
+    padding: 55px 30px;
 }
 
 .page-content {
     position: relative;
     z-index: 2;
-    padding: 50px 40px;
-    min-height: 900px;
+    /* Padding as % so it scales with border at all sizes (~50px/800 40px/600) */
+    padding: 5.55% 6.67%;
+    min-height: 0;
     direction: rtl;
     width: 100%;
     margin: 0 auto;
-    /* Allow content to expand */
     overflow: visible;
     word-wrap: break-word;
     overflow-wrap: break-word;
-    /* Allow container to grow with scaled text */
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
 }
 
 /* Font Loading */
@@ -63,14 +64,11 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 900px;
+    flex: 1;
+    min-height: 200px;
     gap: 20px;
     position: relative;
     z-index: 2;
-}
-
-.mushaf-border-large .font-loading {
-    min-height: 675px;
 }
 
 .font-loading p {
@@ -195,80 +193,61 @@
     color: #666;
 }
 
-/* Page number display */
+/* Page number display - scale with container */
 .page-number-display {
     position: absolute;
-    bottom: 20px;
+    bottom: 3%;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 1.2em;
+    font-size: clamp(0.75rem, 2vw, 1.2em);
     color: #666;
     font-weight: 500;
     z-index: 10;
     font-family: Arial, sans-serif;
     direction: ltr;
     text-align: center;
-    padding: 4px 12px;
+    padding: 0.25em 0.75em;
     background: rgba(255, 255, 255, 0.8);
     border-radius: 4px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Adjust for smaller pages (1 and 2) */
-.mushaf-border-large .page-number-display {
-    font-size: 1em;
-    bottom: 15px;
-    padding: 3px 10px;
-}
-
-/* Responsive */
+/* Responsive: border scales via max-width and aspect-ratio; tighten padding on small screens */
 @media (max-width: 768px) {
     .mushaf-border {
-        width: 100%;
-        max-width: 100%;
-        min-height: auto;
-        /* Maintain aspect ratio: 600:900 = 2:3 */
-        aspect-ratio: 2 / 3;
-        background-size: 100% 100%;
+        max-width: 95vw;
     }
-    
+
     .page-content {
-        /* Scale padding proportionally: 50px -> ~8.3%, 40px -> ~6.7% */
-        padding: 8.3% 6.7%;
-        min-height: auto;
+        padding: 5% 5.5%;
     }
-    
-    .font-loading {
-        min-height: auto;
-    }
-    
+
     .line {
-        font-size: 1.5em;
+        font-size: clamp(1.1em, 3.5vw, 1.8em);
     }
-    
+
     .line.surah-name {
-        font-size: 5em;
+        font-size: clamp(3em, 12vw, 5em);
+        height: auto;
+        min-height: 60px;
     }
 }
 
 @media (max-width: 480px) {
     .mushaf-border {
-        width: 100%;
         max-width: 100%;
-        aspect-ratio: 2 / 3;
     }
-    
+
     .page-content {
-        /* Further reduced padding for very small screens */
-        padding: 7% 5%;
+        padding: 4.5% 5%;
     }
-    
+
     .line {
-        font-size: 1.3em;
+        font-size: clamp(1em, 4vw, 1.3em);
     }
-    
+
     .line.surah-name {
-        font-size: 4em;
+        font-size: clamp(2.5em, 14vw, 4em);
     }
 }
 
