@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XIcon } from '@/globals/icons';
 import MushafPage from './MushafPage';
-import MushafPageNavigator from './MushafPageNavigator';
 import { dbLoader } from '@/utils/helpers/databaseLoader';
 import { fontLoader } from '@/utils/helpers/fontLoader';
 import { loadMushafPages, getPageForVerseKey, verseKeysBetween, compareVerseKeys } from '@/utils/helpers/surahHelper';
@@ -19,6 +18,8 @@ interface MushafPageModalProps {
     endVerseKey?: string; // Format: "surah:ayah" (e.g., "1:7")
     /** When set, verse keys in range are clickable; on verse click calls this with verse key (e.g. "2:255") */
     onSelectVerseKey?: (verseKey: string) => void;
+    /** When set (e.g. in segment picker modal), any word click calls this with verse key; no range check */
+    onVerseKeyClick?: (verseKey: string) => void;
     /** When true, render only inner viewer (no overlay/backdrop); for use inside another modal */
     embedded?: boolean;
 }
@@ -35,6 +36,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     startVerseKey,
     endVerseKey,
     onSelectVerseKey,
+    onVerseKeyClick,
     embedded = false
 }) => {
     const { t } = useTranslation();
@@ -292,15 +294,6 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
         loadPageWithFont();
     }, [currentPage, linesDb, isOpen, isPlanView, planPages.length]);
 
-    const handlePageChange = (page: number) => {
-        if (isPlanView && planPages.length > 0) {
-            const idx = planPages.indexOf(page);
-            if (idx >= 0) setCurrentPageIndex(idx);
-        } else {
-            setSinglePage(page);
-        }
-    };
-
     /** In select mode: word location may be "surah:ayah" or "surah:ayah:wordIndex"; normalize to verse key, check range, set local selection */
     const handleWordClick = React.useCallback(
         (_wordId: number, location: string) => {
@@ -313,6 +306,18 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
             setSelectedVerseKeyInModal(verseKey);
         },
         [onSelectVerseKey, startVerseKey, endVerseKey]
+    );
+
+    /** For segment picker: any word click → extract verse key and notify parent (no range check) */
+    const handleVerseKeyClick = React.useCallback(
+        (_wordId: number, location: string) => {
+            if (!onVerseKeyClick) return;
+            const parts = location.trim().split(':').filter(Boolean);
+            if (parts.length < 2) return;
+            const verseKey = `${parts[0]}:${parts[1]}`;
+            if (/^\d+:\d+$/.test(verseKey)) onVerseKeyClick(verseKey);
+        },
+        [onVerseKeyClick]
     );
 
     /** Confirm selection and close (called from hint bar button) */
@@ -331,27 +336,17 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     if (!isOpen) return null;
 
     const content = (
-        <div className={`relative bg-white overflow-hidden ${embedded ? 'rounded-lg border border-gray-200 w-full max-h-[32rem]' : 'rounded-xl shadow-xl max-w-3xl w-full max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)]'}`}>
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-white flex-wrap gap-3">
-                <div className="flex items-center gap-3 flex-wrap">
-                    {!embedded && (
-                        <h3 className="text-lg font-semibold text-gray-900">
-                            {onSelectVerseKey
-                                ? t('grade.selectEndVerse', 'Select actual end verse')
-                                : isPlanView
-                                    ? t('quran.planView', 'Plan View')
-                                    : t('quran.mushafPage', 'Mushaf Page')}
-                        </h3>
-                    )}
-                    <MushafPageNavigator
-                        value={currentPage}
-                        onChange={handlePageChange}
-                        pageNumbers={isPlanView && planPages.length > 0 ? planPages : undefined}
-                        disabled={isLoading || isLoadingPlanPages}
-                    />
-                </div>
-                {!embedded && (
+        <div className={`relative bg-white ${embedded ? 'rounded-lg border border-gray-200 w-full min-h-0' : 'overflow-hidden rounded-xl shadow-xl max-w-3xl w-full max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)]'}`}>
+            {/* Header: only when not embedded (title + close); embedded has no header */}
+            {!embedded && (
+                <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-white flex-wrap gap-3">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                        {onSelectVerseKey
+                            ? t('grade.selectEndVerse', 'Select actual end verse')
+                            : isPlanView
+                                ? t('quran.planView', 'Plan View')
+                                : t('quran.mushafPage', 'Mushaf Page')}
+                    </h3>
                     <button
                         type="button"
                         onClick={onClose}
@@ -360,8 +355,8 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                     >
                         <XIcon width={20} height={20} />
                     </button>
-                )}
-            </div>
+                </div>
+            )}
 
                     {/* Hint when selecting verse for grade: instructions + selected verse + Confirm */}
                     {onSelectVerseKey && !isLoading && !isLoadingPlanPages && !error && (
@@ -375,7 +370,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                                             {t('grade.confirmOrPickAnother', 'Click Confirm to use this verse, or click another verse.')}
                                         </span>
                                     ) : (
-                                        t('grade.clickVerseToSelect', 'Click any verse on the page to set it as the actual end verse. Use the page navigator above to change pages.')
+                                        t('grade.clickVerseToSelect', 'Click any verse on the page to set it as the actual end verse.')
                                     )}
                                 </p>
                                 {selectedVerseKeyInModal && (
@@ -391,8 +386,8 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                         </div>
                     )}
 
-                    {/* Body */}
-                    <div className={`relative px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-y-auto ${embedded ? 'max-h-[20rem]' : 'max-h-[calc(100vh-12rem)]'}`}>
+                    {/* Body: when embedded, no inner scroll so parent modal content scrolls and mushaf stays visible */}
+                    <div className={`relative px-2 sm:px-4 md:px-6 py-2 sm:py-4 ${embedded ? '' : 'overflow-y-auto max-h-[calc(100vh-12rem)]'}`}>
                         {isLoading || isLoadingPlanPages ? (
                             <div className="flex items-center justify-center py-20">
                                 <div className="text-center">
@@ -420,7 +415,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                                 surahData={surahData}
                                 selectedAyahs={displaySelectedAyahs}
                                 isFontLoading={isFontLoading}
-                                onWordClick={onSelectVerseKey ? handleWordClick : undefined}
+                                onWordClick={onVerseKeyClick ? handleVerseKeyClick : onSelectVerseKey ? handleWordClick : undefined}
                             />
                         )}
                     </div>

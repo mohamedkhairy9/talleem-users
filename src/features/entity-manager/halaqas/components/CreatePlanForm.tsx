@@ -21,7 +21,7 @@ import MushafPageModal from './MushafPageModal';
 import MushafSegmentPickerModal from './MushafSegmentPickerModal';
 import PlanPreviewCard from './PlanPreviewCard';
 import { BookOpenIcon } from '@/globals/icons';
-import { loadSurahData, type SurahDataMap } from '@/utils/helpers/surahHelper';
+import { loadSurahData, getVerseKeyDisplay, getJuzNumberForVerseKey, type SurahDataMap } from '@/utils/helpers/surahHelper';
 
 interface CreatePlanFormProps {
     halaqaId: number | string;
@@ -129,6 +129,26 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
         if (!surah) return '';
         return currentLang === 'ar' ? surah.name_arabic : (surah.name_simple || surah.name);
     }, [surahData, currentLang]);
+
+    /** Format segment as verse info (Surah Name, Ayah X · Juz Y) for display; fallback to verse key if no surah data */
+    const formatSegmentVerseInfo = React.useCallback(
+        (seg: QuranSegment): string => {
+            if (!seg) return '—';
+            const firstDisplay = getVerseKeyDisplay(seg.first_verse_key, surahData, currentLang);
+            const juzFirst = getJuzNumberForVerseKey(seg.first_verse_key);
+            const firstStr = firstDisplay
+                ? `${firstDisplay.surahName}, ${t('quran.ayah', 'Ayah')} ${firstDisplay.ayahNumber} · ${t('quran.juzShort', { number: juzFirst })}`
+                : seg.first_verse_key;
+            if (seg.first_verse_key === seg.last_verse_key) return firstStr;
+            const lastDisplay = getVerseKeyDisplay(seg.last_verse_key, surahData, currentLang);
+            const juzLast = getJuzNumberForVerseKey(seg.last_verse_key);
+            const lastStr = lastDisplay
+                ? `${lastDisplay.surahName}, ${t('quran.ayah', 'Ayah')} ${lastDisplay.ayahNumber} · ${t('quran.juzShort', { number: juzLast })}`
+                : seg.last_verse_key;
+            return `${firstStr} – ${lastStr}`;
+        },
+        [surahData, currentLang, t]
+    );
 
     // Clear selected segments when page number changes
     useEffect(() => {
@@ -393,11 +413,11 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
 
             {/* Segment selection: open in modal only */}
             <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-start flex-col gap-2">
                     <span className="text-sm font-medium text-gray-700">
                         {t('plan.segmentRange', 'Segment range')}
                     </span>
-                    <button
+                    <Button
                         type="button"
                         onClick={() => setShowMushafSegmentPickerModal(true)}
                         className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -405,16 +425,16 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                     >
                         <BookOpenIcon width={18} height={18} />
                         {t('quran.openMushafViewer', 'Open Mushaf viewer')}
-                    </button>
+                    </Button>
                 </div>
                 {(selectedStartSegment || selectedEndSegment) && (
                     <p className="text-sm text-gray-500">
                         {selectedStartSegment && (
-                            <span>{t('quran.startSegment', 'Start')}: {selectedStartSegment.first_verse_key}{selectedStartSegment.first_verse_key !== selectedStartSegment.last_verse_key ? ` – ${selectedStartSegment.last_verse_key}` : ''}</span>
+                            <span>{t('quran.startSegment', 'Start')}: {formatSegmentVerseInfo(selectedStartSegment)}</span>
                         )}
                         {selectedStartSegment && selectedEndSegment && planType === 'start_end' && ' · '}
                         {selectedEndSegment && planType === 'start_end' && (
-                            <span>{t('quran.endSegment', 'End')}: {selectedEndSegment.first_verse_key}{selectedEndSegment.first_verse_key !== selectedEndSegment.last_verse_key ? ` – ${selectedEndSegment.last_verse_key}` : ''}</span>
+                            <span>{t('quran.endSegment', 'End')}: {formatSegmentVerseInfo(selectedEndSegment)}</span>
                         )}
                     </p>
                 )}

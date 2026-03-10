@@ -32,6 +32,12 @@ interface InlineMushafSegmentPickerProps {
     getSurahName?: (surahNumber: number) => string;
     /** When true, do not render the mushaf page in the grid (e.g. when used in modal with separate mushaf viewer below) */
     hideInlineMushaf?: boolean;
+    /** When provided, called whenever the selected page (Juz/Surah/Page) changes so parent can sync e.g. mushaf viewer */
+    onPageChange?: (page: number) => void;
+    /** When set (e.g. from mushaf word click), find segment containing this verse key and set as current selection */
+    selectionVerseKeyFromOutside?: string;
+    /** When provided, called when current selection (clicked segment) changes so parent can e.g. highlight in mushaf */
+    onCurrentSelectionChange?: (segment: QuranSegment | null) => void;
 }
 
 /**
@@ -105,7 +111,10 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
     onSelectStartSegment,
     onSelectEndSegment,
     planType,
-    hideInlineMushaf = false
+    hideInlineMushaf = false,
+    onPageChange,
+    selectionVerseKeyFromOutside,
+    onCurrentSelectionChange
 }) => {
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'ar';
@@ -175,6 +184,23 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
         if (pageNumbers.length === 0) return;
         if (!pageNumbers.includes(currentPage)) setCurrentPage(pageNumbers[0]);
     }, [pageNumbers, currentPage]);
+
+    // Notify parent when selected page changes (e.g. to sync mushaf viewer in modal)
+    useEffect(() => {
+        onPageChange?.(currentPage);
+    }, [currentPage, onPageChange]);
+
+    // When parent sets verse key (e.g. from mushaf word click), find segment and set as current selection
+    useEffect(() => {
+        if (!selectionVerseKeyFromOutside?.trim() || !currentPageSegments.length) return;
+        const segment = findSegmentForVerseKey(selectionVerseKeyFromOutside, currentPageSegments);
+        setCurrentSelection(segment ?? null);
+    }, [selectionVerseKeyFromOutside, currentPageSegments]);
+
+    // Notify parent when current selection changes (so parent can highlight in mushaf)
+    useEffect(() => {
+        onCurrentSelectionChange?.(currentSelection);
+    }, [currentSelection, onCurrentSelectionChange]);
 
     // When juz changes, if current surah not in that juz reset surah to 'all'
     useEffect(() => {
@@ -385,11 +411,12 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
                             />
                         </div>
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-end w-full">
                         <MushafPageNavigator
                             value={currentPage}
                             onChange={setCurrentPage}
                             pageNumbers={pageNumbers.length > 0 ? pageNumbers : undefined}
+                            className="w-full"
                         />
                     </div>
                 </div>

@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XIcon, BookOpenIcon } from '@/globals/icons';
 import InlineMushafSegmentPicker from './InlineMushafSegmentPicker';
 import MushafPageModal from './MushafPageModal';
+import { verseKeysBetween } from '@/utils/helpers/surahHelper';
 import type { QuranSegment } from '../services/quran-segments.service';
 
 export interface MushafSegmentPickerModalProps {
@@ -31,30 +32,47 @@ const MushafSegmentPickerModal: React.FC<MushafSegmentPickerModalProps> = ({
     getSurahName
 }) => {
     const { t } = useTranslation();
+    const [viewerPage, setViewerPage] = useState(1);
+    const [selectionVerseKeyFromMushaf, setSelectionVerseKeyFromMushaf] = useState<string | null>(null);
+    const [currentSelectionFromPicker, setCurrentSelectionFromPicker] = useState<QuranSegment | null>(null);
 
-    const { startVerseKey, endVerseKey, pageNumber } = useMemo(() => {
-        const start = selectedStartSegment?.first_verse_key;
-        const end =
-            planType === 'start_end' && selectedEndSegment
-                ? selectedEndSegment.last_verse_key
-                : selectedStartSegment?.last_verse_key;
-        if (start && end) return { startVerseKey: start, endVerseKey: end, pageNumber: undefined };
-        return { startVerseKey: undefined, endVerseKey: undefined, pageNumber: 1 };
-    }, [selectedStartSegment, selectedEndSegment, planType]);
+    // Sync viewer page when modal opens (segment picker will call onPageChange with its current page)
+    useEffect(() => {
+        if (isOpen) {
+            setViewerPage(1);
+            setSelectionVerseKeyFromMushaf(null);
+            setCurrentSelectionFromPicker(null);
+        }
+    }, [isOpen]);
+
+    // Verse keys to highlight in mushaf: start segment, end segment, and current selection (from list or word click)
+    const selectedAyahsForViewer = useMemo(() => {
+        const set = new Set<string>();
+        if (selectedStartSegment) {
+            verseKeysBetween(selectedStartSegment.first_verse_key, selectedStartSegment.last_verse_key).forEach((k) => set.add(k));
+        }
+        if (selectedEndSegment) {
+            verseKeysBetween(selectedEndSegment.first_verse_key, selectedEndSegment.last_verse_key).forEach((k) => set.add(k));
+        }
+        if (currentSelectionFromPicker) {
+            verseKeysBetween(currentSelectionFromPicker.first_verse_key, currentSelectionFromPicker.last_verse_key).forEach((k) => set.add(k));
+        }
+        return set;
+    }, [selectedStartSegment, selectedEndSegment, currentSelectionFromPicker]);
 
     return (
         <>
             {isOpen && (
-                <div className="fixed inset-0 z-[60] overflow-y-auto">
+                <div className="fixed inset-0 z-[60] overflow-y-auto overscroll-contain">
                     <div
                         className="fixed inset-0 bg-black transition-opacity"
                         style={{ opacity: 0.75 }}
                         onClick={onClose}
                         aria-hidden="true"
                     />
-                    <div className="relative flex min-h-full items-center justify-center p-4 pt-12 pb-12 z-10">
+                    <div className="relative flex min-h-[100dvh] items-start justify-center pt-20 pb-8 px-4 z-10">
                         <div
-                            className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[calc(100vh-3rem)] overflow-hidden flex flex-col"
+                            className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[calc(100dvh-6rem)] overflow-hidden flex flex-col"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Header */}
@@ -75,8 +93,8 @@ const MushafSegmentPickerModal: React.FC<MushafSegmentPickerModalProps> = ({
                                 </button>
                             </div>
 
-                            {/* Body: segment picker + embedded mushaf */}
-                            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+                            {/* Body: single scroll over full content so segment picker + mushaf are both visible */}
+                            <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
                                 <InlineMushafSegmentPicker
                                     selectedStartSegment={selectedStartSegment}
                                     selectedEndSegment={selectedEndSegment}
@@ -85,14 +103,17 @@ const MushafSegmentPickerModal: React.FC<MushafSegmentPickerModalProps> = ({
                                     planType={planType}
                                     getSurahName={getSurahName}
                                     hideInlineMushaf
+                                    onPageChange={setViewerPage}
+                                    selectionVerseKeyFromOutside={selectionVerseKeyFromMushaf ?? undefined}
+                                    onCurrentSelectionChange={setCurrentSelectionFromPicker}
                                 />
                                 <div className="border-t border-gray-200 pt-4">
                                     <MushafPageModal
                                         isOpen={isOpen}
                                         onClose={onClose}
-                                        startVerseKey={startVerseKey}
-                                        endVerseKey={endVerseKey}
-                                        pageNumber={pageNumber}
+                                        pageNumber={viewerPage}
+                                        selectedAyahs={selectedAyahsForViewer}
+                                        onVerseKeyClick={(verseKey) => setSelectionVerseKeyFromMushaf(verseKey)}
                                         embedded
                                     />
                                 </div>
