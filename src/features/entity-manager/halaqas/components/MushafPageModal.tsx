@@ -19,6 +19,8 @@ interface MushafPageModalProps {
     endVerseKey?: string; // Format: "surah:ayah" (e.g., "1:7")
     /** When set, verse keys in range are clickable; on verse click calls this with verse key (e.g. "2:255") */
     onSelectVerseKey?: (verseKey: string) => void;
+    /** When true, render only inner viewer (no overlay/backdrop); for use inside another modal */
+    embedded?: boolean;
 }
 
 /**
@@ -32,7 +34,8 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     selectedAyahs = new Set(),
     startVerseKey,
     endVerseKey,
-    onSelectVerseKey
+    onSelectVerseKey,
+    embedded = false
 }) => {
     const { t } = useTranslation();
     const [pageLines, setPageLines] = useState<any[]>([]);
@@ -327,45 +330,38 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-[60] overflow-y-auto">
-            {/* Backdrop */}
-            <div
-                className="fixed inset-0 bg-black transition-opacity"
-                style={{ opacity: 0.75 }}
-                onClick={onClose}
-                aria-hidden="true"
-            />
-
-            {/* Modal */}
-            <div className="relative flex min-h-full items-center justify-center p-4 pt-20 md:pt-24 z-10">
-                <div className="relative bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)] overflow-hidden">
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-white flex-wrap gap-3">
-                        <div className="flex items-center gap-3 flex-wrap">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                                {onSelectVerseKey
-                                    ? t('grade.selectEndVerse', 'Select actual end verse')
-                                    : isPlanView
-                                        ? t('quran.planView', 'Plan View')
-                                        : t('quran.mushafPage', 'Mushaf Page')}
-                            </h3>
-                            <MushafPageNavigator
-                                value={currentPage}
-                                onChange={handlePageChange}
-                                pageNumbers={isPlanView && planPages.length > 0 ? planPages : undefined}
-                                disabled={isLoading || isLoadingPlanPages}
-                            />
-                        </div>
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                            aria-label={t('common.close')}
-                        >
-                            <XIcon width={20} height={20} />
-                        </button>
-                    </div>
+    const content = (
+        <div className={`relative bg-white overflow-hidden ${embedded ? 'rounded-lg border border-gray-200 w-full max-h-[32rem]' : 'rounded-xl shadow-xl max-w-3xl w-full max-h-[calc(100vh-5rem)] md:max-h-[calc(100vh-6rem)]'}`}>
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-white flex-wrap gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                    {!embedded && (
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            {onSelectVerseKey
+                                ? t('grade.selectEndVerse', 'Select actual end verse')
+                                : isPlanView
+                                    ? t('quran.planView', 'Plan View')
+                                    : t('quran.mushafPage', 'Mushaf Page')}
+                        </h3>
+                    )}
+                    <MushafPageNavigator
+                        value={currentPage}
+                        onChange={handlePageChange}
+                        pageNumbers={isPlanView && planPages.length > 0 ? planPages : undefined}
+                        disabled={isLoading || isLoadingPlanPages}
+                    />
+                </div>
+                {!embedded && (
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                        aria-label={t('common.close')}
+                    >
+                        <XIcon width={20} height={20} />
+                    </button>
+                )}
+            </div>
 
                     {/* Hint when selecting verse for grade: instructions + selected verse + Confirm */}
                     {onSelectVerseKey && !isLoading && !isLoadingPlanPages && !error && (
@@ -396,7 +392,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                     )}
 
                     {/* Body */}
-                    <div className="relative px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
+                    <div className={`relative px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-y-auto ${embedded ? 'max-h-[20rem]' : 'max-h-[calc(100vh-12rem)]'}`}>
                         {isLoading || isLoadingPlanPages ? (
                             <div className="flex items-center justify-center py-20">
                                 <div className="text-center">
@@ -428,7 +424,21 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                             />
                         )}
                     </div>
-                </div>
+        </div>
+    );
+
+    if (embedded) return content;
+
+    return (
+        <div className="fixed inset-0 z-[60] overflow-y-auto">
+            <div
+                className="fixed inset-0 bg-black transition-opacity"
+                style={{ opacity: 0.75 }}
+                onClick={onClose}
+                aria-hidden="true"
+            />
+            <div className="relative flex min-h-full items-center justify-center p-4 pt-20 md:pt-24 z-10">
+                {content}
             </div>
         </div>
     );

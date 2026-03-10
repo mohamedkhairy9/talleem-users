@@ -32,7 +32,7 @@ export const API_CONFIG = {
 export const API_ENDPOINTS = {
     AUTH: {
         LOGIN: '/customer-login',
-        LOGOUT: '/customer-logout',
+        LOGOUT: '/logout',
         USER: '/customer',
         REFRESH: '/customer-refresh-token',
         CHANGE_PASSWORD: '/customer-change-password',

@@ -18,8 +18,9 @@ import {
 import { createPlanSchema, CreatePlanFormData } from '../schemas/plan.schema';
 import type { QuranSegment } from '../services/quran-segments.service';
 import MushafPageModal from './MushafPageModal';
-import InlineMushafSegmentPicker from './InlineMushafSegmentPicker';
+import MushafSegmentPickerModal from './MushafSegmentPickerModal';
 import PlanPreviewCard from './PlanPreviewCard';
+import { BookOpenIcon } from '@/globals/icons';
 import { loadSurahData, type SurahDataMap } from '@/utils/helpers/surahHelper';
 
 interface CreatePlanFormProps {
@@ -89,6 +90,8 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
     const [, setEndPageNumber] = useState<number | undefined>(undefined);
     const [selectedEndSegment, setSelectedEndSegment] = useState<QuranSegment | null>(null);
     
+    // Segment picker + mushaf modal (open from plan form)
+    const [showMushafSegmentPickerModal, setShowMushafSegmentPickerModal] = useState(false);
     // Plan mushaf viewer state
     const [showPlanMushafViewer, setShowPlanMushafViewer] = useState(false);
     const [planStartVerseKey, setPlanStartVerseKey] = useState<string | undefined>(undefined);
@@ -388,20 +391,48 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 placeholder={t('plan.selectStudents', 'Select one or more students')}
             />
 
-            {/* Segment selection (unit is fixed to segments) */}
-            <div className="space-y-4">
-                <InlineMushafSegmentPicker
-                    selectedStartSegment={selectedStartSegment}
-                    selectedEndSegment={selectedEndSegment}
-                    onSelectStartSegment={setSelectedStartSegment}
-                    onSelectEndSegment={setSelectedEndSegment}
-                    planType={planType}
-                    getSurahName={getSurahName}
-                />
-
+            {/* Segment selection: open in modal only */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-gray-700">
+                        {t('plan.segmentRange', 'Segment range')}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => setShowMushafSegmentPickerModal(true)}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                        title={t('quran.openMushafViewer', 'Open Mushaf viewer')}
+                    >
+                        <BookOpenIcon width={18} height={18} />
+                        {t('quran.openMushafViewer', 'Open Mushaf viewer')}
+                    </button>
+                </div>
+                {(selectedStartSegment || selectedEndSegment) && (
+                    <p className="text-sm text-gray-500">
+                        {selectedStartSegment && (
+                            <span>{t('quran.startSegment', 'Start')}: {selectedStartSegment.first_verse_key}{selectedStartSegment.first_verse_key !== selectedStartSegment.last_verse_key ? ` – ${selectedStartSegment.last_verse_key}` : ''}</span>
+                        )}
+                        {selectedStartSegment && selectedEndSegment && planType === 'start_end' && ' · '}
+                        {selectedEndSegment && planType === 'start_end' && (
+                            <span>{t('quran.endSegment', 'End')}: {selectedEndSegment.first_verse_key}{selectedEndSegment.first_verse_key !== selectedEndSegment.last_verse_key ? ` – ${selectedEndSegment.last_verse_key}` : ''}</span>
+                        )}
+                    </p>
+                )}
                 <input type="hidden" {...control.register('start_segment_verse_key')} />
                 <input type="hidden" {...control.register('end_segment_verse_key')} />
             </div>
+
+            {/* Segment picker + Mushaf viewer modal */}
+            <MushafSegmentPickerModal
+                isOpen={showMushafSegmentPickerModal}
+                onClose={() => setShowMushafSegmentPickerModal(false)}
+                selectedStartSegment={selectedStartSegment}
+                selectedEndSegment={selectedEndSegment}
+                onSelectStartSegment={setSelectedStartSegment}
+                onSelectEndSegment={setSelectedEndSegment}
+                planType={planType}
+                getSurahName={getSurahName}
+            />
 
             {/* Plan Mushaf Viewer Modal — available for all units (segments, juz, surah) after preview */}
             {showPlanMushafViewer && planStartVerseKey && planEndVerseKey && (

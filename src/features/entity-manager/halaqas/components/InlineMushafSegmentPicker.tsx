@@ -30,6 +30,8 @@ interface InlineMushafSegmentPickerProps {
     onSelectEndSegment: (segment: QuranSegment | null) => void;
     planType: 'daily_amount' | 'start_end';
     getSurahName?: (surahNumber: number) => string;
+    /** When true, do not render the mushaf page in the grid (e.g. when used in modal with separate mushaf viewer below) */
+    hideInlineMushaf?: boolean;
 }
 
 /**
@@ -103,6 +105,7 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
     onSelectStartSegment,
     onSelectEndSegment,
     planType,
+    hideInlineMushaf = false
 }) => {
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'ar';
@@ -398,30 +401,35 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
                     : t('quran.clickSegmentThenStartEnd', 'Click on a segment in the page or list, then use Start to set it.')}
             </p>
 
-            {/* Grid: mushaf page, segments list, and selection actions (3 columns on lg) */}
+            {/* Grid: optionally mushaf page, then segments list and selection actions */}
             {(() => {
                 const isCurrentStart = currentSelection && isSameSegment(currentSelection, selectedStartSegment);
                 const isCurrentEnd = planType === 'start_end' && currentSelection && isSameSegment(currentSelection, selectedEndSegment);
+                const gridCols = hideInlineMushaf
+                    ? 'grid-cols-1 md:grid-cols-[minmax(220px,1fr)_minmax(200px,260px)]'
+                    : 'grid-cols-1 lg:grid-cols-[1fr_minmax(220px,280px)_minmax(200px,260px)]';
                 return (
-                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(220px,280px)_minmax(200px,260px)] gap-4 items-start">
-                        {/* Mushaf page */}
-                        <div className="rounded-xl border border-gray-200 overflow-hidden bg-white min-w-0">
-                            {isLoadingSegments && currentPageSegments.length === 0 ? (
-                                <div className="flex justify-center py-12">
-                                    <div className="spinner" />
-                                </div>
-                            ) : (
-                                <MushafPage
-                                    pageLines={pageLines}
-                                    currentPage={currentPage}
-                                    wordsDb={wordsDb}
-                                    surahData={surahData}
-                                    selectedAyahs={selectedAyahs}
-                                    onWordClick={handleWordClick}
-                                    isFontLoading={isFontLoading}
-                                />
-                            )}
-                        </div>
+                    <div className={`grid ${gridCols} gap-4 items-start`}>
+                        {!hideInlineMushaf && (
+                            /* Mushaf page */
+                            <div className="rounded-xl border border-gray-200 overflow-hidden bg-white min-w-0">
+                                {isLoadingSegments && currentPageSegments.length === 0 ? (
+                                    <div className="flex justify-center py-12">
+                                        <div className="spinner" />
+                                    </div>
+                                ) : (
+                                    <MushafPage
+                                        pageLines={pageLines}
+                                        currentPage={currentPage}
+                                        wordsDb={wordsDb}
+                                        surahData={surahData}
+                                        selectedAyahs={selectedAyahs}
+                                        onWordClick={handleWordClick}
+                                        isFontLoading={isFontLoading}
+                                    />
+                                )}
+                            </div>
+                        )}
 
                         {/* Segments list for current page */}
                         <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 min-w-0">

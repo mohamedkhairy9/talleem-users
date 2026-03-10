@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { authService } from '../services/auth.service';
 import { useAuthStore } from '@/stores';
@@ -70,15 +70,18 @@ export const useLoginMutation = () => {
  * Logout mutation hook
  */
 export const useLogoutMutation = () => {
+    const queryClient = useQueryClient();
     const logout = useAuthStore(state => state.logout);
 
     return useMutation({
         mutationFn: () => authService.logout(),
         onSuccess: () => {
+            queryClient.clear();
             logout();
         },
         onError: () => {
             // Even if API call fails, logout locally
+            queryClient.clear();
             logout();
         }
     });
