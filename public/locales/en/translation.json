@@ -428,6 +428,11 @@
         "attendanceType": "Attendance Type"
     },
     "grade": {
+        "selectEndVerse": "Select actual end verse",
+        "selectedVerse": "Selected",
+        "confirmOrPickAnother": "Click Confirm to use this verse, or click another verse.",
+        "clickVerseToSelect": "Click any verse on the page to set it as the actual end verse.",
+        "confirmVerse": "Confirm",
         "submitGrade": "Submit Grade",
         "student": "Student",
         "activity": "Activity",
@@ -496,9 +501,12 @@
         "goBack": "Go Back"
     },
     "quran": {
+        "selectSegmentAndViewMushaf": "Select segment & view Mushaf",
+        "openMushafViewer": "Open Mushaf viewer",
         "selectSegment": "Select segment",
         "startSegment": "Start",
         "endSegment": "End",
+        "hintStartEnd": "Click a segment (on the page or in the list), then click \"Set as Start\" or \"Set as End\".",
         "previousPage": "Previous Page",
         "nextPage": "Next Page",
         "page": "Page",
@@ -538,6 +546,7 @@
         "juzShort": "Juz {{number}}"
     },
     "plan": {
+        "segmentRange": "Segment range",
         "plan": "Plan",
         "plans": "Plans",
         "fromVerseToVerse": "From {{from}} to {{to}}",

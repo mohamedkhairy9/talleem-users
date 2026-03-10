@@ -428,6 +428,11 @@
         "attendanceType": "نوع الحضور"
     },
     "grade": {
+        "selectEndVerse": "اختر آية نهاية التسميع الفعلية",
+        "selectedVerse": "المحدد",
+        "confirmOrPickAnother": "انقر تأكيد لاستخدام هذه الآية، أو انقر آية أخرى.",
+        "clickVerseToSelect": "انقر أي آية في الصفحة لتعيينها كنهاية التسميع الفعلية.",
+        "confirmVerse": "تأكيد",
         "submitGrade": "تسجيل الدرجة",
         "student": "الطالب",
         "activity": "النشاط",
@@ -496,9 +501,12 @@
         "goBack": "رجوع"
     },
     "quran": {
+        "selectSegmentAndViewMushaf": "اختر المقطع وعرض المصحف",
+        "openMushafViewer": "فتح عرض المصحف",
         "selectSegment": "اختر المقطع",
         "startSegment": "بداية",
         "endSegment": "نهاية",
+        "hintStartEnd": "انقر على مقطع (في الصفحة أو القائمة)، ثم انقر «تعيين كبداية» أو «تعيين كنهاية».",
         "previousPage": "الصفحة السابقة",
         "nextPage": "الصفحة التالية",
         "page": "صفحة",
@@ -538,6 +546,7 @@
         "juzShort": "جزء {{number}}"
     },
     "plan": {
+        "segmentRange": "نطاق المقاطع",
         "plan": "الخطة",
         "plans": "الخطط",
         "fromVerseToVerse": "من {{from}} إلى {{to}}",

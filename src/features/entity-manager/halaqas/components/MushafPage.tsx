@@ -79,31 +79,29 @@ const MushafPage: React.FC<MushafPageProps> = ({
     };
 
     /**
-     * Get surah number from the first verse on the page
-     * This is more accurate than relying on surah_number in the surah_name line
+     * Get surah number for the surah that starts at a surah_name line by finding the first ayah line after it.
+     * Used when a page has multiple surahs so each header shows the correct name.
      */
-    const getSurahNumberFromPage = (): number | null => {
-        if (!wordsDb || !pageLines || pageLines.length === 0) return null;
-        
-        // Find the first ayah line on the page
-        const firstAyahLine = pageLines.find(line => line.line_type === 'ayah' && line.first_word_id && line.last_word_id);
-        
-        if (!firstAyahLine || !firstAyahLine.first_word_id) return null;
-        
-        try {
-            // Get the first word from the first ayah line
-            const query = `SELECT location FROM words WHERE id = ${firstAyahLine.first_word_id} LIMIT 1`;
-            const result = wordsDb.exec(query);
-            
-            if (result.length > 0 && result[0].values.length > 0) {
-                const location = result[0].values[0][0] as string;
-                const [surah] = location.split(':').map(Number);
-                return surah;
+    const getSurahNumberForSurahNameAt = (lineIndex: number): number | null => {
+        if (!wordsDb || !pageLines || lineIndex < 0 || lineIndex >= pageLines.length) return null;
+        // Find the next ayah line after this index (surah_name is followed by basmallah then ayah)
+        for (let i = lineIndex + 1; i < pageLines.length; i++) {
+            const line = pageLines[i];
+            if (line.line_type === 'ayah' && line.first_word_id) {
+                try {
+                    const query = `SELECT location FROM words WHERE id = ${line.first_word_id} LIMIT 1`;
+                    const result = wordsDb.exec(query);
+                    if (result.length > 0 && result[0].values.length > 0) {
+                        const location = result[0].values[0][0] as string;
+                        const [surah] = location.split(':').map(Number);
+                        return surah;
+                    }
+                } catch (error) {
+                    console.error('Error getting surah for line:', error);
+                }
+                return null;
             }
-        } catch (error) {
-            console.error('Error getting surah number from page:', error);
         }
-        
         return null;
     };
 
@@ -118,12 +116,14 @@ const MushafPage: React.FC<MushafPageProps> = ({
 
     /**
      * Render line
+     * @param lineIndex - index in pageLines, used to derive surah for surah_name from the next ayah
      */
-    const renderLine = (line: Line, pageSurahNumber?: number | null) => {
+    const renderLine = (line: Line, lineIndex: number, pageSurahNumber?: number | null) => {
         switch (line.line_type) {
-            case 'surah_name':
-                // Use surah number from actual verses on the page (more accurate) or fallback to line.surah_number
-                const surahNumber = pageSurahNumber || line.surah_number;
+            case 'surah_name': {
+                // Derive surah from the first verse that follows this header (handles pages with multiple surahs)
+                const derivedSurah = getSurahNumberForSurahNameAt(lineIndex);
+                const surahNumber = derivedSurah ?? line.surah_number ?? pageSurahNumber ?? undefined;
                 return (
                     <div 
                         key={`${line.page_number}-${line.line_number}`} 
@@ -132,6 +132,7 @@ const MushafPage: React.FC<MushafPageProps> = ({
                         {getSurahName(surahNumber)}
                     </div>
                 );
+            }
 
             case 'basmallah':
                 return (
@@ -214,11 +215,21 @@ const MushafPage: React.FC<MushafPageProps> = ({
     // Determine if this is page 1 or 2 for larger sizing
     const isSpecialPage = currentPage === 1 || currentPage === 2;
     
-    // Get the actual surah number from the first verse on the page (more accurate than database surah_number)
-    const actualSurahNumber = useMemo(() => {
-        return getSurahNumberFromPage();
+    // Fallback: first surah on page (for surah_name when derivation fails)
+    const firstSurahOnPage = useMemo(() => {
+        if (!wordsDb || !pageLines?.length) return null;
+        const firstAyah = pageLines.find(l => l.line_type === 'ayah' && l.first_word_id);
+        if (!firstAyah?.first_word_id) return null;
+        try {
+            const result = wordsDb.exec(`SELECT location FROM words WHERE id = ${firstAyah.first_word_id} LIMIT 1`);
+            if (result.length > 0 && result[0].values.length > 0) {
+                const location = result[0].values[0][0] as string;
+                return Number(location.split(':')[0]) || null;
+            }
+        } catch (_) {}
+        return null;
     }, [pageLines, wordsDb]);
-    
+
     return (
         <div className="mushaf-page">
             <div className={`mushaf-border ${isSpecialPage ? 'mushaf-border-large' : ''}`}>
@@ -231,7 +242,7 @@ const MushafPage: React.FC<MushafPageProps> = ({
                     }}
                 >
                     {pageLines.length > 0 ? (
-                        pageLines.map(line => renderLine(line, actualSurahNumber))
+                        pageLines.map((line, index) => renderLine(line, index, firstSurahOnPage))
                     ) : (
                         <div className="no-content">
                             لا يوجد محتوى
