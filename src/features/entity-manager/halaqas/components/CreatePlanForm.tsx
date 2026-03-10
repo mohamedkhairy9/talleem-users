@@ -12,7 +12,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
     HALAQA_ACTIVITIES,
     PLAN_TYPES,
-    PLAN_UNITS,
     PLAN_DIRECTIONS,
     type HalaqaActivity
 } from '../config';
@@ -21,7 +20,7 @@ import type { QuranSegment } from '../services/quran-segments.service';
 import MushafPageModal from './MushafPageModal';
 import InlineMushafSegmentPicker from './InlineMushafSegmentPicker';
 import PlanPreviewCard from './PlanPreviewCard';
-import { loadSurahData, getJuzFirstVerseKey, getSurahFirstVerseKey, type SurahDataMap } from '@/utils/helpers/surahHelper';
+import { loadSurahData, type SurahDataMap } from '@/utils/helpers/surahHelper';
 
 interface CreatePlanFormProps {
     halaqaId: number | string;
@@ -128,24 +127,6 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
         return currentLang === 'ar' ? surah.name_arabic : (surah.name_simple || surah.name);
     }, [surahData, currentLang]);
 
-    // Create surah options for dropdown
-    const surahOptions = React.useMemo(() => {
-        if (!surahData) return [];
-        
-        return Object.keys(surahData)
-            .sort((a, b) => Number(a) - Number(b))
-            .map((key) => {
-                const surah = surahData[key];
-                const displayName = currentLang === 'ar' 
-                    ? surah.name_arabic 
-                    : (surah.name_simple || surah.name);
-                return {
-                    value: surah.id,
-                    label: `${surah.id}. ${displayName}`
-                };
-            });
-    }, [surahData, currentLang]);
-
     // Clear selected segments when page number changes
     useEffect(() => {
         if (currentUnit === 'segments') {
@@ -243,23 +224,14 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
         label: t(type.labelKey, type.value)
     }));
 
-    const unitOptions = PLAN_UNITS.map(unit => ({
-        value: unit.value,
-        // Display "Juz" for parts unit, otherwise use translation
-        label: unit.value === 'parts' ? t('plan.unit.juz', 'Juz') : t(unit.labelKey, unit.value)
-    }));
-
     const directionOptions = PLAN_DIRECTIONS.map(direction => ({
         value: direction.value,
         label: t(direction.labelKey, direction.value)
     }));
 
-    /** Build start_verse_key from form data based on unit (local: segments = selected, parts = juz first verse, surahs = surah:1) */
+    /** Build start_verse_key from segment selection (unit is fixed to segments). */
     const getStartVerseKey = (data: CreatePlanFormData): string | null => {
-        if (data.unit === 'segments' && data.start_segment_verse_key) return data.start_segment_verse_key;
-        if (data.unit === 'parts' && data.start_juz_number) return getJuzFirstVerseKey(data.start_juz_number);
-        if (data.unit === 'surahs' && data.start_surah_id) return getSurahFirstVerseKey(data.start_surah_id);
-        return null;
+        return data.start_segment_verse_key ?? null;
     };
 
     const buildPayload = (data: CreatePlanFormData, saveOrNot: 0 | 1): CreatePlanPayload | null => {
@@ -269,14 +241,12 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
             activity: data.activity,
             student_ids: data.student_ids,
             plan_type: data.plan_type,
-            unit: data.unit,
+            unit: 'segments',
             direction: data.direction,
             start_verse_key: startVerseKey,
             save_or_not: saveOrNot,
             ...(data.plan_type === 'daily_amount' && data.daily_amount ? { daily_amount: data.daily_amount } : {}),
-            ...(data.unit === 'segments' && data.plan_type === 'start_end' && data.end_segment_verse_key ? { end_verse_key: data.end_segment_verse_key } : {}),
-            ...(data.unit === 'parts' && data.plan_type === 'start_end' && data.end_juz_number ? { end_juz_number: data.end_juz_number } : {}),
-            ...(data.unit === 'surahs' && data.plan_type === 'start_end' && data.end_surah_id ? { end_surah_id: data.end_surah_id } : {})
+            ...(data.plan_type === 'start_end' && data.end_segment_verse_key ? { end_verse_key: data.end_segment_verse_key } : {})
         };
         return payload;
     };
@@ -380,16 +350,8 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 />
             </div>
 
-            {/* Row 2: Unit, Direction, Daily amount (same row on md: 3 cols when daily_amount visible, else 2) */}
-            <div className={`grid gap-4 ${planType === 'daily_amount' ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
-                <FormSelect
-                    name="unit"
-                    control={control}
-                    label={t('plan.unit', 'Unit')}
-                    required
-                    options={unitOptions}
-                    error={errors.unit?.message}
-                />
+            {/* Row 2: Direction, Daily amount (unit fixed to segments) */}
+            <div className={`grid gap-4 ${planType === 'daily_amount' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
                 <FormSelect
                     name="direction"
                     control={control}
@@ -423,76 +385,20 @@ const CreatePlanForm: React.FC<CreatePlanFormProps> = ({ halaqaId, students, act
                 placeholder={t('plan.selectStudents', 'Select one or more students')}
             />
 
-            {/* Conditional Start Fields based on Unit */}
-            {currentUnit === 'segments' && (
-                <div className="space-y-4">
-                    {/* Inline Mushaf viewer: navigate pages, fetch segments per page, click to select */}
-                    <InlineMushafSegmentPicker
-                        selectedStartSegment={selectedStartSegment}
-                        selectedEndSegment={selectedEndSegment}
-                        onSelectStartSegment={setSelectedStartSegment}
-                        onSelectEndSegment={setSelectedEndSegment}
-                        planType={planType}
-                        getSurahName={getSurahName}
-                    />
+            {/* Segment selection (unit is fixed to segments) */}
+            <div className="space-y-4">
+                <InlineMushafSegmentPicker
+                    selectedStartSegment={selectedStartSegment}
+                    selectedEndSegment={selectedEndSegment}
+                    onSelectStartSegment={setSelectedStartSegment}
+                    onSelectEndSegment={setSelectedEndSegment}
+                    planType={planType}
+                    getSurahName={getSurahName}
+                />
 
-                    {/* Hidden inputs for segment verse keys */}
-                    <input
-                        type="hidden"
-                        {...control.register('start_segment_verse_key')}
-                    />
-                    <input
-                        type="hidden"
-                        {...control.register('end_segment_verse_key')}
-                    />
-                </div>
-            )}
-            {currentUnit === 'parts' && (
-                <>
-                    <FormInput
-                        name="start_juz_number"
-                        control={control}
-                        label={t('plan.startJuzNumber', 'Start Juz Number')}
-                        required
-                        type="number"
-                        error={errors.start_juz_number?.message}
-                    />
-                    {planType === 'start_end' && (
-                        <FormInput
-                            name="end_juz_number"
-                            control={control}
-                            label={t('plan.endJuzNumber', 'End Juz Number')}
-                            required
-                            type="number"
-                            error={errors.end_juz_number?.message}
-                        />
-                    )}
-                </>
-            )}
-            {currentUnit === 'surahs' && (
-                <>
-                    <FormSelect
-                        name="start_surah_id"
-                        control={control}
-                        label={t('plan.startSurahId', 'Start Surah')}
-                        required
-                        options={surahOptions}
-                        error={errors.start_surah_id?.message}
-                        placeholder={t('plan.selectSurah', 'Select a surah')}
-                    />
-                    {planType === 'start_end' && (
-                        <FormSelect
-                            name="end_surah_id"
-                            control={control}
-                            label={t('plan.endSurahId', 'End Surah')}
-                            required
-                            options={surahOptions}
-                            error={errors.end_surah_id?.message}
-                            placeholder={t('plan.selectSurah', 'Select a surah')}
-                        />
-                    )}
-                </>
-            )}
+                <input type="hidden" {...control.register('start_segment_verse_key')} />
+                <input type="hidden" {...control.register('end_segment_verse_key')} />
+            </div>
 
             {/* Plan Mushaf Viewer Modal — available for all units (segments, juz, surah) after preview */}
             {showPlanMushafViewer && planStartVerseKey && planEndVerseKey && (

@@ -19,9 +19,12 @@ import {
     HALAQA_WEEKLY_HOLIDAYS,
     HALAQA_EVALUATION_SYSTEM_TYPES
 } from '../config';
+import type { HalaqaActivity } from '../config';
 import { createHalaqaSchema, CreateHalaqaFormData } from '../schemas/halaqa.schema';
 import { AlertTriangleIcon, ClipboardCheckIcon, CircleIcon } from '@/globals/icons';
 import { normalizeDate, normalizeSessionTime } from '@/utils';
+import { useHalaqa } from '../hooks/useHalaqas';
+import CreatePlanForm from './CreatePlanForm';
 
 /**
  * Create Halaqa Form Component
@@ -77,6 +80,14 @@ const CreateHalaqaForm: React.FC = () => {
 
     // State for availability check result
     const [availabilityResult, setAvailabilityResult] = useState<CheckAvailabilityResponse | null>(null);
+
+    // Multi-step: after halaqa creation success, show step 2 (create plan)
+    const [step, setStep] = useState<1 | 2>(1);
+    const [createdHalaqaId, setCreatedHalaqaId] = useState<number | null>(null);
+    const [createdActivities, setCreatedActivities] = useState<HalaqaActivity[]>([]);
+    // Step 2: multiple plan forms, each with its own submission
+    const [planFormKeys, setPlanFormKeys] = useState<number[]>([0]);
+    const [submittedPlanIndices, setSubmittedPlanIndices] = useState<Set<number>>(new Set());
 
     // Clear platform_id when teaching method changes to in_person
     useEffect(() => {
@@ -244,16 +255,108 @@ const CreateHalaqaForm: React.FC = () => {
             ...(data.teaching_method !== 'in_person' && platform_id ? { platform_id } : {})
         };
         createHalaqaMutation.mutate(payload, {
-            onSuccess: () => {
+            onSuccess: (res: any) => {
                 toast.success(t('halaqa.createSuccess', 'Halaqa created successfully'));
                 queryClient.invalidateQueries({ queryKey: ['halaqas'] });
-                navigate(`/${lang || 'ar'}/halaqas`);
+                const resData = res?.data?.data ?? res?.data ?? res;
+                const id = resData?.id != null ? Number(resData.id) : null;
+                if (id != null) {
+                    setCreatedHalaqaId(id);
+                    setCreatedActivities(Array.isArray(data.activities) ? data.activities : []);
+                    setStep(2);
+                } else {
+                    navigate(`/${lang || 'ar'}/halaqas`);
+                }
             },
             onError: (error: any) => {
                 toast.error(error?.message || t('halaqa.createError', 'Error creating halaqa. Please try again.'));
             }
         });
     };
+
+    // Step 2: create plan for the new halaqa (fetch halaqa for students list)
+    const { data: createdHalaqaData } = useHalaqa(createdHalaqaId ?? '');
+    const createdHalaqa = (() => {
+        const raw = createdHalaqaData?.data;
+        return raw && typeof raw === 'object' && 'data' in raw ? (raw as { data: any }).data : raw;
+    })();
+    const createdHalaqaStudents = createdHalaqa?.students ?? [];
+
+    const handleGoToHalaqa = () => {
+        if (createdHalaqaId != null) {
+            navigate(`/${lang || 'ar'}/halaqas/${createdHalaqaId}`);
+        } else {
+            navigate(`/${lang || 'ar'}/halaqas`);
+        }
+    };
+
+    const handlePlanFormSuccess = (formIndex: number) => {
+        queryClient.invalidateQueries({ queryKey: ['halaqa', createdHalaqaId] });
+        toast.success(t('plan.createSuccess', 'Plan created successfully'));
+        setSubmittedPlanIndices((prev) => new Set(prev).add(formIndex));
+    };
+
+    const handleAddAnotherPlan = () => {
+        setPlanFormKeys((prev) => [...prev, prev.length]);
+    };
+
+    // Step 2: Create plans (optional), each with its own form and submission
+    if (step === 2 && createdHalaqaId != null) {
+        return (
+            <div className="space-y-6">
+                <div className="rounded-lg border-2 border-emerald-200 bg-emerald-50/50 px-4 py-3">
+                    <p className="text-sm font-medium text-emerald-800">
+                        {t('halaqa.createSuccess', 'Halaqa created successfully')}. {t('plan.createPlanOptional', 'You can create a plan below or go to the halaqa.')}
+                    </p>
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-white p-6 space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                        {t('plan.step2CreatePlan', 'Step 2: Create a plan (optional)')}
+                    </h3>
+                    {planFormKeys.map((formKey, index) => (
+                        <div key={formKey} className="border border-gray-200 rounded-lg p-4 bg-gray-50/50">
+                            {submittedPlanIndices.has(index) ? (
+                                <div className="flex items-center gap-2 text-emerald-700 font-medium py-2">
+                                    <span>{t('plan.planCreated', 'Plan created')} ✓</span>
+                                </div>
+                            ) : (
+                                <>
+                                    <h4 className="text-sm font-medium text-gray-700 mb-3">
+                                        {planFormKeys.length > 1
+                                            ? t('plan.planNumber', 'Plan {{number}}', { number: index + 1 })
+                                            : t('plan.createNewPlan', 'Create New Plan')}
+                                    </h4>
+                                    <CreatePlanForm
+                                        halaqaId={createdHalaqaId}
+                                        students={createdHalaqaStudents}
+                                        activities={createdActivities.length > 0 ? createdActivities : undefined}
+                                        onSuccess={() => handlePlanFormSuccess(index)}
+                                        onCancel={handleGoToHalaqa}
+                                    />
+                                </>
+                            )}
+                        </div>
+                    ))}
+                    <div className="flex flex-wrap items-center gap-3 pt-2">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={handleAddAnotherPlan}
+                        >
+                            {t('plan.addAnotherPlan', 'Add another plan')}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleGoToHalaqa}
+                        >
+                            {t('plan.goToHalaqa', 'Go to Halaqa')}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
