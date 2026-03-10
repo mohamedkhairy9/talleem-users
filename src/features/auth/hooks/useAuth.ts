@@ -34,13 +34,14 @@ const normalizeRoles = (roles: string[]): string[] => {
  * Login mutation hook
  */
 export const useLoginMutation = () => {
+    const setLoginData = useAuthStore(state => state.setLoginData);
     const setUser = useAuthStore(state => state.setUser);
     const setLoading = useAuthStore(state => state.setLoading);
 
     return useMutation({
         mutationFn: (credentials: LoginCredentials) => authService.login(credentials),
         onSuccess: (response: any) => {
-            // API: { message, data: { front_access_token, token_type, user } }; axios puts body in response.data
+            // API: { message, data: { front_access_token, token_type, user, teacher? } }; axios puts body in response.data
             const body = response?.data ?? response;
             const inner = body?.data ?? body;
             const token = inner.front_access_token ?? inner.token ?? body.front_access_token ?? body.token;
@@ -54,7 +55,13 @@ export const useLoginMutation = () => {
             }
             if (!Array.isArray(user.permissions)) user.permissions = user.permissions ?? [];
 
-            setUser(user, token);
+            const teacher = inner.teacher ?? body.teacher ?? null;
+            // Store full login response so profile page can render without refetch
+            if (token && user) {
+                setLoginData(user, teacher, token);
+            } else {
+                setUser(user, token);
+            }
             setLoading(false);
         },
         onError: () => {
@@ -124,4 +131,18 @@ export const useUserQuery = () => {
     }, [query.isSuccess, query.data, setUser, token]);
 
     return query;
+};
+
+export interface ChangePasswordPayload {
+    new_password: string;
+    new_password_confirmation: string;
+}
+
+/**
+ * Change password mutation hook
+ */
+export const useChangePasswordMutation = () => {
+    return useMutation({
+        mutationFn: (payload: ChangePasswordPayload) => authService.changePassword(payload),
+    });
 };

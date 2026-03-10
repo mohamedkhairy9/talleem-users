@@ -62,5 +62,12 @@ export const authService = {
      */
     refreshToken: (): Promise<{ token: string }> => {
         return axiosInstance.post(API_ENDPOINTS.AUTH.REFRESH);
+    },
+
+    /**
+     * Change password (customer/teacher)
+     */
+    changePassword: (payload: { new_password: string; new_password_confirmation: string }): Promise<{ message?: string }> => {
+        return axiosInstance.post(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, payload);
     }
 };

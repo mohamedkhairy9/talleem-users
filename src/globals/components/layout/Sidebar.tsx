@@ -20,6 +20,7 @@ import {
     SettingsIcon,
     TeacherIcon,
     UsersIcon,
+    UserIcon,
     CircleIcon,
     PlusIcon,
     ChevronDownIcon,
@@ -112,6 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, direct
         SettingsIcon,
         TeacherIcon,
         UsersIcon,
+        UserIcon,
         CircleIcon,
         PlusIcon
     };

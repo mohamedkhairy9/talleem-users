@@ -238,7 +238,8 @@
         "calendar": "التقويم",
         "evaluations": "التقييمات",
         "receivedEvaluations": "المستلمة",
-        "givenEvaluations": "المقدمة"
+        "givenEvaluations": "المقدمة",
+        "profile": "ملفي"
     },
     "auth": {
         "email": {
@@ -276,6 +277,34 @@
         "required": "هذا الحقل مطلوب",
         "email": "عنوان بريد إلكتروني غير صحيح",
         "minLength": "الحد الأدنى للطول هو {{min}} أحرف"
+    },
+    "profile": {
+        "title": "ملفي",
+        "subtitle": "عرض حسابك وتغيير كلمة المرور",
+        "loadError": "فشل تحميل الملف الشخصي.",
+        "mainData": "البيانات الرئيسية",
+        "name": "الاسم",
+        "phone": "الهاتف",
+        "entity": "الجهة",
+        "branch": "الفرع",
+        "mainProgram": "البرنامج الرئيسي",
+        "nationality": "الجنسية",
+        "academicQualification": "المؤهل العلمي",
+        "major": "التخصص",
+        "yearsOfExperience": "سنوات الخبرة",
+        "memorizationAmount": "مقدار الحفظ",
+        "nationalId": "رقم الهوية",
+        "address": "العنوان",
+        "city": "المدينة",
+        "licenseNumber": "رقم الترخيص",
+        "changePassword": {
+            "title": "تغيير كلمة المرور",
+            "newPassword": "كلمة المرور الجديدة",
+            "confirmPassword": "تأكيد كلمة المرور الجديدة",
+            "submit": "تغيير كلمة المرور",
+            "error": "فشل تغيير كلمة المرور.",
+            "mismatch": "كلمتا المرور غير متطابقتين"
+        }
     },
     "halaqa": {
         "createTitle": "إنشاء حلقة",
@@ -502,7 +531,7 @@
     },
     "quran": {
         "selectSegmentAndViewMushaf": "اختر المقطع وعرض المصحف",
-        "openMushafViewer": "فتح عرض المصحف",
+        "openMushafViewer": "فتح المصحف التفاعلي",
         "selectSegment": "اختر المقطع",
         "startSegment": "بداية",
         "endSegment": "نهاية",

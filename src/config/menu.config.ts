@@ -129,6 +129,12 @@ export const TEACHER_MENU_ITEMS: MenuItem[] = [
                 icon: 'StarIcon'
             }
         ]
+    },
+    {
+        path: ROUTE_PATHS.TEACHER_PROFILE,
+        labelKey: 'menu.profile',
+        icon: 'UserIcon',
+        roles: ['teacher']
     }
 ];
 

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { cookieService } from '@/utils/cookies';
+import { customerStorage } from '@/utils/customerStorage';
 import { AuthState, User } from '@/globals/types';
 import type { CompactEntity } from '@/utils/cookies';
 
@@ -18,28 +19,39 @@ function compactEntityToEntity(compact: CompactEntity | undefined): User['entity
 }
 
 export const useAuthStore = create<AuthState>((set, get) => {
-    // Initialize from cookies on store creation
-    const initializeFromCookies = () => {
+    // Initialize from cookies + localStorage (full user/teacher from login)
+    const initializeFromStorage = () => {
         const token = cookieService.getToken();
+        if (!token) return { user: null, teacher: null, isAuthenticated: false };
+
+        const stored = customerStorage.get();
+        if (stored?.user) {
+            return {
+                user: stored.user as User,
+                teacher: stored.teacher ?? null,
+                isAuthenticated: true
+            };
+        }
+
         const userData = cookieService.getUserData();
-        
-        if (token && userData) {
+        if (userData) {
             const user: User = {
                 id: userData.id || 0,
                 roles: userData.roles || [],
                 permissions: userData.permissions || [],
                 entity: compactEntityToEntity(userData.entity)
             };
-            return { user, isAuthenticated: true };
+            return { user, teacher: null, isAuthenticated: true };
         }
-        return { user: null, isAuthenticated: false };
+        return { user: null, teacher: null, isAuthenticated: false };
     };
 
-    const initialState = initializeFromCookies();
+    const initialState = initializeFromStorage();
 
     return {
         // State
         user: initialState.user,
+        teacher: initialState.teacher ?? null,
         isAuthenticated: initialState.isAuthenticated,
         isLoading: false,
 
@@ -48,17 +60,28 @@ export const useAuthStore = create<AuthState>((set, get) => {
             if (token) {
                 cookieService.setToken(token);
             }
-            
-            // Store user data in cookie (compact: id, roles, permissions, entity ids)
             if (user) {
                 cookieService.setUserData(user);
             } else {
                 cookieService.setUserData(null);
             }
-            
             set({
                 user,
                 isAuthenticated: !!token && !!user
+            });
+        },
+
+        setLoginData: (user: User, teacher: AuthState['teacher'], token: string) => {
+            cookieService.setToken(token);
+            cookieService.setUserData(user);
+            customerStorage.set({
+                user: user as unknown as Record<string, unknown>,
+                teacher: teacher as Record<string, unknown> | null
+            });
+            set({
+                user,
+                teacher: teacher ?? null,
+                isAuthenticated: true
             });
         },
 
@@ -69,8 +92,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
     logout: () => {
         cookieService.removeToken();
         cookieService.removeUserData();
+        customerStorage.remove();
         set({
             user: null,
+            teacher: null,
             isAuthenticated: false
         });
     },
@@ -111,29 +136,34 @@ export const useAuthStore = create<AuthState>((set, get) => {
         return permissions.some(permission => user.permissions?.includes(permission));
     },
 
-    // Initialize auth from token and user data in cookies
+    // Initialize auth from token and stored data (localStorage then cookie)
     initializeAuth: () => {
         const { user: currentUser, isAuthenticated } = get();
-        
-        // If already initialized, don't re-initialize
         if (currentUser && isAuthenticated) {
             return cookieService.getToken() || null;
         }
-        
         const token = cookieService.getToken();
+        if (!token) return null;
+        const stored = customerStorage.get();
+        if (stored?.user) {
+            set({
+                user: stored.user as User,
+                teacher: stored.teacher ?? null,
+                isAuthenticated: true
+            });
+            return token;
+        }
         const userData = cookieService.getUserData();
-        
-        if (token && userData) {
+        if (userData) {
             const user: User = {
                 id: userData.id || 0,
                 roles: userData.roles || [],
                 permissions: userData.permissions || [],
                 entity: compactEntityToEntity(userData.entity)
             };
-            set({ user, isAuthenticated: true });
+            set({ user, teacher: null, isAuthenticated: true });
             return token;
         }
-        
         return null;
     }
     };

@@ -50,11 +50,17 @@ export interface User {
     [key: string]: any;
 }
 
+/** Teacher payload from login response (stored for profile without refetch) */
+export type TeacherPayload = Record<string, unknown> | null;
+
 export interface AuthState {
     user: User | null;
+    teacher: TeacherPayload;
     isAuthenticated: boolean;
     isLoading: boolean;
     setUser: (user: User | null, token?: string) => void;
+    /** Store full login response (user + teacher) and persist for profile page */
+    setLoginData: (user: User, teacher: TeacherPayload, token: string) => void;
     setLoading: (isLoading: boolean) => void;
     logout: () => void;
     updateUser: (updatedFields: Partial<User>) => void;

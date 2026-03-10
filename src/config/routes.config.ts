@@ -30,6 +30,7 @@ export const ROUTE_PATHS = {
     TEACHER_LICENSES: 'teacher/licenses',
     TEACHER_EVALUATIONS_RECEIVED: 'teacher/evaluations/received',
     TEACHER_EVALUATIONS_GIVEN: 'teacher/evaluations/given',
+    TEACHER_PROFILE: 'teacher/profile',
     SETTINGS: 'settings'
 } as const;
 

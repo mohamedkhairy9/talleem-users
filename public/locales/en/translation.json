@@ -238,7 +238,8 @@
         "calendar": "Calendar",
         "evaluations": "Evaluations",
         "receivedEvaluations": "Received",
-        "givenEvaluations": "Given"
+        "givenEvaluations": "Given",
+        "profile": "My Profile"
     },
     "auth": {
         "email": {
@@ -276,6 +277,34 @@
         "required": "This field is required",
         "email": "Invalid email address",
         "minLength": "Minimum length is {{min}} characters"
+    },
+    "profile": {
+        "title": "My Profile",
+        "subtitle": "View your account and change password",
+        "loadError": "Failed to load profile.",
+        "mainData": "Main data",
+        "name": "Name",
+        "phone": "Phone",
+        "entity": "Entity",
+        "branch": "Branch",
+        "mainProgram": "Main program",
+        "nationality": "Nationality",
+        "academicQualification": "Academic qualification",
+        "major": "Major",
+        "yearsOfExperience": "Years of experience",
+        "memorizationAmount": "Memorization amount",
+        "nationalId": "National ID",
+        "address": "Address",
+        "city": "City",
+        "licenseNumber": "License number",
+        "changePassword": {
+            "title": "Change password",
+            "newPassword": "New password",
+            "confirmPassword": "Confirm new password",
+            "submit": "Change password",
+            "error": "Failed to change password.",
+            "mismatch": "Passwords do not match"
+        }
     },
     "halaqa": {
         "createTitle": "Create Halaqa",

@@ -8,4 +8,5 @@ export { default as TeacherCertificatesPage } from './TeacherCertificatesPage';
 export { default as TeacherLicensesPage } from './TeacherLicensesPage';
 export { default as TeacherEvaluationsReceivedPage } from './TeacherEvaluationsReceivedPage';
 export { default as TeacherEvaluationsGivenPage } from './TeacherEvaluationsGivenPage';
+export { default as TeacherProfilePage } from './TeacherProfilePage';
 

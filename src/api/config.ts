@@ -35,7 +35,7 @@ export const API_ENDPOINTS = {
         LOGOUT: '/logout',
         USER: '/customer',
         REFRESH: '/customer-refresh-token',
-        CHANGE_PASSWORD: '/customer-change-password',
+        CHANGE_PASSWORD: '/customer/change-password',
     },
     JOIN_REQUESTS: {
         LIST: '/join-requests',
