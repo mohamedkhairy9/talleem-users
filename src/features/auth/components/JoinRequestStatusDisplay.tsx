@@ -9,18 +9,21 @@ import { toast } from 'react-toastify';
 export interface FormInputDefinition {
     key: string;
     type: string;
-    label: string;
+    label: string | BilingualText;
     required?: boolean;
 }
 
+/** Helper type for API fields that can be a plain string or bilingual { en, ar } */
+export type BilingualText = string | { en?: string; ar?: string };
+
 interface JoinRequestStatusData {
     id: number;
-    request_type: string;
+    request_type: BilingualText;
     status: number;
-    current_phase: string | { en: string; ar: string };
+    current_phase: BilingualText;
     current_step: {
         id: number;
-        name: string | { en: string; ar: string };
+        name: BilingualText;
         order: number;
         step_type: string;
         assigned_to_type: string;
@@ -29,7 +32,7 @@ interface JoinRequestStatusData {
     };
     submitted_logs: Array<{
         step_id: number;
-        step_name: string | { en: string; ar: string };
+        step_name: BilingualText;
         status: number;
         notes: string | null;
         form_data?: Record<string, unknown>;
@@ -83,9 +86,12 @@ const JoinRequestStatusDisplay: React.FC<JoinRequestStatusDisplayProps> = ({ dat
         defaultValues: uploadDefaultValues
     });
 
-    const getBilingualText = (obj: string | { en: string; ar: string }) => {
+    const getBilingualText = (obj: BilingualText | null | undefined): string => {
+        if (obj == null) return '';
         if (typeof obj === 'string') return obj;
-        return currentLang === 'ar' ? obj.ar : obj.en;
+        const lang = currentLang?.startsWith('ar') ? 'ar' : 'en';
+        const value = obj[lang] ?? obj.en ?? obj.ar ?? '';
+        return typeof value === 'string' ? value : '';
     };
 
     const onSubmitUploadStep = (values: Record<string, File | File[] | null>) => {
@@ -147,7 +153,7 @@ const JoinRequestStatusDisplay: React.FC<JoinRequestStatusDisplayProps> = ({ dat
                         <p className="text-sm font-medium text-gray-700 mb-1">
                             {t('status.request_type', 'Request Type')}
                         </p>
-                        <p className="text-gray-900">{data.request_type}</p>
+                        <p className="text-gray-900">{getBilingualText(data.request_type)}</p>
                     </div>
                     <div>
                         <p className="text-sm font-medium text-gray-700 mb-1">
@@ -206,7 +212,7 @@ const JoinRequestStatusDisplay: React.FC<JoinRequestStatusDisplayProps> = ({ dat
                                             key={input.key}
                                             name={input.key}
                                             control={control}
-                                            label={input.label}
+                                            label={getBilingualText(input.label)}
                                             required={input.required}
                                             error={errors[input.key]?.message as string}
                                         />
@@ -233,11 +239,11 @@ const JoinRequestStatusDisplay: React.FC<JoinRequestStatusDisplayProps> = ({ dat
                 </div>
             )}
 
-            {/* Submitted Logs */}
+            {/* Request History (submitted_logs) */}
             {data.submitted_logs && data.submitted_logs.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                        {t('status.submitted_logs', 'Submitted Logs')}
+                        {t('status.request_history', 'Request History')}
                     </h3>
                     <div className="space-y-4">
                         {data.submitted_logs.map((log, index) => (

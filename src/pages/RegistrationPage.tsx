@@ -19,9 +19,11 @@ const CHECK_STATUS_PARAM = 'checkStatus';
 
 const RegistrationPage: React.FC = () => {
     const { isAuthenticated } = useAuthStore();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { lang } = useParams<{ lang: string }>();
     const [searchParams] = useSearchParams();
+    const currentLang = lang || i18n.language || 'ar';
+    const direction = currentLang === 'ar' ? 'rtl' : 'ltr';
     const openCheckStatus = searchParams.get(CHECK_STATUS_PARAM) === '1' || searchParams.get(CHECK_STATUS_PARAM) === 'true';
     const [selectedRole, setSelectedRole] = useState<UserRoleType | null>(null);
     const [showStatusCheck, setShowStatusCheck] = useState(openCheckStatus);
@@ -67,7 +69,7 @@ const RegistrationPage: React.FC = () => {
     };
 
     return (
-        <div dir="ltr" className="min-h-screen bg-gradient-to-tr from-primary to-primary-900 relative overflow-hidden">
+        <div dir={direction} className="min-h-screen bg-gradient-to-tr from-primary to-primary-900 relative overflow-hidden">
             {/* Background Pattern */}
             <div
                 className="absolute inset-0 opacity-10"

@@ -65,12 +65,18 @@ const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack })
 
     const [lastCheckInput, setLastCheckInput] = useState('');
 
+    /** Unwrap API response: backend may return { data: { id, request_type, ... } } */
+    const unwrapStatusData = (response: any) => {
+        const body = response?.data ?? response;
+        return body?.data ?? body;
+    };
+
     const refetchStatus = () => {
         if (!lastCheckInput.trim()) return;
         const requestData = detectInputType(lastCheckInput.trim());
         statusMutation.mutate(requestData, {
             onSuccess: (response) => {
-                setStatusData(response.data || response);
+                setStatusData(unwrapStatusData(response));
             }
         });
     };
@@ -82,7 +88,7 @@ const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack })
 
         statusMutation.mutate(requestData, {
             onSuccess: (response) => {
-                setStatusData(response.data || response);
+                setStatusData(unwrapStatusData(response));
                 toast.success(t('auth.status_check_success', 'Status retrieved successfully'));
             },
             onError: (error: any) => {

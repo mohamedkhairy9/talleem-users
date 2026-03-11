@@ -14,9 +14,11 @@ import AuthLanguageSwitcher from '@/features/auth/components/AuthLanguageSwitche
  */
 const LoginPage: React.FC = () => {
     const { isAuthenticated } = useAuthStore();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { lang } = useParams<{ lang: string }>();
     const [isVisible, setIsVisible] = useState(false);
+    const currentLang = lang || i18n.language || 'ar';
+    const direction = currentLang === 'ar' ? 'rtl' : 'ltr';
 
     useEffect(() => {
         // Trigger animations after component mounts
@@ -33,7 +35,7 @@ const LoginPage: React.FC = () => {
     }
 
     return (
-        <div dir="ltr" className="min-h-screen bg-gradient-to-tr from-primary to-primary-900 relative overflow-hidden">
+        <div dir={direction} className="min-h-screen bg-gradient-to-tr from-primary to-primary-900 relative overflow-hidden">
             {/* Background Pattern */}
             <div
                 className="absolute inset-0 opacity-10"
