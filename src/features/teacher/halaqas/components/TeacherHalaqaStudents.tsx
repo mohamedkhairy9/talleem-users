@@ -153,6 +153,9 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                 actual_end_verse_key: '',
                 notes: ''
             });
+        },
+        onError: (error) => {
+            toast.error(getErrorMessage(error));
         }
     });
 
@@ -248,29 +251,30 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
         loadSurahData().then(setSurahData).catch(() => setSurahData(null));
     }, []);
 
+    const locale = currentLang === 'ar' ? 'ar' : 'en';
+    const formatAyahNum = useMemo(() => (n: number) => new Intl.NumberFormat(locale).format(n), [locale]);
+
+    /** Format a single verse key as "Surah X, Ayah: N" (or raw key if no surah data) */
+    const formatVerseKey = useMemo(() => {
+        return (verseKey: string) => {
+            if (!verseKey?.trim()) return '';
+            const info = getVerseKeyDisplay(verseKey, surahData, currentLang);
+            if (!info) return verseKey;
+            return t('quran.surahAyahLabel', '{{surah}}, {{ayahLabel}}: {{number}}', {
+                surah: info.surahName,
+                ayahLabel: t('quran.ayah', 'Ayah'),
+                number: formatAyahNum(info.ayahNumber)
+            });
+        };
+    }, [surahData, currentLang, t, formatAyahNum]);
+
     const formatVerseRange = useMemo(() => {
-        const locale = currentLang === 'ar' ? 'ar' : 'en';
-        const formatAyahNum = (n: number) => new Intl.NumberFormat(locale).format(n);
         return (fromKey: string, toKey: string) => {
-            const from = getVerseKeyDisplay(fromKey, surahData, currentLang);
-            const to = getVerseKeyDisplay(toKey, surahData, currentLang);
-            const fromStr = from
-                ? t('quran.surahAyahLabel', '{{surah}}, {{ayahLabel}}: {{number}}', {
-                    surah: from.surahName,
-                    ayahLabel: t('quran.ayah', 'Ayah'),
-                    number: formatAyahNum(from.ayahNumber)
-                })
-                : fromKey;
-            const toStr = to
-                ? t('quran.surahAyahLabel', '{{surah}}, {{ayahLabel}}: {{number}}', {
-                    surah: to.surahName,
-                    ayahLabel: t('quran.ayah', 'Ayah'),
-                    number: formatAyahNum(to.ayahNumber)
-                })
-                : toKey;
+            const fromStr = formatVerseKey(fromKey) || fromKey;
+            const toStr = formatVerseKey(toKey) || toKey;
             return t('plan.fromVerseToVerse', 'From {{from}} to {{to}}', { from: fromStr, to: toStr });
         };
-    }, [surahData, currentLang, t]);
+    }, [formatVerseKey, t]);
 
     /** Date used as "today" for plan daily schedule: session date from API or local today (YYYY-MM-DD) */
     const planCurrentDate = useMemo(() => {
@@ -385,7 +389,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                     <div className="flex items-center gap-1.5 flex-shrink-0">
                                         {/* Attendance Status */}
                                         {student.is_present !== null && (
-                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm ${
+                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
                                                 student.is_present
                                                     ? 'bg-green-50 text-green-700 border border-green-200'
                                                     : 'bg-red-50 text-red-700 border border-red-200'
@@ -927,10 +931,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                     {t('grade.expectedRange', 'Expected Verse Range')} ({planCurrentDate})
                                                 </p>
                                                 <p className="text-sm text-blue-800">
-                                                    {t('plan.verseRangeKeys', 'From {{from}} to {{to}}', {
-                                                        from: gradeModalDailyRange.from_verse_key,
-                                                        to: gradeModalDailyRange.to_verse_key
-                                                    })}
+                                                    {formatVerseRange(gradeModalDailyRange.from_verse_key, gradeModalDailyRange.to_verse_key)}
                                                 </p>
                                             </div>
                                         )}
@@ -961,7 +962,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                 </label>
                                                 {gradeForm.is_complete && gradeModalDailyRange && (
                                                     <p className="text-xs text-gray-500 mt-1">
-                                                        {t('grade.actualEndSetToSchedule', 'Actual end verse set to daily schedule end')}: {gradeModalDailyRange.to_verse_key}
+                                                        {t('grade.actualEndSetToSchedule', 'Actual end verse set to daily schedule end')}: {formatVerseKey(gradeModalDailyRange.to_verse_key)}
                                                     </p>
                                                 )}
                                             </div>
@@ -998,7 +999,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                                 <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center flex-wrap">
                                                     <div className="flex-1 min-w-0 flex items-center rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                                                         {gradeForm.actual_end_verse_key ? (
-                                                            <span className="font-medium text-gray-900">{gradeForm.actual_end_verse_key}</span>
+                                                            <span className="font-medium text-gray-900">{formatVerseKey(gradeForm.actual_end_verse_key)}</span>
                                                         ) : (
                                                             <span className="text-gray-400 italic">{t('grade.noVerseSelected', 'No verse selected')}</span>
                                                         )}

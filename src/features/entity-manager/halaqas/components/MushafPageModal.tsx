@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XIcon } from '@/globals/icons';
+import { XIcon, ChevronRightIcon } from '@/globals/icons';
 import MushafPage from './MushafPage';
 import { dbLoader } from '@/utils/helpers/databaseLoader';
 import { fontLoader } from '@/utils/helpers/fontLoader';
@@ -39,7 +39,8 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     onVerseKeyClick,
     embedded = false
 }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const isRtl = (i18n.language || 'ar').startsWith('ar');
     const [pageLines, setPageLines] = useState<any[]>([]);
     const [linesDb, setLinesDb] = useState<Database | null>(null);
     const [wordsDb, setWordsDb] = useState<Database | null>(null);
@@ -47,7 +48,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     const [isLoading, setIsLoading] = useState(true);
     const [isFontLoading, setIsFontLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    
+
     // Plan view mode state
     const [planPages, setPlanPages] = useState<number[]>([]);
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
@@ -56,7 +57,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     const [planSegmentVerseKeys, setPlanSegmentVerseKeys] = useState<Set<string>>(new Set());
     // Memoized segments per page (pageNumber -> segments) to avoid re-requesting when navigating
     const [segmentsByPageCache, setSegmentsByPageCache] = useState<Record<number, QuranSegment[]>>({});
-    
+
     // When in select-verse mode: local selection before confirm (show in hint, then confirm to apply)
     const [selectedVerseKeyInModal, setSelectedVerseKeyInModal] = useState<string | null>(null);
 
@@ -70,7 +71,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     const currentPage = isPlanView && planPages.length > 0
         ? planPages[currentPageIndex]
         : singlePage;
-    
+
     // Plan view: highlight only verses that belong to segments from the API (not all verses in range)
     const planSelectedAyahs = useMemo(() => planSegmentVerseKeys, [planSegmentVerseKeys]);
 
@@ -94,11 +95,11 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                 setIsLoading(true);
                 setError(null);
                 const { linesDb: lDb, wordsDb: wDb, surahData: sData } = await dbLoader.initialize();
-                
+
                 if (!lDb || !wDb || !sData) {
                     throw new Error('Failed to initialize all databases');
                 }
-                
+
                 setLinesDb(lDb);
                 setWordsDb(wDb);
                 setSurahData(sData);
@@ -209,10 +210,10 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
         const loadPageWithFont = async () => {
             try {
                 setIsFontLoading(true);
-                
+
                 // Load font for the page
                 fontLoader.loadPageFont(currentPage);
-                
+
                 // Wait for font to load
                 if (document.fonts) {
                     await document.fonts.load(`1em QuranicFont-${currentPage}`);
@@ -220,7 +221,7 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                 } else {
                     await new Promise(resolve => setTimeout(resolve, 300));
                 }
-                
+
                 // Load page lines
                 loadPage(currentPage);
                 setIsFontLoading(false);
@@ -358,67 +359,98 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                 </div>
             )}
 
-                    {/* Hint when selecting verse for grade: instructions + selected verse + Confirm */}
-                    {onSelectVerseKey && !isLoading && !isLoadingPlanPages && !error && (
-                        <div className="px-4 sm:px-6 py-3 bg-primary-50 border-b border-primary-100">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                <p className="text-sm text-primary-800">
-                                    {selectedVerseKeyInModal ? (
-                                        <span>
-                                            {t('grade.selectedVerse', 'Selected')}: <strong className="font-semibold text-primary-900">{selectedVerseKeyInModal}</strong>
-                                            {' — '}
-                                            {t('grade.confirmOrPickAnother', 'Click Confirm to use this verse, or click another verse.')}
-                                        </span>
-                                    ) : (
-                                        t('grade.clickVerseToSelect', 'Click any verse on the page to set it as the actual end verse.')
-                                    )}
-                                </p>
-                                {selectedVerseKeyInModal && (
-                                    <button
-                                        type="button"
-                                        onClick={handleConfirmSelection}
-                                        className="shrink-0 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 shadow-sm"
-                                    >
-                                        {t('grade.confirmVerse', 'Confirm')}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Body: when embedded, no inner scroll so parent modal content scrolls and mushaf stays visible */}
-                    <div className={`relative px-2 sm:px-4 md:px-6 py-2 sm:py-4 ${embedded ? '' : 'overflow-y-auto max-h-[calc(100vh-12rem)]'}`}>
-                        {isLoading || isLoadingPlanPages ? (
-                            <div className="flex items-center justify-center py-20">
-                                <div className="text-center">
-                                    <div className="spinner mx-auto mb-4"></div>
-                                    <p className="text-gray-500">{t('common.loading', 'Loading...')}</p>
-                                </div>
-                            </div>
-                        ) : error ? (
-                            <div className="flex items-center justify-center py-20">
-                                <div className="text-center">
-                                    <p className="text-red-600 mb-4">{error}</p>
-                                    <button
-                                        onClick={onClose}
-                                        className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
-                                    >
-                                        {t('common.close', 'Close')}
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <MushafPage
-                                pageLines={pageLines}
-                                currentPage={currentPage}
-                                wordsDb={wordsDb}
-                                surahData={surahData}
-                                selectedAyahs={displaySelectedAyahs}
-                                isFontLoading={isFontLoading}
-                                onWordClick={onVerseKeyClick ? handleVerseKeyClick : onSelectVerseKey ? handleWordClick : undefined}
-                            />
+            {/* Hint when selecting verse for grade: instructions + selected verse + Confirm */}
+            {onSelectVerseKey && !isLoading && !isLoadingPlanPages && !error && (
+                <div className="px-4 sm:px-6 py-3 bg-primary-50 border-b border-primary-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <p className="text-sm text-primary-800">
+                            {selectedVerseKeyInModal ? (
+                                <span>
+                                    {t('grade.selectedVerse', 'Selected')}: <strong className="font-semibold text-primary-900">{selectedVerseKeyInModal}</strong>
+                                    {' — '}
+                                    {t('grade.confirmOrPickAnother', 'Click Confirm to use this verse, or click another verse.')}
+                                </span>
+                            ) : (
+                                t('grade.clickVerseToSelect', 'Click any verse on the page to set it as the actual end verse.')
+                            )}
+                        </p>
+                        {selectedVerseKeyInModal && (
+                            <button
+                                type="button"
+                                onClick={handleConfirmSelection}
+                                className="shrink-0 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 shadow-sm"
+                            >
+                                {t('grade.confirmVerse', 'Confirm')}
+                            </button>
                         )}
                     </div>
+                </div>
+            )}
+
+            {/* Plan view: prev/next page navigation (order and arrow direction respect RTL) */}
+            {isPlanView && planPages.length > 0 && !isLoading && !isLoadingPlanPages && !error && (
+                <div
+                    className={`flex items-center justify-center gap-4 px-4 py-3 border-b border-gray-200 bg-gray-50 ${isRtl ? 'flex-row-reverse' : ''}`}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setCurrentPageIndex((i) => Math.min(planPages.length - 1, i + 1))}
+                        disabled={currentPageIndex === planPages.length - 1}
+                        className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
+                        aria-label={t('quran.nextPage', 'Next page')}
+                    >
+                        <ChevronRightIcon width={20} height={20}  className={isRtl ? 'rotate-180' : ''}/>
+                    </button>
+
+                    <span className="text-sm font-medium text-gray-700 min-w-[8rem] text-center">
+                        {t('quran.page', 'Page')} {currentPage} ({currentPageIndex + 1} / {planPages.length})
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => setCurrentPageIndex((i) => Math.max(0, i - 1))}
+                        disabled={currentPageIndex === 0}
+                        className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
+                        aria-label={t('quran.previousPage', 'Previous page')}
+                    >
+                        <ChevronRightIcon width={20} height={20} className={isRtl ? '' : 'rotate-180'} />
+                    </button>
+
+                </div>
+            )}
+
+            {/* Body: when embedded, no inner scroll so parent modal content scrolls and mushaf stays visible */}
+            <div className={`relative px-2 sm:px-4 md:px-6 py-2 sm:py-4 ${embedded ? '' : 'overflow-y-auto max-h-[calc(100vh-12rem)]'}`}>
+                {isLoading || isLoadingPlanPages ? (
+                    <div className="flex items-center justify-center py-20">
+                        <div className="text-center">
+                            <div className="spinner mx-auto mb-4"></div>
+                            <p className="text-gray-500">{t('common.loading', 'Loading...')}</p>
+                        </div>
+                    </div>
+                ) : error ? (
+                    <div className="flex items-center justify-center py-20">
+                        <div className="text-center">
+                            <p className="text-red-600 mb-4">{error}</p>
+                            <button
+                                onClick={onClose}
+                                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                            >
+                                {t('common.close', 'Close')}
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <MushafPage
+                        pageLines={pageLines}
+                        currentPage={currentPage}
+                        wordsDb={wordsDb}
+                        surahData={surahData}
+                        selectedAyahs={displaySelectedAyahs}
+                        isFontLoading={isFontLoading}
+                        onWordClick={onVerseKeyClick ? handleVerseKeyClick : onSelectVerseKey ? handleWordClick : undefined}
+                    />
+                )}
+            </div>
         </div>
     );
 
