@@ -78,6 +78,14 @@ const CreateHalaqaForm: React.FC = () => {
     const sessionTime = useWatch({ control, name: 'session_time' });
     const activities = useWatch({ control, name: 'activities' });
 
+    const {
+        teachersOptions,
+        platformsOptions,
+        autoIncludeActivities,
+        isLoadingTeachers,
+        isLoadingPlatforms,
+    } = useCreateHalaqaFormQueries({ includeStudents: false });
+
     // State for availability check result
     const [availabilityResult, setAvailabilityResult] = useState<CheckAvailabilityResponse | null>(null);
 
@@ -102,23 +110,21 @@ const CreateHalaqaForm: React.FC = () => {
         }
     }, [evaluationSystemType, setValue]);
 
-    // Force tasbit to be included when hifz is selected (handled in Controller onChange)
-    // Keeping this as a backup in case the direct onChange doesn't catch all cases
+    // When hifz is selected, auto-add activities from config (e.g. tasbit, murajaa from /configurations?program=tahfiz&key=auto_include_activities)
     useEffect(() => {
-        if (Array.isArray(activities) && activities.length > 0) {
+        if (Array.isArray(activities) && activities.length > 0 && autoIncludeActivities.length > 0) {
             const hasHifz = activities.includes('hifz');
-            const hasTasbit = activities.includes('tasbit');
-
-            if (hasHifz && !hasTasbit) {
-                // If hifz is selected but tasbit is not, add tasbit
-                setValue('activities', [...activities, 'tasbit'], {
+            if (!hasHifz) return;
+            const toAdd = autoIncludeActivities.filter((a) => !activities.includes(a));
+            if (toAdd.length > 0) {
+                setValue('activities', [...activities, ...toAdd], {
                     shouldValidate: true,
                     shouldDirty: true,
                     shouldTouch: false
                 });
             }
         }
-    }, [activities, setValue]);
+    }, [activities, autoIncludeActivities, setValue]);
 
     // Clear availability result when form fields change
     useEffect(() => {
@@ -184,12 +190,6 @@ const CreateHalaqaForm: React.FC = () => {
     const isCheckingAvailability = checkAvailabilityMutation.isPending;
 
     const entity = useAuthStore((s) => s.user?.entity);
-    const {
-        teachersOptions,
-        platformsOptions,
-        isLoadingTeachers,
-        isLoadingPlatforms,
-    } = useCreateHalaqaFormQueries({ includeStudents: false });
 
     // Get localized options for static fields (memoized)
     const periodOptions = useMemo(() =>
@@ -435,26 +435,25 @@ const CreateHalaqaForm: React.FC = () => {
                     name="activities"
                     control={control}
                     render={({ field, fieldState }) => {
-                        const handleChange = (selectedOptions: any) => {
-                            let selectedValues: string[] = [];
+                                        const handleChange = (selectedOptions: any) => {
+                                            let selectedValues: string[] = [];
 
-                            if (selectedOptions) {
-                                if (Array.isArray(selectedOptions)) {
-                                    selectedValues = selectedOptions.map((opt: any) => opt.value || opt.id);
-                                } else {
-                                    selectedValues = [selectedOptions.value || selectedOptions.id];
-                                }
-                            }
+                                            if (selectedOptions) {
+                                                if (Array.isArray(selectedOptions)) {
+                                                    selectedValues = selectedOptions.map((opt: any) => opt.value || opt.id);
+                                                } else {
+                                                    selectedValues = [selectedOptions.value || selectedOptions.id];
+                                                }
+                                            }
 
-                            const hasHifz = selectedValues.includes('hifz');
-                            const hasTasbit = selectedValues.includes('tasbit');
+                                            const hasHifz = selectedValues.includes('hifz');
+                                            if (hasHifz && autoIncludeActivities.length > 0) {
+                                                const toAdd = autoIncludeActivities.filter((a) => !selectedValues.includes(a));
+                                                selectedValues = [...selectedValues, ...toAdd];
+                                            }
 
-                            if (hasHifz && !hasTasbit) {
-                                selectedValues = [...selectedValues, 'tasbit'];
-                            }
-
-                            field.onChange(selectedValues);
-                        };
+                                            field.onChange(selectedValues);
+                                        };
 
                         const currentValue = field.value || [];
                         const selectedOptions = Array.isArray(currentValue)
@@ -525,7 +524,7 @@ const CreateHalaqaForm: React.FC = () => {
                                 <p className="mt-1 h-4 text-xs text-red-600" role="alert">
                                     {getErrorMessage((fieldState.error?.message || errors.activities?.message) ?? '') ?? ''}
                                 </p>
-                                {Array.isArray(field.value) && field.value.includes('hifz') && (
+                                {Array.isArray(field.value) && field.value.includes('hifz') && autoIncludeActivities.length > 0 && (
                                     <p className="mt-1 text-xs text-blue-600">
                                         {t('halaqa.hifzRequiresTasbit', 'Note: Hifz automatically includes Tasbit')}
                                     </p>

@@ -59,6 +59,8 @@ const EditHalaqaForm: React.FC = () => {
     const evaluationSystemType = useWatch({ control, name: 'evaluation_system_type' });
     const activities = useWatch({ control, name: 'activities' });
 
+    const { teachersOptions, platformsOptions, autoIncludeActivities, isLoadingTeachers, isLoadingPlatforms } = useCreateHalaqaFormQueries({ includeStudents: false });
+
     useEffect(() => {
         if (teachingMethod === 'in_person') setValue('platform_id', undefined);
     }, [teachingMethod, setValue]);
@@ -68,16 +70,15 @@ const EditHalaqaForm: React.FC = () => {
     }, [evaluationSystemType, setValue]);
 
     useEffect(() => {
-        if (Array.isArray(activities) && activities.length > 0) {
+        if (Array.isArray(activities) && activities.length > 0 && autoIncludeActivities.length > 0) {
             const hasHifz = activities.includes('hifz');
-            const hasTasbit = activities.includes('tasbit');
-            if (hasHifz && !hasTasbit) {
-                setValue('activities', [...activities, 'tasbit'], { shouldValidate: true, shouldDirty: true, shouldTouch: false });
+            if (!hasHifz) return;
+            const toAdd = autoIncludeActivities.filter((a) => !activities.includes(a));
+            if (toAdd.length > 0) {
+                setValue('activities', [...activities, ...toAdd], { shouldValidate: true, shouldDirty: true, shouldTouch: false });
             }
         }
-    }, [activities, setValue]);
-
-    const { teachersOptions, platformsOptions, isLoadingTeachers, isLoadingPlatforms } = useCreateHalaqaFormQueries({ includeStudents: false });
+    }, [activities, autoIncludeActivities, setValue]);
 
     const periodOptions = useMemo(() =>
         HALAQA_PERIODS.map((p) => ({ value: p.value, label: t(p.labelKey, p.value) })), [t]);
@@ -231,8 +232,10 @@ const EditHalaqaForm: React.FC = () => {
                                 }
                             }
                             const hasHifz = selectedValues.includes('hifz');
-                            const hasTasbit = selectedValues.includes('tasbit');
-                            if (hasHifz && !hasTasbit) selectedValues = [...selectedValues, 'tasbit'];
+                            if (hasHifz && autoIncludeActivities.length > 0) {
+                                const toAdd = autoIncludeActivities.filter((a) => !selectedValues.includes(a));
+                                selectedValues = [...selectedValues, ...toAdd];
+                            }
                             field.onChange(selectedValues);
                         };
                         const currentValue = field.value || [];
@@ -281,7 +284,7 @@ const EditHalaqaForm: React.FC = () => {
                                 <p className="mt-1 h-4 text-xs text-red-600" role="alert">
                                     {getErrorMessage((fieldState.error?.message || errors.activities?.message) ?? '') ?? ''}
                                 </p>
-                                {Array.isArray(field.value) && field.value.includes('hifz') && (
+                                {Array.isArray(field.value) && field.value.includes('hifz') && autoIncludeActivities.length > 0 && (
                                     <p className="mt-1 text-xs text-blue-600">
                                         {t('halaqa.hifzRequiresTasbit', 'Note: Hifz automatically includes Tasbit')}
                                     </p>

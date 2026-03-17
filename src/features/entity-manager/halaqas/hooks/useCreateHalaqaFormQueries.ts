@@ -1,14 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores';
 import { formFieldsService } from '../services/form-fields.service';
+import { getAutoIncludeActivitiesForTahfiz } from '../services/configurations.service';
 import { generateOptions } from '../utils/formOptionsUtils';
 import type { SelectRFHOption } from '@/globals/components/ui/SelectRFH';
+import type { HalaqaActivity } from '../config';
 
 /** Query keys for create halaqa form lists (include entity_id so cache is per entity) */
 export const HALAQA_FORM_QUERY_KEYS = {
     teachers: ['halaqa-form', 'teachers'] as const,
     students: ['halaqa-form', 'students'] as const,
     platforms: ['halaqa-form', 'platforms'] as const,
+    autoIncludeActivities: ['halaqa-form', 'configurations', 'tahfiz', 'auto_include_activities'] as const,
 } as const;
 
 const ITEMS_PER_PAGE = 10;
@@ -62,6 +65,12 @@ export function useCreateHalaqaFormQueries({ includeStudents = true }: UseCreate
         staleTime: STALE_TIME_MS,
     });
 
+    const autoIncludeActivitiesQuery = useQuery({
+        queryKey: HALAQA_FORM_QUERY_KEYS.autoIncludeActivities,
+        queryFn: getAutoIncludeActivitiesForTahfiz,
+        staleTime: STALE_TIME_MS,
+    });
+
     const teachersOptions: SelectRFHOption[] = generateOptions(
         (teachersQuery.data as ListResponse)?.data
     );
@@ -77,10 +86,13 @@ export function useCreateHalaqaFormQueries({ includeStudents = true }: UseCreate
         (includeStudents && studentsQuery.isLoading) ||
         platformsQuery.isLoading;
 
+    const autoIncludeActivities: HalaqaActivity[] = autoIncludeActivitiesQuery.data ?? [];
+
     return {
         teachersOptions,
         studentsOptions,
         platformsOptions,
+        autoIncludeActivities,
         isLoadingTeachers: teachersQuery.isLoading,
         isLoadingStudents: includeStudents ? studentsQuery.isLoading : false,
         isLoadingPlatforms: platformsQuery.isLoading,
