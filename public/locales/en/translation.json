@@ -282,7 +282,13 @@
         "step_submitted": "Documents submitted successfully",
         "step_submit_error": "Error submitting documents",
         "submit_documents": "Submit Documents",
-        "upload_documents": "Upload Documents"
+        "upload_documents": "Upload Documents",
+        "registration_success": "Registration submitted successfully",
+        "request_number_label": "Your request number is",
+        "keep_request_number": "Please keep this request number. You will need it to check your request status.",
+        "request_number": "Request number",
+        "request_number_placeholder": "Enter your request number",
+        "status_check_description_request_id": "Enter your request number to check the status of your join request."
     },
     "status": {
         "request_info": "Request Information",

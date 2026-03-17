@@ -15,14 +15,17 @@ interface JoinRequestStatusFormProps {
 }
 
 /**
- * Schema for join request status check
- * Validates that input is provided
+ * Schema for join request status check — request ID (number) only
  */
 const statusCheckSchema = yup.object({
     input: yup
         .string()
-        .required('Email or phone number is required')
-        .min(3, 'Please enter a valid email or phone number')
+        .required('Request number is required')
+        .test('is-request-id', 'Please enter a valid request number', (value) => {
+            if (!value?.trim()) return false;
+            const n = parseInt(value.trim(), 10);
+            return !Number.isNaN(n) && n >= 1 && Number.isInteger(n);
+        })
 });
 
 interface StatusCheckFormData {
@@ -31,7 +34,7 @@ interface StatusCheckFormData {
 
 /**
  * Join Request Status Form Component
- * Allows users to check their join request status by email or phone number
+ * Allows users to check their join request status by request number (ID)
  */
 const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack }) => {
     const { t } = useTranslation();
@@ -40,6 +43,7 @@ const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack })
     const currentLang = lang || 'ar';
     const statusMutation = useCheckJoinRequestStatus();
     const [statusData, setStatusData] = useState<any>(null);
+    const [lastRequestId, setLastRequestId] = useState<number | null>(null);
 
     const {
         control,
@@ -53,18 +57,6 @@ const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack })
         }
     });
 
-    // Helper function to detect if input is email or phone/national_id
-    const detectInputType = (input: string): { email?: string; national_id?: string } => {
-        // Check if it's an email (contains @)
-        if (input.includes('@')) {
-            return { email: input };
-        }
-        // Otherwise treat as phone/national_id
-        return { national_id: input };
-    };
-
-    const [lastCheckInput, setLastCheckInput] = useState('');
-
     /** Unwrap API response: backend may return { data: { id, request_type, ... } } */
     const unwrapStatusData = (response: any) => {
         const body = response?.data ?? response;
@@ -72,35 +64,41 @@ const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack })
     };
 
     const refetchStatus = () => {
-        if (!lastCheckInput.trim()) return;
-        const requestData = detectInputType(lastCheckInput.trim());
-        statusMutation.mutate(requestData, {
-            onSuccess: (response) => {
-                setStatusData(unwrapStatusData(response));
+        if (lastRequestId == null) return;
+        statusMutation.mutate(
+            { request_number: lastRequestId },
+            {
+                onSuccess: (response) => {
+                    setStatusData(unwrapStatusData(response));
+                }
             }
-        });
+        );
     };
 
     const onSubmit = async (data: StatusCheckFormData) => {
         const input = data.input.trim();
-        setLastCheckInput(input);
-        const requestData = detectInputType(input);
-
-        statusMutation.mutate(requestData, {
-            onSuccess: (response) => {
-                setStatusData(unwrapStatusData(response));
-                toast.success(t('auth.status_check_success', 'Status retrieved successfully'));
-            },
-            onError: (error: any) => {
-                const errorMessage = error.message || t('auth.status_check_error', 'Error checking status. Please try again.');
-                toast.error(errorMessage);
-                setStatusData(null);
+        const requestId = parseInt(input, 10);
+        if (Number.isNaN(requestId) || requestId < 1) return;
+        setLastRequestId(requestId);
+        statusMutation.mutate(
+            { request_number: requestId },
+            {
+                onSuccess: (response) => {
+                    setStatusData(unwrapStatusData(response));
+                    toast.success(t('auth.status_check_success', 'Status retrieved successfully'));
+                },
+                onError: (error: any) => {
+                    const errorMessage = error.message || t('auth.status_check_error', 'Error checking status. Please try again.');
+                    toast.error(errorMessage);
+                    setStatusData(null);
+                }
             }
-        });
+        );
     };
 
     const handleCheckAgain = () => {
         setStatusData(null);
+        setLastRequestId(null);
         reset();
     };
 
@@ -150,17 +148,18 @@ const JoinRequestStatusForm: React.FC<JoinRequestStatusFormProps> = ({ onBack })
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div>
                     <p className="text-sm text-gray-600 mb-4">
-                        {t('auth.status_check_description', 'Enter your email address or phone number to check the status of your join request.')}
+                        {t('auth.status_check_description_request_id', 'Enter your request number to check the status of your join request.')}
                     </p>
                     
                     <FormInput
                         name="input"
                         control={control}
-                        label={t('auth.email_or_phone', 'Email or Phone Number')}
+                        label={t('auth.request_number', 'Request number')}
                         type="text"
+                        inputMode="numeric"
                         required
                         error={errors.input?.message}
-                        placeholder={t('auth.email_or_phone_placeholder', 'Enter email or phone number')}
+                        placeholder={t('auth.request_number_placeholder', 'Enter your request number')}
                     />
                 </div>
 

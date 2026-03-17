@@ -1,6 +1,12 @@
 import * as yup from 'yup';
 import { JoinRequestFormField } from '../types/registration.types';
 
+/** Normalize value for visible_when comparison (API may send number or string) */
+function normalizeVisibleWhenValue(v: unknown): string {
+    if (v === null || v === undefined) return '';
+    return String(v);
+}
+
 /**
  * Build Yup schema dynamically from form field definitions
  */
@@ -20,7 +26,10 @@ export const buildDynamicSchema = (fields: JoinRequestFormField[]): yup.AnyObjec
                 break;
 
             case 'number':
-                fieldSchema = yup.number().typeError('Must be a number');
+                fieldSchema = yup
+                    .number()
+                    .transform((v) => (v === '' || v === undefined ? undefined : Number(v)))
+                    .typeError('Must be a number');
                 break;
 
             case 'date':
@@ -59,6 +68,8 @@ export const buildDynamicSchema = (fields: JoinRequestFormField[]): yup.AnyObjec
                     // For dynamic selects, accept string or number
                     fieldSchema = yup.mixed();
                 }
+                // Allow null when not required (cleared selection)
+                if (!field.required) fieldSchema = fieldSchema.nullable();
                 break;
 
             case 'multiselect':
@@ -99,6 +110,28 @@ export const buildDynamicSchema = (fields: JoinRequestFormField[]): yup.AnyObjec
             });
         } else if (field.required && field.type !== 'file') {
             fieldSchema = fieldSchema.required(`${field.label} is required`);
+        } else if (!field.required && field.type === 'number') {
+            // Optional number (e.g. YOE): allow null/empty so empty field doesn't trigger typeError
+            fieldSchema = fieldSchema.nullable();
+        }
+
+        // When field is only visible under visible_when, skip validation when hidden (allow null)
+        if (field.visible_when && Object.keys(field.visible_when).length > 0) {
+            const depKeys = Object.keys(field.visible_when);
+            const allowedByKey = field.visible_when as Record<string, (string | number)[]>;
+            fieldSchema = fieldSchema.when(depKeys, {
+                is: (...depValues: unknown[]) => {
+                    for (let i = 0; i < depKeys.length; i++) {
+                        const rawAllowed = allowedByKey[depKeys[i]] || [];
+                        const allowed = rawAllowed.map((v) => String(v));
+                        const val = normalizeVisibleWhenValue(depValues[i]);
+                        if (!val || !allowed.includes(val)) return false;
+                    }
+                    return true;
+                },
+                then: (schema: yup.AnySchema) => schema,
+                otherwise: (schema: yup.AnySchema) => schema.nullable()
+            });
         }
 
         return fieldSchema;

@@ -40,9 +40,9 @@ export const registrationService = {
     },
 
     /**
-     * Check join request status by email or national_id (phone)
+     * Check join request status by request ID (number returned after submission)
      */
-    checkJoinRequestStatus: async (data: { email?: string; national_id?: string }): Promise<any> => {
+    checkJoinRequestStatus: async (data: { request_number: number }): Promise<any> => {
         return axiosInstance.post('/join-request/status', data);
     },
 

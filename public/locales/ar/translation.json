@@ -282,7 +282,13 @@
         "step_submitted": "تم إرسال المستندات بنجاح",
         "step_submit_error": "خطأ في إرسال المستندات",
         "submit_documents": "إرسال المستندات",
-        "upload_documents": "رفع المستندات"
+        "upload_documents": "رفع المستندات",
+        "registration_success": "تم إرسال التسجيل بنجاح",
+        "request_number_label": "رقم طلبك هو",
+        "keep_request_number": "يرجى الاحتفاظ برقم الطلب هذا. ستحتاجه للتحقق من حالة طلبك.",
+        "request_number": "رقم الطلب",
+        "request_number_placeholder": "أدخل رقم الطلب",
+        "status_check_description_request_id": "أدخل رقم الطلب للتحقق من حالة طلب الانضمام."
     },
     "status": {
         "request_info": "معلومات الطلب",

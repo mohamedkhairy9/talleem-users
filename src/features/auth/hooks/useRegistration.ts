@@ -24,11 +24,11 @@ export const useSubmitJoinRequest = () => {
 };
 
 /**
- * Hook to check join request status
+ * Hook to check join request status by request ID
  */
 export const useCheckJoinRequestStatus = () => {
     return useMutation({
-        mutationFn: (data: { email?: string; national_id?: string }) =>
+        mutationFn: (data: { request_number: number }) =>
             registrationService.checkJoinRequestStatus(data)
     });
 };

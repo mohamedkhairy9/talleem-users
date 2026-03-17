@@ -26,6 +26,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
     const currentLang = lang || 'ar';
     const { data: formData, isLoading: isLoadingForm, error: formError } = useJoinRequestForm(userType);
     const submitMutation = useSubmitJoinRequest();
+    /** After successful submit, show request number so user can check status later */
+    const [submittedRequestId, setSubmittedRequestId] = React.useState<number | null>(null);
 
     // Build schema and default values from form structure
     const schema = React.useMemo(() => {
@@ -122,14 +124,56 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
         submitMutation.mutate(
             { userType, data: formDataToSend },
             {
-                onSuccess: () => {
-                    // Redirect to login or show success message
-                    const currentLang = window.location.pathname.split('/')[1] || 'ar';
-                    navigate(`/${currentLang}/login`);
+                onSuccess: (response: any) => {
+                    const body = response?.data ?? response;
+                    const requestId = body?.id != null ? Number(body.id) : null;
+                    if (requestId != null && !Number.isNaN(requestId)) {
+                        setSubmittedRequestId(requestId);
+                    } else {
+                        const currentLang = window.location.pathname.split('/')[1] || 'ar';
+                        navigate(`/${currentLang}/login`);
+                    }
                 }
             }
         );
     };
+
+    // Success: show request number and remind user to keep it for status check
+    if (submittedRequestId != null) {
+        return (
+            <div className="space-y-6">
+                <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                    <p className="text-green-800 font-semibold text-lg mb-2">
+                        {t('auth.registration_success', 'Registration submitted successfully')}
+                    </p>
+                    <p className="text-gray-700 mb-4">
+                        {t('auth.request_number_label', 'Your request number is')}
+                    </p>
+                    <p className="text-2xl font-bold text-primary-700 mb-4" data-testid="submitted-request-id">
+                        {submittedRequestId}
+                    </p>
+                    <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 max-w-md mx-auto">
+                        {t('auth.keep_request_number', 'Please keep this request number. You will need it to check your request status.')}
+                    </p>
+                </div>
+                <div className="flex flex-col gap-3">
+                    <Button
+                        variant="primary"
+                        onClick={() => navigate(`/${currentLang}/login`)}
+                    >
+                        {t('auth.back_to_login', 'Back to login')}
+                    </Button>
+                    <button
+                        type="button"
+                        onClick={() => navigate(`/${currentLang}/register?checkStatus=1`)}
+                        className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                        {t('auth.check_join_request_status', 'Check join request status')}
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     if (isLoadingForm) {
         return (

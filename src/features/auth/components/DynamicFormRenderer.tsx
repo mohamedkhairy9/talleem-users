@@ -59,6 +59,27 @@ function collectDependsOnFields(
     return result;
 }
 
+/** Collect fields that have visible_when so we can clear them when they become hidden */
+function collectVisibleWhenFields(
+    fields: JoinRequestFormField[],
+    prefix = ''
+): Array<{ fieldPath: string; visibleWhen: Record<string, string[]> }> {
+    const result: Array<{ fieldPath: string; visibleWhen: Record<string, string[]> }> = [];
+    for (const field of fields) {
+        const fieldPath = prefix ? `${prefix}.${field.key}` : field.key;
+        if (field.visible_when && Object.keys(field.visible_when).length > 0) {
+            const visibleWhen = Object.fromEntries(
+                Object.entries(field.visible_when).map(([k, v]) => [k, (v || []).map(String)])
+            );
+            result.push({ fieldPath, visibleWhen });
+        }
+        if (field.type === 'group' && field.fields?.length) {
+            result.push(...collectVisibleWhenFields(field.fields, fieldPath));
+        }
+    }
+    return result;
+}
+
 interface DynamicFormRendererProps<T extends FieldValues = FieldValues> {
     fields: JoinRequestFormField[];
     control: Control<T>;
@@ -116,6 +137,29 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
         prevDepValuesRef.current['_branch_id'] = branchId;
         prevDepValuesRef.current['_main_program_id'] = mainProgramId;
     }, [formValues, setValueFn, dependsOnList, branchId, mainProgramId]);
+
+    // Clear fields with visible_when when they become hidden (e.g. education_program_entity_type_id when main_program_id !== 1)
+    const visibleWhenList = React.useMemo(() => collectVisibleWhenFields(fields), [fields]);
+    useEffect(() => {
+        if (!setValueFn || typeof setValueFn !== 'function') return;
+        for (const { fieldPath, visibleWhen } of visibleWhenList) {
+            let visible = true;
+            for (const [depKey, allowed] of Object.entries(visibleWhen)) {
+                const val = formValues?.[depKey];
+                const normalized = val === null || val === undefined ? '' : String(val);
+                if (!normalized || !allowed.includes(normalized)) {
+                    visible = false;
+                    break;
+                }
+            }
+            if (!visible) {
+                const current = fieldPath.includes('.') ? undefined : formValues?.[fieldPath];
+                if (current !== null && current !== undefined && current !== '') {
+                    setValueFn(fieldPath, null, { shouldValidate: true });
+                }
+            }
+        }
+    }, [formValues, setValueFn, visibleWhenList]);
 
     // Show entity_id validation error only after user has opened (blurred) the entity select
     const [entityIdTouched, setEntityIdTouched] = useState(false);
