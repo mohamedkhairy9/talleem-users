@@ -9,7 +9,7 @@ import Select from 'react-select';
 import { useAuthStore } from '@/stores';
 import { useCreateHalaqa, useCheckAvailability } from '../hooks/useHalaqas';
 import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
-import type { CreateHalaqaPayload, CheckAvailabilityPayload, CheckAvailabilityResponse } from '../services/halaqas.service';
+import type { CreateHalaqaPayload, CheckAvailabilityPayload, CheckAvailabilityResponse } from '../types';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 import {

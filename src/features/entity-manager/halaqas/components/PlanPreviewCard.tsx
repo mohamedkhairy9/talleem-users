@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/globals/components';
 import { BookOpenIcon } from '@/globals/icons';
 import { getVerseKeyDisplay, getJuzNumberForVerseKey, type SurahDataMap } from '@/utils/helpers/surahHelper';
-import type { CreatePlanResponseData } from '../services/halaqas.service';
+import type { CreatePlanResponseData } from '../types';
 
 export interface PlanPreviewCardProps {
     planPreviewData: CreatePlanResponseData;

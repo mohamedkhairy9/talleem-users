@@ -6,7 +6,7 @@ import { FormInput, FormSelect, Button } from '@/globals/components';
 import SelectRFH from '@/globals/components/ui/SelectRFH';
 import { useCreatePlan } from '../hooks/useHalaqas';
 import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
-import type { CreatePlanPayload, CreatePlanResponseData } from '../services/halaqas.service';
+import type { CreatePlanPayload, CreatePlanResponseData } from '../types';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 import {

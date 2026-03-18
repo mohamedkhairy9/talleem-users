@@ -16,14 +16,8 @@ export interface ConfigurationsResponse {
     data: ConfigurationItem[][];
 }
 
-/**
- * Fetch configurations for a program and key.
- * GET /configurations?program=tahfiz&key=auto_include_activities
- */
 export async function getConfigurations(program: string, key: string): Promise<ConfigurationsResponse> {
-    const { data } = await axiosInstance.get<ConfigurationsResponse>('/configurations', {
-        params: { program, key }
-    });
+    const { data } = await axiosInstance.get<ConfigurationsResponse>(`/configurations/${program}/key/${key}`);
     return data;
 }
 

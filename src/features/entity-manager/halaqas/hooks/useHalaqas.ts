@@ -1,11 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { halaqasService, CreateHalaqaPayload, UpdateHalaqaPayload, CreatePlanPayload, CheckAvailabilityPayload } from '../services/halaqas.service';
+import { halaqasService } from '../services/halaqas.service';
+
 import type {
-    HalaqasListParams,
+    CreateHalaqaPayload, UpdateHalaqaPayload, CreatePlanPayload, CheckAvailabilityPayload, HalaqasListParams,
     HalaqasListResponse,
     HalaqaListItem,
     HalaqasListMeta
-} from '../types/list.types';
+} from '../types';
 
 /**
  * Create halaqa mutation hook
