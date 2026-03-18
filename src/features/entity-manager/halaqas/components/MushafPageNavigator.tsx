@@ -12,6 +12,7 @@ import {
     type SurahDataMap
 } from '@/utils/helpers/surahHelper';
 import { ReactSelect } from '@/globals/components';
+import { ChevronRightIcon } from '@/globals/icons';
 
 interface MushafPageNavigatorProps {
     value: number;
@@ -34,6 +35,7 @@ const MushafPageNavigator: React.FC<MushafPageNavigatorProps> = ({
 }) => {
     const { t, i18n } = useTranslation();
     const lang = i18n.language || 'ar';
+    const isRtl = lang.startsWith('ar');
     const [mushafPages, setMushafPages] = useState<MushafPageEntry[]>([]);
     const [juzPages, setJuzPages] = useState<JuzPageEntry[]>([]);
     const [surahData, setSurahData] = useState<SurahDataMap | null>(null);
@@ -55,16 +57,33 @@ const MushafPageNavigator: React.FC<MushafPageNavigatorProps> = ({
         return () => { cancelled = true; };
     }, []);
 
+    const sortedPages = useMemo(() => {
+        const list = pageNumbers?.length ? [...pageNumbers] : Array.from({ length: 604 }, (_, i) => i + 1);
+        return [...new Set(list)].sort((a, b) => a - b);
+    }, [pageNumbers]);
+
+    const pageIndex = sortedPages.indexOf(value);
+    const canGoPrev = pageIndex > 0;
+    const canGoNext = pageIndex >= 0 && pageIndex < sortedPages.length - 1;
+
+    const goPrev = () => {
+        if (!canGoPrev) return;
+        onChange(sortedPages[pageIndex - 1]);
+    };
+    const goNext = () => {
+        if (!canGoNext) return;
+        onChange(sortedPages[pageIndex + 1]);
+    };
+
     const options = useMemo(() => {
-        const list = pageNumbers ?? Array.from({ length: 604 }, (_, i) => i + 1);
-        return list.map((pageNum) => {
+        return sortedPages.map((pageNum) => {
             const surahNum = getSurahNumberForPage(pageNum, mushafPages);
             const juz = getJuzForPage(pageNum, juzPages);
             const surahName = getSurahNameForPage(surahNum, surahData, lang) || `Surah ${surahNum}`;
             const label = `${t('quran.page', 'Page')} ${pageNum} — ${surahName} — ${t('quran.juz', 'Juz')} ${juz}`;
             return { value: pageNum, label };
         });
-    }, [mushafPages, juzPages, surahData, lang, pageNumbers, t]);
+    }, [mushafPages, juzPages, surahData, lang, sortedPages, t]);
 
     if (loading) {
         return (
@@ -74,15 +93,38 @@ const MushafPageNavigator: React.FC<MushafPageNavigatorProps> = ({
         );
     }
 
+    const navBtn =
+        'flex items-center justify-center w-10 h-10 shrink-0 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors';
+
     return (
-        <div className={`min-w-[12rem] max-w-full ${className}`}>
-            <ReactSelect
-                value={value}
-                onChange={(val) => onChange(val != null ? Number(val) : value)}
-                options={options}
-                placeholder={t('quran.selectPage', 'Select page')}
-                isDisabled={disabled}
-            />
+        <div className={`flex items-center gap-2 min-w-0 max-w-full ${isRtl ? 'flex-row-reverse' : ''} ${className}`}>
+            <button
+                type="button"
+                onClick={goNext}
+                disabled={disabled || !canGoNext}
+                className={navBtn}
+                aria-label={t('quran.nextPage', 'Next page')}
+            >
+                <ChevronRightIcon width={20} height={20} className={isRtl ? 'rotate-180' : ''} />
+            </button>
+            <div className="min-w-0 flex-1">
+                <ReactSelect
+                    value={value}
+                    onChange={(val) => onChange(val != null ? Number(val) : value)}
+                    options={options}
+                    placeholder={t('quran.selectPage', 'Select page')}
+                    isDisabled={disabled}
+                />
+            </div>
+            <button
+                type="button"
+                onClick={goPrev}
+                disabled={disabled || !canGoPrev}
+                className={navBtn}
+                aria-label={t('quran.previousPage', 'Previous page')}
+            >
+                <ChevronRightIcon width={20} height={20} className={isRtl ? '' : 'rotate-180'} />
+            </button>
         </div>
     );
 };

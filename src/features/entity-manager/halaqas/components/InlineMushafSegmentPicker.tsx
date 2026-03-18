@@ -38,6 +38,10 @@ interface InlineMushafSegmentPickerProps {
     selectionVerseKeyFromOutside?: string;
     /** When provided, called when current selection (clicked segment) changes so parent can e.g. highlight in mushaf */
     onCurrentSelectionChange?: (segment: QuranSegment | null) => void;
+    /** Report allowed page numbers (Juz/Surah filter) for mushaf viewer navigation */
+    onNavigablePagesChange?: (pages: number[]) => void;
+    /** When embedded mushaf viewer changes page via arrows, parent passes new page so picker stays in sync */
+    viewerPageSync?: number;
 }
 
 /**
@@ -114,7 +118,9 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
     hideInlineMushaf = false,
     onPageChange,
     selectionVerseKeyFromOutside,
-    onCurrentSelectionChange
+    onCurrentSelectionChange,
+    onNavigablePagesChange,
+    viewerPageSync
 }) => {
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'ar';
@@ -189,6 +195,17 @@ const InlineMushafSegmentPicker: React.FC<InlineMushafSegmentPickerProps> = ({
     useEffect(() => {
         onPageChange?.(currentPage);
     }, [currentPage, onPageChange]);
+
+    useEffect(() => {
+        onNavigablePagesChange?.(pageNumbers);
+    }, [pageNumbers, onNavigablePagesChange]);
+
+    // Sync picker page when embedded mushaf viewer changes page (arrow). Do not depend on currentPage — avoids fighting the page dropdown.
+    useEffect(() => {
+        if (viewerPageSync == null || viewerPageSync < 1) return;
+        if (pageNumbers.length > 0 && !pageNumbers.includes(viewerPageSync)) return;
+        setCurrentPage(viewerPageSync);
+    }, [viewerPageSync, pageNumbers]);
 
     // When parent sets verse key (e.g. from mushaf word click), find segment and set as current selection
     useEffect(() => {

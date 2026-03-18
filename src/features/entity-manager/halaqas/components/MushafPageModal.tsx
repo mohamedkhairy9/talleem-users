@@ -22,6 +22,10 @@ interface MushafPageModalProps {
     onVerseKeyClick?: (verseKey: string) => void;
     /** When true, render only inner viewer (no overlay/backdrop); for use inside another modal */
     embedded?: boolean;
+    /** Pages the user may browse (e.g. Juz/Surah filter). Omit for full mushaf 1–604. */
+    navigablePageNumbers?: number[];
+    /** When set, prev/next calls this so parent can sync (e.g. embedded viewer + segment picker). */
+    onPageChange?: (page: number) => void;
 }
 
 /**
@@ -37,7 +41,9 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     endVerseKey,
     onSelectVerseKey,
     onVerseKeyClick,
-    embedded = false
+    embedded = false,
+    navigablePageNumbers,
+    onPageChange
 }) => {
     const { t, i18n } = useTranslation();
     const isRtl = (i18n.language || 'ar').startsWith('ar');
@@ -71,6 +77,42 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
     const currentPage = isPlanView && planPages.length > 0
         ? planPages[currentPageIndex]
         : singlePage;
+
+    const singleViewPagesList = useMemo(() => {
+        if (isPlanView) return [];
+        const list =
+            navigablePageNumbers != null && navigablePageNumbers.length > 0
+                ? [...new Set(navigablePageNumbers)].sort((a, b) => a - b)
+                : Array.from({ length: 604 }, (_, i) => i + 1);
+        return list;
+    }, [isPlanView, navigablePageNumbers]);
+
+    const singleViewPageIndex = singleViewPagesList.indexOf(currentPage);
+    const canSingleGoPrev = !isPlanView && singleViewPageIndex > 0;
+    const canSingleGoNext =
+        !isPlanView && singleViewPageIndex >= 0 && singleViewPageIndex < singleViewPagesList.length - 1;
+
+    const goSinglePrev = () => {
+        if (!canSingleGoPrev) return;
+        const p = singleViewPagesList[singleViewPageIndex - 1];
+        if (onPageChange) onPageChange(p);
+        else setSinglePage(p);
+    };
+    const goSingleNext = () => {
+        if (!canSingleGoNext) return;
+        const p = singleViewPagesList[singleViewPageIndex + 1];
+        if (onPageChange) onPageChange(p);
+        else setSinglePage(p);
+    };
+
+    // Keep current page inside navigable set when filter changes (e.g. Juz/Surah)
+    useEffect(() => {
+        if (isPlanView || !singleViewPagesList.length) return;
+        if (singleViewPagesList.includes(currentPage)) return;
+        const first = singleViewPagesList[0];
+        if (onPageChange) onPageChange(first);
+        else setSinglePage(first);
+    }, [isPlanView, singleViewPagesList, currentPage, onPageChange]);
 
     // Plan view: highlight only verses that belong to segments from the API (not all verses in range)
     const planSelectedAyahs = useMemo(() => planSegmentVerseKeys, [planSegmentVerseKeys]);
@@ -384,6 +426,38 @@ const MushafPageModal: React.FC<MushafPageModalProps> = ({
                             </button>
                         )}
                     </div>
+                </div>
+            )}
+
+            {/* Single-page / embedded: prev/next within allowed pages (1–604 or Juz/Surah subset) */}
+            {!isPlanView && singleViewPagesList.length > 0 && !isLoading && !error && (
+                <div
+                    className={`flex items-center justify-center gap-4 px-4 py-3 border-b border-gray-200 bg-gray-50 ${isRtl ? 'flex-row-reverse' : ''}`}
+                >
+                    <button
+                        type="button"
+                        onClick={goSingleNext}
+                        disabled={!canSingleGoNext}
+                        className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
+                        aria-label={t('quran.nextPage', 'Next page')}
+                    >
+                        <ChevronRightIcon width={20} height={20} className={isRtl ? 'rotate-180' : ''} />
+                    </button>
+                    <span className="text-sm font-medium text-gray-700 min-w-[10rem] text-center">
+                        {t('quran.page', 'Page')} {currentPage}
+                        {singleViewPagesList.length < 604
+                            ? ` (${singleViewPageIndex >= 0 ? singleViewPageIndex + 1 : '—'} / ${singleViewPagesList.length})`
+                            : ''}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={goSinglePrev}
+                        disabled={!canSingleGoPrev}
+                        className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
+                        aria-label={t('quran.previousPage', 'Previous page')}
+                    >
+                        <ChevronRightIcon width={20} height={20} className={isRtl ? '' : 'rotate-180'} />
+                    </button>
                 </div>
             )}
 

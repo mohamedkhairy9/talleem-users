@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XIcon, BookOpenIcon } from '@/globals/icons';
 import InlineMushafSegmentPicker from './InlineMushafSegmentPicker';
@@ -33,13 +33,23 @@ const MushafSegmentPickerModal: React.FC<MushafSegmentPickerModalProps> = ({
 }) => {
     const { t } = useTranslation();
     const [viewerPage, setViewerPage] = useState(1);
+    const [navigablePages, setNavigablePages] = useState<number[]>(() =>
+        Array.from({ length: 604 }, (_, i) => i + 1)
+    );
     const [selectionVerseKeyFromMushaf, setSelectionVerseKeyFromMushaf] = useState<string | null>(null);
     const [currentSelectionFromPicker, setCurrentSelectionFromPicker] = useState<QuranSegment | null>(null);
+
+    const handleNavigablePagesChange = useCallback((pages: number[]) => {
+        setNavigablePages((prev) =>
+            prev.length === pages.length && prev.every((p, i) => p === pages[i]) ? prev : [...pages]
+        );
+    }, []);
 
     // Sync viewer page when modal opens (segment picker will call onPageChange with its current page)
     useEffect(() => {
         if (isOpen) {
             setViewerPage(1);
+            setNavigablePages(Array.from({ length: 604 }, (_, i) => i + 1));
             setSelectionVerseKeyFromMushaf(null);
             setCurrentSelectionFromPicker(null);
         }
@@ -104,6 +114,8 @@ const MushafSegmentPickerModal: React.FC<MushafSegmentPickerModalProps> = ({
                                     getSurahName={getSurahName}
                                     hideInlineMushaf
                                     onPageChange={setViewerPage}
+                                    onNavigablePagesChange={handleNavigablePagesChange}
+                                    viewerPageSync={viewerPage}
                                     selectionVerseKeyFromOutside={selectionVerseKeyFromMushaf ?? undefined}
                                     onCurrentSelectionChange={setCurrentSelectionFromPicker}
                                 />
@@ -112,6 +124,8 @@ const MushafSegmentPickerModal: React.FC<MushafSegmentPickerModalProps> = ({
                                         isOpen={isOpen}
                                         onClose={onClose}
                                         pageNumber={viewerPage}
+                                        navigablePageNumbers={navigablePages}
+                                        onPageChange={setViewerPage}
                                         selectedAyahs={selectedAyahsForViewer}
                                         onVerseKeyClick={(verseKey) => setSelectionVerseKeyFromMushaf(verseKey)}
                                         embedded
