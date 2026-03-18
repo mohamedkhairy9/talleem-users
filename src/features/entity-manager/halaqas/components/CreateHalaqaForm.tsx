@@ -7,23 +7,22 @@ import { FormInput, FormSelect, Button } from '@/globals/components';
 import SelectRFH from '@/globals/components/ui/SelectRFH';
 import Select from 'react-select';
 import { useAuthStore } from '@/stores';
-import { useCreateHalaqa, useCheckAvailability } from '../hooks/useHalaqas';
+import { useCreateHalaqa, useCheckAvailability, useHalaqa } from '../hooks/useHalaqas';
 import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
 import type { CreateHalaqaPayload, CheckAvailabilityPayload, CheckAvailabilityResponse } from '../types';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+    HalaqaActivity,
     HALAQA_PERIODS,
     HALAQA_ACTIVITIES,
     HALAQA_TEACHING_METHODS,
     HALAQA_WEEKLY_HOLIDAYS,
     HALAQA_EVALUATION_SYSTEM_TYPES
 } from '../config';
-import type { HalaqaActivity } from '../config';
 import { createHalaqaSchema, CreateHalaqaFormData } from '../schemas/halaqa.schema';
 import { AlertTriangleIcon, ClipboardCheckIcon, CircleIcon } from '@/globals/icons';
 import { normalizeDate, normalizeSessionTime } from '@/utils';
-import { useHalaqa } from '../hooks/useHalaqas';
 import CreatePlanForm from './CreatePlanForm';
 
 /**
