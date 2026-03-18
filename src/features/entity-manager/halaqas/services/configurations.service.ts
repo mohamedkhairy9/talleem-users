@@ -8,17 +8,15 @@ export interface ConfigurationItem {
     label?: string;
     value?: string;
     type?: string;
-    options?: string;
+    // API returns an array like ["tasbit","murajaa","none"]
+    options?: string[] | string;
 }
 
-export interface ConfigurationsResponse {
-    program: string;
-    data: ConfigurationItem[][];
-}
-
-export async function getConfigurations(program: string, key: string): Promise<ConfigurationsResponse> {
-    const { data } = await axiosInstance.get<ConfigurationsResponse>(`/configurations/${program}/key/${key}`);
-    return data;
+export async function getConfigurations(program: string, key: string): Promise<ConfigurationItem> {
+    const response = await axiosInstance.get<any>(`/configurations/${program}/key/${key}`);
+    const maybeWrapped = response && typeof response === 'object' ? (response as any).data : undefined;
+    const item = (maybeWrapped && typeof maybeWrapped === 'object' ? maybeWrapped : response) as ConfigurationItem;
+    return item;
 }
 
 const VALID_ACTIVITIES: HalaqaActivity[] = ['tasbit', 'hifz', 'murajaa'];
@@ -27,12 +25,22 @@ const VALID_ACTIVITIES: HalaqaActivity[] = ['tasbit', 'hifz', 'murajaa'];
  * Parse auto_include_activities value (e.g. "tasbit, murajaa") into an array of HalaqaActivity.
  * Excludes "none" and any value not in tasbit | hifz | murajaa.
  */
-export function parseAutoIncludeActivitiesValue(value: string | undefined): HalaqaActivity[] {
-    if (!value || typeof value !== 'string') return [];
-    return value
-        .split(',')
+export function parseAutoIncludeActivitiesValue(
+    value: string | string[] | undefined
+): HalaqaActivity[] {
+    if (!value) return [];
+
+    const asString = Array.isArray(value) ? value.join(',') : String(value);
+
+    return asString
+        .split(/[,،]/)
         .map((s) => s.trim().toLowerCase())
-        .filter((s) => s && s !== 'none' && VALID_ACTIVITIES.includes(s as HalaqaActivity)) as HalaqaActivity[];
+        .filter(
+            (s) =>
+                s &&
+                s !== 'none' &&
+                VALID_ACTIVITIES.includes(s as HalaqaActivity)
+        ) as HalaqaActivity[];
 }
 
 /**
@@ -40,9 +48,7 @@ export function parseAutoIncludeActivitiesValue(value: string | undefined): Hala
  * Returns e.g. ['tasbit', 'murajaa'] from the config value "tasbit, murajaa".
  */
 export async function getAutoIncludeActivitiesForTahfiz(): Promise<HalaqaActivity[]> {
-    const res = await getConfigurations('tahfiz', 'auto_include_activities');
-    const firstRow = res?.data?.[0];
-    const item = Array.isArray(firstRow) ? firstRow[0] : firstRow;
-    const value = item && typeof item === 'object' && 'value' in item ? (item as ConfigurationItem).value : undefined;
-    return parseAutoIncludeActivitiesValue(value);
+    const item = await getConfigurations('tahfiz', 'auto_include_activities');
+    const raw = item?.value ?? (item?.options ?? undefined);
+    return parseAutoIncludeActivitiesValue(raw);
 }

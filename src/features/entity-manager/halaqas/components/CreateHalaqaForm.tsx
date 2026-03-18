@@ -109,7 +109,7 @@ const CreateHalaqaForm: React.FC = () => {
         }
     }, [evaluationSystemType, setValue]);
 
-    // When hifz is selected, auto-add activities from config (e.g. tasbit, murajaa from /configurations?program=tahfiz&key=auto_include_activities)
+    // When hifz is selected, auto-add activities from config (e.g. tasbit, murajaa).
     useEffect(() => {
         if (Array.isArray(activities) && activities.length > 0 && autoIncludeActivities.length > 0) {
             const hasHifz = activities.includes('hifz');
@@ -434,25 +434,28 @@ const CreateHalaqaForm: React.FC = () => {
                     name="activities"
                     control={control}
                     render={({ field, fieldState }) => {
-                                        const handleChange = (selectedOptions: any) => {
-                                            let selectedValues: string[] = [];
+                        const handleChange = (selectedOptions: any) => {
+                            let selectedValues: string[] = [];
 
-                                            if (selectedOptions) {
-                                                if (Array.isArray(selectedOptions)) {
-                                                    selectedValues = selectedOptions.map((opt: any) => opt.value || opt.id);
-                                                } else {
-                                                    selectedValues = [selectedOptions.value || selectedOptions.id];
-                                                }
-                                            }
+                            if (selectedOptions) {
+                                if (Array.isArray(selectedOptions)) {
+                                    selectedValues = selectedOptions.map((opt: any) => opt.value || opt.id);
+                                } else {
+                                    selectedValues = [selectedOptions.value || selectedOptions.id];
+                                }
+                            }
 
-                                            const hasHifz = selectedValues.includes('hifz');
-                                            if (hasHifz && autoIncludeActivities.length > 0) {
-                                                const toAdd = autoIncludeActivities.filter((a) => !selectedValues.includes(a));
-                                                selectedValues = [...selectedValues, ...toAdd];
-                                            }
+                            const hasHifz = selectedValues.includes(HALAQA_ACTIVITIES[0].value);
+                            if (hasHifz && autoIncludeActivities.length > 0) {
+                                // Ensure all auto-include activities are present while hifz is selected
+                                const toAdd = autoIncludeActivities.filter(
+                                    (a) => !selectedValues.includes(a)
+                                );
+                                selectedValues = [...selectedValues, ...toAdd];
+                            }
 
-                                            field.onChange(selectedValues);
-                                        };
+                            field.onChange(selectedValues);
+                        };
 
                         const currentValue = field.value || [];
                         const selectedOptions = Array.isArray(currentValue)

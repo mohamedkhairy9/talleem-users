@@ -9,8 +9,8 @@ export const HALAQA_PERIODS = [
 ] as const;
 
 export const HALAQA_ACTIVITIES = [
+    { value: 'hifz', labelKey: 'halaqa.activity.hifz' }, // Note: hifz must be the first activity for auto-include activities to work correctly
     { value: 'tasbit', labelKey: 'halaqa.activity.tasbit' },
-    { value: 'hifz', labelKey: 'halaqa.activity.hifz' },
     { value: 'murajaa', labelKey: 'halaqa.activity.murajaa' }
 ] as const;
 
