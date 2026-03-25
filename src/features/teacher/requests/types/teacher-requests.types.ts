@@ -96,7 +96,8 @@ export interface TeacherRequestsListParams {
 
 export interface CreateTeacherRequestPayload {
     request_type_id: number;
-    submitted_data: Record<string, unknown>[];
+    join_request_form_id: number;
+    submitted_data: Record<string, unknown>;
 }
 
 /** Dynamic form field from GET /join-request-forms/:id (data.fields) */

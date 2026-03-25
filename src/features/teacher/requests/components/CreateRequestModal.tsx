@@ -160,7 +160,8 @@ function CreateRequestFormBody({
             });
             const payload: CreateTeacherRequestPayload = {
                 request_type_id,
-                submitted_data: [submittedData]
+                join_request_form_id: request_type_id,
+                submitted_data: submittedData
             };
             createMutation.mutate(payload, {
                 onSuccess: () => {
