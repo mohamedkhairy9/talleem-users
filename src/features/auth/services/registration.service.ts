@@ -1,4 +1,4 @@
-import { JoinRequestFormResponse, UserRoleType } from '../types/registration.types';
+import { JoinRequestFormResponse, RequiredDocumentsResponse, UserRoleType } from '../types/registration.types';
 import axiosInstance from '@/api/axiosInstance';
 
 export interface SelectOption {
@@ -26,6 +26,17 @@ export const registrationService = {
      */
     getJoinRequestForm: async (userType: UserRoleType): Promise<JoinRequestFormResponse> => {
         return axiosInstance.get(`/join-request-forms/${userType}`);
+    },
+
+    /**
+     * Required supporting documents hint for join flow (by role + program slug)
+     * GET /required-documents?type=teacher|entity&program=tahfiz|taaleem
+     */
+    getRequiredDocuments: async (params: {
+        type: 'teacher' | 'entity';
+        program: 'tahfiz' | 'taaleem';
+    }): Promise<RequiredDocumentsResponse> => {
+        return axiosInstance.get('/required-documents', { params });
     },
 
     /**

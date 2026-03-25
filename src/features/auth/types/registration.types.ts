@@ -41,4 +41,10 @@ export interface RegistrationFormData {
     [key: string]: any;
 }
 
+/** GET /required-documents?type=&program= */
+export interface RequiredDocumentsResponse {
+    type: string;
+    program: string;
+    documents: string[];
+}
 

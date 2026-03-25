@@ -9,6 +9,8 @@ interface FormFileProps<T extends FieldValues = FieldValues> {
     accept?: string;
     multiple?: boolean;
     disabled?: boolean;
+    /** Helper text shown under the label (e.g. suggested documents to upload) */
+    hint?: string;
 }
 
 /**
@@ -23,6 +25,7 @@ const FormFile = <T extends FieldValues = FieldValues>({
     accept,
     multiple = false,
     disabled,
+    hint,
     ...props
 }: FormFileProps<T>) => {
     return (
@@ -45,6 +48,9 @@ const FormFile = <T extends FieldValues = FieldValues>({
                                 {required && <span className="text-red-500 ml-1">*</span>}
                             </label>
                         )}
+                        {hint ? (
+                            <p className="mb-2 text-xs text-primary-600 leading-relaxed">{hint}</p>
+                        ) : null}
                         <input
                             {...field}
                             type="file"

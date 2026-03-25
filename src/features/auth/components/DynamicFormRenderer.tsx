@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Control, Controller, FieldValues, useWatch, UseFormSetValue } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { AsyncPaginate } from 'react-select-async-paginate';
-import { JoinRequestFormField } from '../types/registration.types';
+import { JoinRequestFormField, UserRoleType } from '../types/registration.types';
 import { FormInput, FormSelect, FormAsyncPaginate, FormTextarea, FormFile, FormCheckbox, MapPicker } from '@/globals/components';
 import type { AsyncPaginateOption } from '@/globals/components/forms/FormAsyncPaginate';
 import { registrationService } from '../services/registration.service';
+import { useRequiredDocumentsHint } from '../hooks/useRegistration';
 import { extractLabel } from '../utils/extractLabel';
 
 const PER_PAGE = 20;
@@ -85,6 +86,8 @@ interface DynamicFormRendererProps<T extends FieldValues = FieldValues> {
     control: Control<T>;
     errors: any;
     setValue?: UseFormSetValue<T>;
+    /** When set (registration join forms), loads /required-documents hint for the `files` field */
+    joinRequestRole?: UserRoleType;
 }
 
 /**
@@ -96,7 +99,8 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     fields,
     control,
     errors,
-    setValue
+    setValue,
+    joinRequestRole
 }: DynamicFormRendererProps<T>) => {
     const { t } = useTranslation();
     
@@ -108,6 +112,7 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
     const cityId = formValues?.city_id;
     const branchId = formValues?.branch_id;
     const mainProgramId = formValues?.main_program_id;
+    const { data: requiredDocumentsData } = useRequiredDocumentsHint(joinRequestRole, mainProgramId);
     const latitude = formValues?.latitude;
     const longitude = formValues?.longitude;
 
@@ -431,7 +436,14 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                     />
                 );
 
-            case 'file':
+            case 'file': {
+                const filesHint =
+                    joinRequestRole &&
+                    field.key === 'files' &&
+                    requiredDocumentsData?.documents &&
+                    requiredDocumentsData.documents.length > 0
+                        ? requiredDocumentsData.documents.join('، ')
+                        : undefined;
                 return (
                     <FormFile
                         key={field.key}
@@ -443,8 +455,10 @@ const DynamicFormRenderer = <T extends FieldValues = FieldValues>({
                         multiple={field.multiple}
                         accept={field.accept}
                         disabled={isDisabled}
+                        hint={filesHint}
                     />
                 );
+            }
 
             case 'object':
                 // Multilingual object (name.ar, name.en)

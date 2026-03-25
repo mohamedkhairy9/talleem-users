@@ -244,7 +244,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ userType, onBack })
                     </div>
                 )}
                 
-                <DynamicFormRenderer fields={formData.data.fields} control={control} errors={errors} setValue={setValue} />
+                <DynamicFormRenderer
+                    fields={formData.data.fields}
+                    control={control}
+                    errors={errors}
+                    setValue={setValue}
+                    joinRequestRole={userType}
+                />
 
                 {submitMutation.error && (
                     <div className="text-red-600 text-sm mt-4">
