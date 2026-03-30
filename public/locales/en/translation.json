@@ -357,6 +357,8 @@
             "en": "Name (English)",
             "ar": "Name (Arabic)"
         },
+        "myHalaqas": "My Halaqas",
+        "myHalaqasDescription": "View and manage your active halaqas",
         "teacher": "Teacher",
         "selectTeacher": "Select a teacher",
         "memorizationProgramEntityType": "Memorization Program Entity Type",
