@@ -90,12 +90,6 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, request
                                     label={t('teacherRequests.currentStep', 'Current Step')}
                                     value={getLocalized(detail.current_step?.name)}
                                 />
-                                {detail.current_step?.assigned_to && (
-                                    <DetailRow
-                                        label={t('teacherRequests.assignedTo', 'Assigned To')}
-                                        value={detail.current_step.assigned_to.name}
-                                    />
-                                )}
                                 <DetailRow
                                     label={t('teacherRequests.createdAt', 'Created At')}
                                     value={getDisplayDate(detail.created_at as any)}

@@ -179,23 +179,9 @@ const JoinRequestStatusDisplay: React.FC<JoinRequestStatusDisplayProps> = ({ dat
                         </div>
                         <div>
                             <p className="text-sm font-medium text-gray-700 mb-1">
-                                {t('status.step_type', 'Step Type')}
-                            </p>
-                            <p className="text-gray-900 capitalize">{data.current_step.step_type}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-700 mb-1">
                                 {t('status.order', 'Order')}
                             </p>
                             <p className="text-gray-900">{data.current_step.order}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-700 mb-1">
-                                {t('status.assigned_to', 'Assigned To')}
-                            </p>
-                            <p className="text-gray-900 capitalize">
-                                {data.current_step.assigned_to_type} ({data.current_step.assigned_to_id})
-                            </p>
                         </div>
                     </div>
 

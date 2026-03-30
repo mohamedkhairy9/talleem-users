@@ -45,10 +45,9 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
     const [attendanceModal, setAttendanceModal] = useState<{
         studentId: number;
         studentName: string;
-        isPresent: boolean;
     } | null>(null);
     /** Tracks which student/action is currently submitting (for button loading state) */
-    const [pendingAttendance, setPendingAttendance] = useState<{ studentId: number; isPresent: boolean } | null>(null);
+    const [pendingAttendanceStudentId, setPendingAttendanceStudentId] = useState<number | null>(null);
     const [selectedAttendanceType, setSelectedAttendanceType] = useState<number | null>(null);
 
     const [gradeModal, setGradeModal] = useState<{
@@ -126,7 +125,7 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
             toast.error(getErrorMessage(error));
         },
         onSettled: () => {
-            setPendingAttendance(null);
+            setPendingAttendanceStudentId(null);
         }
     });
 
@@ -167,17 +166,9 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
         setSelectedPlan(null);
     };
 
-    const handleMarkAttendance = (studentId: number, studentName: string, isPresent: boolean) => {
-        if (isPresent) {
-            setPendingAttendance({ studentId, isPresent: true });
-            attendanceMutation.mutate({
-                student_id: studentId,
-                is_present: true
-            });
-        } else {
-            setAttendanceModal({ studentId, studentName, isPresent: false });
-            setSelectedAttendanceType(null);
-        }
+    const handleMarkAbsent = (studentId: number, studentName: string) => {
+        setAttendanceModal({ studentId, studentName });
+        setSelectedAttendanceType(null);
     };
 
     const handleCloseAttendanceModal = () => {
@@ -188,15 +179,15 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
     const handleSubmitAttendance = () => {
         if (!attendanceModal) return;
 
-        if (!attendanceModal.isPresent && !selectedAttendanceType) {
+        if (!selectedAttendanceType) {
             return;
         }
 
-        setPendingAttendance({ studentId: attendanceModal.studentId, isPresent: attendanceModal.isPresent });
+        setPendingAttendanceStudentId(attendanceModal.studentId);
         attendanceMutation.mutate({
             student_id: attendanceModal.studentId,
-            is_present: attendanceModal.isPresent,
-            attendance_type_id: attendanceModal.isPresent ? undefined : selectedAttendanceType!
+            is_present: false,
+            attendance_type_id: selectedAttendanceType!
         });
     };
 
@@ -422,21 +413,10 @@ const TeacherHalaqaStudents: React.FC<TeacherHalaqaStudentsProps> = ({
                                             <div className="flex flex-wrap gap-2">
                                                 <Button
                                                     type="button"
-                                                    onClick={() => handleMarkAttendance(student.id, getLocalizedText(student.name) || `Student #${student.id}`, true)}
-                                                    size="sm"
-                                                    variant="success"
-                                                    loading={attendanceMutation.isPending && pendingAttendance?.studentId === student.id && pendingAttendance?.isPresent === true}
-                                                    className="flex items-center gap-1.5"
-                                                >
-                                                    <CheckIcon width={14} height={14} />
-                                                    {t('attendance.markPresent', 'Mark Present')}
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    onClick={() => handleMarkAttendance(student.id, getLocalizedText(student.name) || `Student #${student.id}`, false)}
+                                                    onClick={() => handleMarkAbsent(student.id, getLocalizedText(student.name) || `Student #${student.id}`)}
                                                     size="sm"
                                                     variant="danger"
-                                                    loading={attendanceMutation.isPending && pendingAttendance?.studentId === student.id && pendingAttendance?.isPresent === false}
+                                                    loading={attendanceMutation.isPending && pendingAttendanceStudentId === student.id}
                                                     className="flex items-center gap-1.5"
                                                 >
                                                     <XIcon width={14} height={14} />
