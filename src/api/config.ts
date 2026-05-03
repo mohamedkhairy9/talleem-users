@@ -18,7 +18,7 @@
  * 3. Production mode - use default production URL
  */
 export const API_CONFIG = {
-    baseURL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '/api/front' : 'https://api-tallam.vocus-dev2.com/api/front'),
+    baseURL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '/api/v1/front' : 'https://api-tallam.vocus-dev2.com/api/v1/front'),
     timeout: 30000, // 30 seconds
     headers: {
         'Content-Type': 'application/json',

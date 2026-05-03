@@ -24,12 +24,12 @@ export default defineConfig({
                 changeOrigin: true,
                 secure: true,
                 rewrite: (path) => {
-                    // If path already contains /front, don't rewrite
-                    if (path.startsWith('/api/front')) {
+                    // If path already contains /v1/front, don't rewrite
+                    if (path.startsWith('/api/v1/front')) {
                         return path;
                     }
-                    // Otherwise rewrite /api to /api/front
-                    return path.replace(/^\/api/, '/api/front');
+                    // Otherwise rewrite /api to /api/v1/front
+                    return path.replace(/^\/api/, '/api/v1/front');
                 },
                 configure: (proxy, _options) => {
                     proxy.on('error', (err, _req, _res) => {
