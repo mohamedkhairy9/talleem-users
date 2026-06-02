@@ -8,9 +8,16 @@ import { cookieService } from '@/utils/cookies';
  * Converts "entity manager" -> "entity_manager", etc.
  */
 const normalizeRoles = (roles) => {
-    return roles.map(role => {
+    return roles
+        .map(role => {
+        const rawRole = typeof role === 'string'
+            ? role
+            : role?.name || role?.slug || role?.code || role?.role || role?.type || '';
+        if (!rawRole) {
+            return '';
+        }
         // Normalize role names: replace spaces with underscores and convert to lowercase
-        const normalized = role.toLowerCase().replace(/\s+/g, '_');
+        const normalized = rawRole.toLowerCase().replace(/\s+/g, '_');
         // Map common variations
         const roleMapping = {
             'entity_manager': 'entity_manager',
@@ -19,7 +26,110 @@ const normalizeRoles = (roles) => {
             'admin': 'admin'
         };
         return roleMapping[normalized] || normalized;
-    });
+    })
+        .filter(Boolean);
+};
+const USER_FIELD_KEYS = ['user', 'customer', 'account', 'front_user', 'current_user'];
+const TEACHER_FIELD_KEYS = ['teacher', 'teacher_profile', 'current_teacher'];
+const TOKEN_FIELD_KEYS = ['front_access_token', 'access_token', 'accessToken', 'token', 'auth_token', 'bearer_token'];
+const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
+const pickFirst = (sources, keys) => {
+    for (const source of sources) {
+        if (!isRecord(source))
+            continue;
+        for (const key of keys) {
+            if (source[key] != null && source[key] !== '') {
+                return source[key];
+            }
+        }
+    }
+    return undefined;
+};
+const buildCandidateSources = (response) => {
+    const body = response?.data ?? response ?? {};
+    const nestedData = body?.data;
+    const nestedPayload = body?.payload;
+    const nestedResult = body?.result;
+    return [body, nestedData, nestedPayload, nestedResult, nestedData?.data, nestedPayload?.data, response?.headers].filter(Boolean);
+};
+const readHeader = (headers, name) => {
+    if (!headers) {
+        return undefined;
+    }
+    if (typeof headers.get === 'function') {
+        return headers.get(name);
+    }
+    return headers[name] ?? headers[name.toLowerCase()] ?? headers[name.toUpperCase()];
+};
+const extractTokenFromHeaders = (headers) => {
+    const authorization = readHeader(headers, 'authorization') || readHeader(headers, 'Authorization');
+    if (typeof authorization === 'string' && authorization.toLowerCase().startsWith('bearer ')) {
+        return authorization.slice(7).trim();
+    }
+    return (readHeader(headers, 'x-access-token') ||
+        readHeader(headers, 'access-token') ||
+        readHeader(headers, 'x-auth-token') ||
+        readHeader(headers, 'auth-token'));
+};
+const findValueDeep = (value, matcher, depth = 0) => {
+    if (depth > 4 || !isRecord(value)) {
+        return undefined;
+    }
+    for (const [key, nestedValue] of Object.entries(value)) {
+        if (matcher(key, nestedValue)) {
+            return nestedValue;
+        }
+        const nestedResult = findValueDeep(nestedValue, matcher, depth + 1);
+        if (nestedResult !== undefined) {
+            return nestedResult;
+        }
+    }
+    return undefined;
+};
+const deriveRoles = (user) => {
+    if (!isRecord(user)) {
+        return [];
+    }
+    if (Array.isArray(user.roles) && user.roles.length > 0) {
+        return normalizeRoles(user.roles);
+    }
+    if (user.role != null) {
+        return normalizeRoles([user.role]);
+    }
+    if (user.user_type != null) {
+        const mapped = user.user_type === 1
+            ? 'teacher'
+            : user.user_type === 3
+                ? 'entity_manager'
+                : user.user_type;
+        return normalizeRoles([mapped]);
+    }
+    return [];
+};
+const normalizeUser = (candidate) => {
+    if (!isRecord(candidate)) {
+        return null;
+    }
+    const roles = deriveRoles(candidate);
+    return {
+        ...candidate,
+        id: candidate.id ?? candidate.user_id ?? candidate.customer_id ?? 0,
+        roles,
+        permissions: Array.isArray(candidate.permissions) ? candidate.permissions : []
+    };
+};
+const extractAuthPayload = (response) => {
+    const sources = buildCandidateSources(response);
+    const token = pickFirst(sources, TOKEN_FIELD_KEYS) ??
+        extractTokenFromHeaders(response?.headers) ??
+        findValueDeep(response?.data ?? response, (key, value) => TOKEN_FIELD_KEYS.includes(key) && typeof value === 'string');
+    const userCandidate = pickFirst(sources, USER_FIELD_KEYS);
+    const teacher = pickFirst(sources, TEACHER_FIELD_KEYS) ?? null;
+    const fallbackUser = pickFirst(sources, USER_FIELD_KEYS) ??
+        findValueDeep(response?.data ?? response, (key, value) => USER_FIELD_KEYS.includes(key) && isRecord(value)) ??
+        sources.find(source => isRecord(source) && (source.id != null || source.email || source.roles || source.role || source.user_type));
+    const user = normalizeUser(userCandidate) ?? normalizeUser(fallbackUser);
+    return { token, user, teacher };
 };
 /**
  * Login mutation hook
@@ -30,29 +140,28 @@ export const useLoginMutation = () => {
     const setLoading = useAuthStore(state => state.setLoading);
     return useMutation({
         mutationFn: (credentials) => authService.login(credentials),
-        onSuccess: (response) => {
-            // API: { message, data: { front_access_token, token_type, user, teacher? } }; axios puts body in response.data
-            const body = response?.data ?? response;
-            const inner = body?.data ?? body;
-            const token = inner.front_access_token ?? inner.token ?? body.front_access_token ?? body.token;
-            let user = inner.user ?? body.user ?? inner;
-            if (typeof user !== 'object' || user === null)
-                user = { id: 0, roles: [], permissions: [] };
-            if (user.roles && Array.isArray(user.roles)) {
-                user.roles = normalizeRoles(user.roles);
+        onSuccess: async (response) => {
+            let { token, user, teacher } = extractAuthPayload(response);
+            let sessionVerified = false;
+            // Some API versions authenticate via server-set cookies and require a follow-up current-user fetch.
+            if (!token || !user) {
+                try {
+                    const currentUserResponse = await authService.getUser();
+                    const extracted = extractAuthPayload(currentUserResponse);
+                    user = extracted.user ?? user;
+                    teacher = extracted.teacher ?? teacher;
+                    token = token ?? extracted.token;
+                    sessionVerified = true;
+                }
+                catch {
+                    // Ignore follow-up fetch errors; the route guard will handle invalid sessions.
+                }
             }
-            else {
-                user.roles = user.roles ?? [];
-            }
-            if (!Array.isArray(user.permissions))
-                user.permissions = user.permissions ?? [];
-            const teacher = inner.teacher ?? body.teacher ?? null;
-            // Store full login response so profile page can render without refetch
-            if (token && user) {
+            if (user && (token || sessionVerified)) {
                 setLoginData(user, teacher, token);
             }
             else {
-                setUser(user, token);
+                setUser(null, token);
             }
             setLoading(false);
         },
@@ -89,30 +198,21 @@ export const useLogoutMutation = () => {
 export const useUserQuery = () => {
     const setUser = useAuthStore(state => state.setUser);
     const token = cookieService.getToken();
+    const hasSession = cookieService.hasSession();
     const query = useQuery({
         queryKey: ['user', 'current'],
         queryFn: () => authService.getUser(),
-        enabled: !!token, // Only run if token exists
+        enabled: hasSession,
         retry: false,
         staleTime: Infinity // User data doesn't change often
     });
     // Handle success with useEffect (React Query v5+ removed onSuccess)
     useEffect(() => {
         if (query.isSuccess && query.data) {
-            // Handle new API response structure
-            const responseData = query.data.data || query.data;
-            let user = responseData.user || responseData;
-            // Use roles array directly from API response
-            if (user.roles && Array.isArray(user.roles)) {
-                // Normalize role names to match app's expected format
-                user.roles = normalizeRoles(user.roles);
+            const { user } = extractAuthPayload(query.data);
+            if (user) {
+                setUser(user, token || undefined);
             }
-            else {
-                // Fallback: if roles array is missing, initialize empty array
-                // The app should rely on roles from API, not user_type
-                user.roles = [];
-            }
-            setUser(user, token || undefined);
         }
     }, [query.isSuccess, query.data, setUser, token]);
     return query;

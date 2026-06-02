@@ -18,8 +18,8 @@ function compactEntityToEntity(compact) {
 export const useAuthStore = create((set, get) => {
     // Initialize from cookies + localStorage (full user/teacher from login)
     const initializeFromStorage = () => {
-        const token = cookieService.getToken();
-        if (!token)
+        const hasSession = cookieService.hasSession();
+        if (!hasSession)
             return { user: null, teacher: null, isAuthenticated: false };
         const stored = customerStorage.get();
         if (stored?.user) {
@@ -53,6 +53,9 @@ export const useAuthStore = create((set, get) => {
             if (token) {
                 cookieService.setToken(token);
             }
+            else if (user) {
+                cookieService.setSessionActive();
+            }
             if (user) {
                 cookieService.setUserData(user);
             }
@@ -61,11 +64,16 @@ export const useAuthStore = create((set, get) => {
             }
             set({
                 user,
-                isAuthenticated: !!token && !!user
+                isAuthenticated: !!user && (!!token || cookieService.hasSession())
             });
         },
         setLoginData: (user, teacher, token) => {
-            cookieService.setToken(token);
+            if (token) {
+                cookieService.setToken(token);
+            }
+            else {
+                cookieService.setSessionActive();
+            }
             cookieService.setUserData(user);
             customerStorage.set({
                 user: user,
@@ -82,6 +90,7 @@ export const useAuthStore = create((set, get) => {
         },
         logout: () => {
             cookieService.removeToken();
+            cookieService.removeSession();
             cookieService.removeUserData();
             customerStorage.remove();
             set({
@@ -126,10 +135,10 @@ export const useAuthStore = create((set, get) => {
         initializeAuth: () => {
             const { user: currentUser, isAuthenticated } = get();
             if (currentUser && isAuthenticated) {
-                return cookieService.getToken() || null;
+                return cookieService.getToken() || (cookieService.hasSession() ? '__session__' : null);
             }
             const token = cookieService.getToken();
-            if (!token)
+            if (!cookieService.hasSession())
                 return null;
             const stored = customerStorage.get();
             if (stored?.user) {
@@ -138,7 +147,7 @@ export const useAuthStore = create((set, get) => {
                     teacher: stored.teacher ?? null,
                     isAuthenticated: true
                 });
-                return token;
+                return token || '__session__';
             }
             const userData = cookieService.getUserData();
             if (userData) {
@@ -149,7 +158,7 @@ export const useAuthStore = create((set, get) => {
                     entity: compactEntityToEntity(userData.entity)
                 };
                 set({ user, teacher: null, isAuthenticated: true });
-                return token;
+                return token || '__session__';
             }
             return null;
         }
