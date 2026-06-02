@@ -24,7 +24,7 @@ const ProtectedRoute = ({ children, roles = [], permissions = [] }) => {
                 <Loader size="lg"/>
             </div>);
     }
-    if (!isAuthenticated || !cookieService.hasSession()) {
+    if (!isAuthenticated || !cookieService.hasToken()) {
         // Redirect to login with current language
         const lang = location.pathname.split('/')[1] || DEFAULT_LANG;
         return <Navigate to={`/${lang}/${ROUTE_PATHS.LOGIN}`} state={{ from: location }} replace/>;

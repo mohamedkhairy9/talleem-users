@@ -9,7 +9,7 @@ export const authService = {
      * Login user
      */
     login: (credentials) => {
-        return axiosInstance.post(API_ENDPOINTS.AUTH.LOGIN, credentials, { rawResponse: true });
+        return axiosInstance.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
     },
     /**
      * Logout user

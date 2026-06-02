@@ -56,9 +56,6 @@ axiosInstance.interceptors.request.use((config) => {
  * - Handles token refresh if needed
  */
 axiosInstance.interceptors.response.use((response) => {
-    if (response.config?.rawResponse) {
-        return response;
-    }
     // Return data directly for cleaner API calls
     return response.data;
 }, async (error) => {

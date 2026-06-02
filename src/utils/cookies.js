@@ -5,7 +5,6 @@ import Cookies from 'js-cookie';
  */
 const TOKEN_KEY = 'tallem_users_dashboard_auth_token';
 const USER_DATA_KEY = 'tallem_users_dashboard_user_data';
-const SESSION_KEY = 'tallem_users_dashboard_auth_session';
 const COOKIE_OPTIONS = {
     expires: 7, // 7 days
     secure: import.meta.env.PROD, // HTTPS only in production
@@ -20,7 +19,6 @@ const COOKIE_OPTIONS = {
 export const cookieService = {
     setToken: (token) => {
         Cookies.set(TOKEN_KEY, token, COOKIE_OPTIONS);
-        Cookies.set(SESSION_KEY, '1', COOKIE_OPTIONS);
     },
     getToken: () => {
         return Cookies.get(TOKEN_KEY);
@@ -30,15 +28,6 @@ export const cookieService = {
     },
     hasToken: () => {
         return !!Cookies.get(TOKEN_KEY);
-    },
-    setSessionActive: () => {
-        Cookies.set(SESSION_KEY, '1', COOKIE_OPTIONS);
-    },
-    hasSession: () => {
-        return !!Cookies.get(TOKEN_KEY) || Cookies.get(SESSION_KEY) === '1';
-    },
-    removeSession: () => {
-        Cookies.remove(SESSION_KEY, { path: '/' });
     },
     /**
      * Store user data in cookie (compact format to respect 4KB limit)

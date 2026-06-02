@@ -10,7 +10,7 @@
  * IMPORTANT:
  * - DO NOT set VITE_API_BASE_URL to localhost in development - it will bypass the proxy and cause CORS errors
  * - In development: use '/api/front' (uses proxy) or leave VITE_API_BASE_URL unset
- * - In production: set VITE_API_BASE_URL to the full backend URL (e.g., 'https://api-tallam.vocus-dev2.com/api/v2/front')
+ * - In production: set VITE_API_BASE_URL to the full backend URL (e.g., 'https://api-tallam.vocus-dev2.com/api/front')
  *
  * Configuration priority:
  * 1. VITE_API_BASE_URL (if set) - use this value
@@ -18,7 +18,7 @@
  * 3. Production mode - use default production URL
  */
 export const API_CONFIG = {
-    baseURL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '/api/v2/front' : 'https://api-tallam.vocus-dev2.com/api/v2/front'),
+    baseURL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '/api/v1/front' : 'https://api-tallam.vocus-dev2.com/api/v1/front'),
     timeout: 30000, // 30 seconds
     headers: {
         'Content-Type': 'application/json',
