@@ -1,6 +1,6 @@
-import { EyeIcon } from '@/globals/icons';
-import { DateCell } from '@/globals/components';
-import { getLocalizedText as getLocalizedTextHelper } from '@/utils';
+import { EyeIcon } from '@/shared/icons';
+import { DateCell } from '@/shared/components';
+import { getLocalizedText as getLocalizedTextHelper } from '@/shared/utils';
 export function createTeacherRequestsColumns(params) {
     const { t, currentLang, onView } = params;
     const getLocalized = (obj) => getLocalizedTextHelper(obj, currentLang, t('common.not_available', 'N/A'));

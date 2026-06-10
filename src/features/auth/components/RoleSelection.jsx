@@ -1,8 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { TeacherIcon, BriefcaseIcon } from '@/globals/icons';
-import { Button } from '@/globals/components';
+import { TeacherIcon, BriefcaseIcon } from '@/shared/icons';
+import { Button } from '@/shared/components';
 import { ROUTE_PATHS } from '@/config';
 /**
  * Role Selection Component

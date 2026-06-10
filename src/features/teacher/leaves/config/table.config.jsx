@@ -1,5 +1,5 @@
-import { getDisplayDate, formatTimePart } from '@/utils';
-import { Button, DateCell, ImageWithViewer } from '@/globals/components';
+import { getDisplayDate, formatTimePart } from '@/shared/utils';
+import { Button, DateCell, ImageWithViewer } from '@/shared/components';
 export const LEAVE_SUB_TYPES = [
     { key: 'sick', labelKey: 'leaves.subType.sick' },
     { key: 'annual', labelKey: 'leaves.subType.annual' },

@@ -1,4 +1,4 @@
-import { getDisplayDate } from '@/utils';
+import { getDisplayDate } from '@/shared/utils';
 /**
  * Table Columns Configuration for Teacher Halaqa List
  * Returns a function that creates table columns with the necessary dependencies

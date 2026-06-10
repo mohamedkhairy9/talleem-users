@@ -1,11 +1,11 @@
 import React, { useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Table } from '@/globals/components';
+import { Table } from '@/shared/components';
 import { useGivenEvaluations } from '../hooks/useEvaluations';
 import GivenEvaluationsListMobile from './GivenEvaluationsListMobile';
 import { createGivenEvaluationsListColumns } from '../config/table.config';
-import { getLocalizedText as getLocalizedTextHelper } from '@/utils/helpers/getLocalizedText';
-import { useDateFormatStore } from '@/stores';
+import { getLocalizedText as getLocalizedTextHelper } from '@/shared/utils/helpers/getLocalizedText';
+import { useDateFormatStore } from '@/app/stores';
 /**
  * Teacher Given Evaluations List
  * Responsive: cards on mobile, table on desktop (evaluations the teacher submitted)

@@ -1,11 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { XIcon } from '@/globals/icons';
-import { ImageWithViewer } from '@/globals/components';
+import { XIcon } from '@/shared/icons';
+import { ImageWithViewer } from '@/shared/components';
 import { useStudentCertificates } from '../hooks/useCertificates';
-import { getLocalizedText } from '@/utils/helpers/getLocalizedText';
-import { getDisplayDate } from '@/utils';
-import { getErrorMessage } from '@/utils/helpers/errorHandler';
+import { getLocalizedText } from '@/shared/utils/helpers/getLocalizedText';
+import { getDisplayDate } from '@/shared/utils';
+import { getErrorMessage } from '@/shared/utils/helpers/errorHandler';
 function DetailRow({ label, value }) {
     return (<div className="flex flex-wrap gap-2 py-2 border-b border-gray-100 last:border-0">
             <dt className="text-sm font-medium text-gray-500 min-w-[100px]">{label}</dt>

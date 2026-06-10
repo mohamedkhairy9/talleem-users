@@ -1,13 +1,15 @@
-import { axiosInstance } from '@/api/axiosInstance';
+import { axiosInstance } from '@/shared/api/axiosInstance';
 import { HALAQAS_LIST_PATH } from '../constants/list.constants';
 /** Build query params object (strip undefined, keep only defined filters). */
 function buildListQueryParams(params) {
     const result = {};
     Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== '' && value !== null) {
-            // API expects halaqa_page instead of generic page for halaqa list
-            const apiKey = key === 'page' ? 'halaqa_page' : key;
-            result[apiKey] = value;
+            result[key] = value;
+            // Keep halaqa_page as a compatibility fallback for older backends.
+            if (key === 'page') {
+                result.halaqa_page = value;
+            }
         }
     });
     return result;
@@ -27,6 +29,11 @@ export const halaqasService = {
      */
     getHalaqas: (params = {}) => {
         const queryParams = buildListQueryParams(params);
+        console.log('Halaqa list request debug:', {
+            endpoint: HALAQAS_LIST_PATH,
+            params,
+            queryParams
+        });
         return axiosInstance.get(HALAQAS_LIST_PATH, { params: queryParams });
     },
     /**

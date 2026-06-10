@@ -1,4 +1,4 @@
-import { axiosInstance } from '@/api/axiosInstance';
+import { axiosInstance } from '@/shared/api/axiosInstance';
 /**
  * Entity Manager Licenses Service
  * GET /entity/licenses, GET /entity/licenses/current

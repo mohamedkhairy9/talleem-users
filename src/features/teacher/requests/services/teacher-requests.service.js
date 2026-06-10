@@ -1,4 +1,4 @@
-import { axiosInstance } from '@/api/axiosInstance';
+import { axiosInstance } from '@/shared/api/axiosInstance';
 /**
  * Teacher Requests Service
  * GET /teacher-requests, POST /teacher-requests, GET /teacher-requests/request-types, GET /join-request-forms/:id

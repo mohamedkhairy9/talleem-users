@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { loadMushafPages, loadJuzPages, loadSurahData, getSurahNumberForPage, getJuzForPage, getSurahNameForPage } from '@/utils/helpers/surahHelper';
-import { ReactSelect } from '@/globals/components';
-import { ChevronRightIcon } from '@/globals/icons';
+import { loadMushafPages, loadJuzPages, loadSurahData, getSurahNumberForPage, getJuzForPage, getSurahNameForPage } from '@/shared/utils/helpers/surahHelper';
+import { ReactSelect } from '@/shared/components';
+import { ChevronRightIcon } from '@/shared/icons';
 /**
  * Dropdown to select a mushaf page (1–604). Each option shows localized surah name and juz number.
  */

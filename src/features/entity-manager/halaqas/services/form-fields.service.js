@@ -1,4 +1,4 @@
-import { axiosInstance } from '@/api/axiosInstance';
+import { axiosInstance } from '@/shared/api/axiosInstance';
 /**
  * Form Fields Service
  * Handles API calls for form field options (teachers, students, platforms, etc.)
@@ -17,6 +17,12 @@ export const formFieldsService = {
      */
     getStudents: (params = {}) => {
         return axiosInstance.get('/students', { params });
+    },
+    /**
+     * Get entities list (paginated / filtered)
+     */
+    getEntities: (params = {}) => {
+        return axiosInstance.get('/entities', { params });
     },
     /**
      * Get platforms list (paginated) - generic platforms endpoint

@@ -1,8 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { EyeIcon } from '@/globals/icons';
-import { getDisplayDate } from '@/utils';
-import { useDateFormatStore } from '@/stores';
+import { EyeIcon } from '@/shared/icons';
+import { getDisplayDate } from '@/shared/utils';
+import { useDateFormatStore } from '@/app/stores';
 const TeacherHalaqaListMobile = ({ list, isLoading, hasError, errorMessage, emptyMessage, getLocalizedText, formatActivities, onView }) => {
     const { t } = useTranslation();
     useDateFormatStore((s) => s.dateFormat); // re-render when date format changes

@@ -19,10 +19,27 @@ export const useHalaqas = (params = {}) => {
         queryFn: () => halaqasService.getHalaqas(params),
         staleTime: 2 * 60 * 1000
     });
-    // Axios interceptor returns response.data (API body), so query.data = { data: [], meta: {} }
+    // Axios interceptor returns response.data (API body). Some responses may wrap list/meta one level deeper.
     const responseBody = query.data;
-    const list = Array.isArray(responseBody?.data) ? responseBody.data : [];
-    const meta = responseBody?.meta;
+    const nestedResponseBody = responseBody?.data && !Array.isArray(responseBody.data)
+        ? responseBody.data
+        : null;
+    const list = Array.isArray(responseBody?.data)
+        ? responseBody.data
+        : Array.isArray(nestedResponseBody?.data)
+            ? nestedResponseBody.data
+            : [];
+    const meta = responseBody?.meta ??
+        nestedResponseBody?.meta ??
+        responseBody?.pagination ??
+        nestedResponseBody?.pagination ??
+        null;
+    console.log('Halaqa list response debug:', {
+        params,
+        responseBody,
+        resolvedMeta: meta,
+        listLength: list.length
+    });
     return {
         ...query,
         list,

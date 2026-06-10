@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pagination, Table } from '@/globals/components';
+import { Pagination, Table } from '@/shared/components';
 import { useTeacherRequests } from '../hooks/useTeacherRequests';
 import { createTeacherRequestsColumns } from '../config/table.config';
-import { useDateFormatStore } from '@/stores';
+import { useDateFormatStore } from '@/app/stores';
 const PER_PAGE = 15;
 const TeacherRequestsList = ({ onView }) => {
     const { t, i18n } = useTranslation();

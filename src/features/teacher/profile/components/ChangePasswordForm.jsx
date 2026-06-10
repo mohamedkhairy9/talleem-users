@@ -2,7 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useChangePasswordMutation } from '@/features/auth';
-import { Button, Input } from '@/globals/components';
+import { Button, Input } from '@/shared/components';
 const ChangePasswordForm = ({ onSuccess }) => {
     const { t } = useTranslation();
     const changePassword = useChangePasswordMutation();

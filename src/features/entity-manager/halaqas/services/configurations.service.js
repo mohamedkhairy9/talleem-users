@@ -1,4 +1,4 @@
-import { axiosInstance } from '@/api/axiosInstance';
+import { axiosInstance } from '@/shared/api/axiosInstance';
 export async function getConfigurations(program, key) {
     const response = await axiosInstance.get(`/configurations/${program}/key/${key}`);
     const maybeWrapped = response && typeof response === 'object' ? response.data : undefined;

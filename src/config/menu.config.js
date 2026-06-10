@@ -27,12 +27,31 @@ export const MEMORIZATION_MENU_ITEMS = [
             }
         ]
     },
+    //submenu warning
     {
         path: ROUTE_PATHS.WARNINGS_MANAGEMENT,
         labelKey: 'menu.warningsManagement',
         icon: 'AlertTriangleIcon',
-        roles: ['admin', 'entity_manager']
+        roles: ['admin', 'entity_manager'],
+        subItems: [
+            {
+                path: ROUTE_PATHS.INCOMING_WARNINGS,
+                labelKey: 'menu.incomingWarnings',
+                icon: 'UsersIcon'
+            },
+            {
+                path: ROUTE_PATHS.WARNINGS_ISSUED,
+                labelKey: 'menu.warningsIssued',
+                icon: 'ClipboardCheckIcon'
+            },
+        ]
     },
+    // {
+    //     path: ROUTE_PATHS.WARNINGS_MANAGEMENT,
+    //     labelKey: 'menu.warningsManagement',
+    //     icon: 'AlertTriangleIcon',
+    //     roles: ['admin', 'entity_manager']
+    // },
     {
         path: ROUTE_PATHS.ENTITY_LICENSES,
         labelKey: 'menu.licenses',
@@ -51,14 +70,14 @@ export const MEMORIZATION_MENU_ITEMS = [
  * Add menu items for education program here
  */
 export const EDUCATION_MENU_ITEMS = [
-// Add education program menu items here
-// Example:
-// {
-//     path: ROUTE_PATHS.EDUCATION_CLASSES,
-//     labelKey: 'menu.educationClasses',
-//     icon: 'BookIcon',
-//     roles: ['entity_manager']
-// }
+    // Add education program menu items here
+    // Example:
+    // {
+    //     path: ROUTE_PATHS.EDUCATION_CLASSES,
+    //     labelKey: 'menu.educationClasses',
+    //     icon: 'BookIcon',
+    //     roles: ['entity_manager']
+    // }
 ];
 /**
  * Teacher Menu Items

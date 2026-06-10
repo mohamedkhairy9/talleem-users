@@ -1,4 +1,4 @@
-import { AwardIcon } from '@/globals/icons';
+import { AwardIcon } from '@/shared/icons';
 /**
  * Table columns for Teacher Certificates (students) List
  */

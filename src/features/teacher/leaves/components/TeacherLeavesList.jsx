@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
-import { Table } from '@/globals/components';
+import { Table } from '@/shared/components';
 import { useTeacherLeaves, useCancelTeacherLeave } from '../hooks/useTeacherLeaves';
 import TeacherLeavesListMobile from './TeacherLeavesListMobile';
 import { createTeacherLeavesListColumns } from '../config/table.config';
-import { getErrorMessage } from '@/utils/helpers/errorHandler';
-import { useDateFormatStore } from '@/stores';
+import { getErrorMessage } from '@/shared/utils/helpers/errorHandler';
+import { useDateFormatStore } from '@/app/stores';
 const TeacherLeavesList = () => {
     const { t } = useTranslation();
     useDateFormatStore((s) => s.dateFormat); // re-render when date format changes

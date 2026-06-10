@@ -2,11 +2,11 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
-import { Button, FormInput, FormTextarea, FormFile, FormSelect, ReactSelect } from '@/globals/components';
-import { XIcon } from '@/globals/icons';
-import { getLocalizedText } from '@/utils/helpers/getLocalizedText';
+import { Button, FormInput, FormTextarea, FormFile, FormSelect, ReactSelect } from '@/shared/components';
+import { XIcon } from '@/shared/icons';
+import { getLocalizedText } from '@/shared/utils/helpers/getLocalizedText';
 import { useEvaluationTemplates, useEvaluationTemplate, useSubmitEvaluation } from '../hooks/useEvaluations';
-import { getErrorMessage } from '@/utils/helpers/errorHandler';
+import { getErrorMessage } from '@/shared/utils/helpers/errorHandler';
 function buildDefaultValues(criteria, canAttachFiles) {
     const out = {
         evaluated_id: null,

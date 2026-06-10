@@ -1,4 +1,4 @@
-import { PAGINATION } from '@/utils/constants/api.constants';
+import { PAGINATION } from '@/shared/utils/constants/api.constants';
 /** API path for halaqas list (GET /api/front/halaqas with baseURL) - single source of truth */
 export const HALAQAS_LIST_PATH = '/halaqas';
 /**

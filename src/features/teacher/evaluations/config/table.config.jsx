@@ -1,4 +1,4 @@
-import { DateCell } from '@/globals/components';
+import { DateCell } from '@/shared/components';
 /**
  * Table columns for Teacher Received Evaluations List
  */

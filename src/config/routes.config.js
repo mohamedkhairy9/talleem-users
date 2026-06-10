@@ -16,6 +16,8 @@ export const ROUTE_PATHS = {
     HALAQA_DETAIL: 'halaqas/:id',
     EDIT_HALAQA: 'halaqas/:id/edit',
     WARNINGS_MANAGEMENT: 'warnings-management',
+    INCOMING_WARNINGS: 'warnings-management/incoming',
+    WARNINGS_ISSUED: 'warnings-management/issued',
     ENTITY_LICENSES: 'entity/licenses',
     JOIN_REQUESTS: 'join-requests',
     // Teacher menu items (TEACHER_CALENDAR is default home for teacher)

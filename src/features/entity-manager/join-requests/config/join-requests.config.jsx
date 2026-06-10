@@ -1,4 +1,4 @@
-import { DateCell } from '@/globals/components';
+import { DateCell } from '@/shared/components';
 export const PROCESS_STEP_STATUS_OPTIONS = [
     { value: 1, labelKey: 'joinRequests.statusOptions.approved' },
     { value: 2, labelKey: 'joinRequests.statusOptions.rejected' },

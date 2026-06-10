@@ -1,520 +1,1241 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useFormWithValidation } from '@/utils';
-import { FormInput, FormSelect, Button } from '@/globals/components';
-import SelectRFH from '@/globals/components/ui/SelectRFH';
-import Select from 'react-select';
-import { useAuthStore } from '@/stores';
-import { useCreateHalaqa, useCheckAvailability, useHalaqa } from '../hooks/useHalaqas';
-import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
-import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
-import { HALAQA_PERIODS, HALAQA_ACTIVITIES, HALAQA_TEACHING_METHODS, HALAQA_WEEKLY_HOLIDAYS, HALAQA_EVALUATION_SYSTEM_TYPES } from '../config';
+import { toast } from 'react-toastify';
+import { useAuthStore } from '@/app/stores';
+import { FormInput, Button } from '@/shared/components';
+import SelectRFH from '@/shared/components/ui/SelectRFH';
+import { AlertTriangleIcon, BookOpenIcon, CalendarIcon, CheckIcon, ChevronRightIcon, CircleIcon, ClipboardCheckIcon, SearchIcon, TeacherIcon, UserIcon, UsersIcon } from '@/shared/icons';
+import { normalizeDate, normalizeSessionTime, useFormWithValidation } from '@/shared/utils';
+import { useCheckAvailability, useCreateHalaqa, useHalaqa, useUpdateHalaqa } from '../hooks/useHalaqas';
+import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
+import { HALAQA_ACTIVITIES, HALAQA_EVALUATION_SYSTEM_TYPES, HALAQA_PERIODS, HALAQA_TEACHING_METHODS, HALAQA_WEEKLY_HOLIDAYS } from '../config';
 import { createHalaqaSchema } from '../schemas/halaqa.schema';
-import { AlertTriangleIcon, ClipboardCheckIcon, CircleIcon } from '@/globals/icons';
-import { normalizeDate, normalizeSessionTime } from '@/utils';
 import CreatePlanForm from './CreatePlanForm';
+
+const TOTAL_STEPS = 5;
+const SECTION_CARD_CLASS = 'rounded-[24px] border border-slate-200/80 bg-white p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.45)] md:p-5';
+const FIELD_INPUT_CLASS = 'rounded-[16px] border-slate-200 px-4 py-3 text-sm text-slate-800 shadow-sm focus:border-[#0d7a78]';
+const SELECT_FIELD_CLASSES = '[&_.react-select__control]:min-h-[52px] [&_.react-select__control]:rounded-[16px] [&_.react-select__control]:border-slate-200 [&_.react-select__control]:shadow-sm [&_.react-select__control]:px-1 [&_.react-select__control--is-focused]:border-[#0d7a78] [&_.react-select__placeholder]:text-slate-400';
+const REQUIRED_HIFZ_ACTIVITIES = ['tasbit'];
+
+const FALLBACK_ENTITY_TYPE_OPTIONS = [
+    { value: 1, code: 1, labelAr: 'ذكور', labelEn: 'Male' },
+    { value: 2, code: 2, labelAr: 'إناث', labelEn: 'Female' },
+    { value: 3, code: 3, labelAr: 'مختلط', labelEn: 'Mixed' }
+];
+
+const getDurationInDays = (startDate, endDate) => {
+    if (!startDate || !endDate) {
+        return null;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+        return null;
+    }
+
+    const differenceInMs = end.getTime() - start.getTime();
+    return Math.floor(differenceInMs / (1000 * 60 * 60 * 24)) + 1;
+};
+
+const getPreferredEntityTypeId = (...sources) => {
+    for (const source of sources) {
+        const value = Number(source);
+        if (value > 0) {
+            return value;
+        }
+    }
+
+    return 0;
+};
+
+const resolveEntityTypeLabel = (option, isArabic) => {
+    const code = Number(option?.code ?? option?.value ?? option?.id);
+
+    if (code === 1) {
+        return isArabic ? 'ذكور' : 'Male';
+    }
+
+    if (code === 2) {
+        return isArabic ? 'إناث' : 'Female';
+    }
+
+    if (code === 3) {
+        return isArabic ? 'مختلط' : 'Mixed';
+    }
+
+    return option?.label ?? option?.name ?? '';
+};
+
+const StepHeader = ({ currentStep, title, subtitle, onBack, isArabic, stepLabel }) => {
+    return (
+        <div className="relative overflow-hidden bg-[linear-gradient(135deg,#004247_0%,#0a6666_55%,#12797b_100%)] px-5 pb-6 pt-5 text-white md:px-8 md:pb-8 md:pt-7">
+            <div className="absolute inset-0 opacity-20" style={{
+                backgroundImage: 'radial-gradient(circle at 12% 18%, rgba(255,255,255,0.25), transparent 28%), radial-gradient(circle at 85% 22%, rgba(255,255,255,0.18), transparent 24%), linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
+                backgroundSize: 'auto, auto, 24px 24px, 24px 24px'
+            }} />
+            <div className="relative flex items-start justify-between gap-4">
+                <div className="space-y-2">
+                    <p className="text-xs font-medium text-white/75 md:text-sm">{stepLabel}</p>
+                    <h1 className="text-2xl font-semibold md:text-3xl">{title}</h1>
+                    <p className="max-w-2xl text-sm text-white/80 md:text-base">{subtitle}</p>
+                </div>
+                <button
+                    type="button"
+                    onClick={onBack}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 transition hover:bg-white/15"
+                    aria-label={isArabic ? 'الرجوع إلى الحلقات' : 'Back to halaqas'}
+                >
+                    <ChevronRightIcon width={20} height={20} className={isArabic ? '' : 'rotate-180'} />
+                </button>
+            </div>
+            <div className="relative mt-6 grid grid-cols-5 gap-2">
+                {Array.from({ length: TOTAL_STEPS }, (_, index) => {
+                    const stepNumber = index + 1;
+                    const isActive = stepNumber <= currentStep;
+
+                    return (
+                        <span
+                            key={stepNumber}
+                            className={`h-2 rounded-full transition ${isActive ? 'bg-white shadow-[0_0_18px_rgba(255,255,255,0.6)]' : 'bg-white/20'}`}
+                        />
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const SectionCard = ({ icon, title, children }) => {
+    const IconComponent = icon;
+
+    return (
+        <section className={SECTION_CARD_CLASS}>
+            <div className="mb-5 flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#e7f5f3] text-[#0d7a78]">
+                    <IconComponent width={18} height={18} />
+                </div>
+            </div>
+            <div className="space-y-5">{children}</div>
+        </section>
+    );
+};
+
+const SearchField = ({ value, onChange, placeholder }) => (
+    <div className="relative">
+        <span className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-4 text-slate-400">
+            <SearchIcon width={18} height={18} />
+        </span>
+        <input
+            type="text"
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            className="h-14 w-full rounded-[18px] border border-slate-200 bg-white ps-11 pe-4 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#0d7a78] focus:ring-2 focus:ring-[#0d7a78]/10"
+        />
+    </div>
+);
+
+const StudentSelectionCard = ({ student, subtitle, selected, disabled = false, onToggle, trailingText }) => (
+    <button
+        type="button"
+        disabled={disabled}
+        onClick={onToggle}
+        className={`flex w-full items-center gap-3 rounded-[22px] border p-4 text-start transition ${
+            disabled
+                ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-80'
+                : selected
+                    ? 'border-[#33c6c3] bg-[#f3fffe] shadow-[0_16px_30px_-26px_rgba(13,122,120,0.8)]'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
+        }`}
+    >
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
+            selected
+                ? 'border-[#0d7a78] bg-[#0d7a78] text-white'
+                : 'border-slate-300 bg-white text-transparent'
+        }`}>
+            <CheckIcon width={14} height={14} />
+        </span>
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-slate-500">
+                {student?.avatar ? (
+                    <img src={student.avatar} alt="" className="h-full w-full object-cover" />
+                ) : (
+                    <UserIcon width={20} height={20} />
+                )}
+            </div>
+            <div className="min-w-0 flex-1">
+                <p className={`truncate text-sm font-semibold ${disabled ? 'text-slate-500' : 'text-slate-900'}`}>
+                    {student.label}
+                </p>
+                {subtitle ? <p className={`mt-1 text-xs ${disabled ? 'text-rose-500' : 'text-slate-500'}`}>{subtitle}</p> : null}
+            </div>
+        </div>
+        {trailingText ? <span className="shrink-0 text-xs font-medium text-[#0d7a78]">{trailingText}</span> : null}
+    </button>
+);
+
+const SingleSelectPillsField = ({ name, control, label, options, error, required = false }) => {
+    return (
+        <Controller
+            name={name}
+            control={control}
+            render={({ field }) => (
+                <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                        {label}
+                        {required && <span className="ms-1 text-rose-500">*</span>}
+                    </label>
+                    <div className="flex flex-wrap gap-2 rounded-[24px] bg-slate-100 p-1.5">
+                        {options.map((option) => {
+                            const isSelected = String(field.value) === String(option.value);
+
+                            return (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => field.onChange(option.value)}
+                                    className={`flex min-w-[120px] flex-1 items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-semibold transition ${isSelected
+                                        ? 'bg-[#0d7a78] text-white shadow-[0_14px_28px_-18px_rgba(13,122,120,0.9)]'
+                                        : 'bg-transparent text-slate-600 hover:bg-white'
+                                        }`}
+                                >
+                                    {isSelected && <CheckIcon width={16} height={16} />}
+                                    <span>{option.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <p className="mt-1 min-h-4 text-xs text-red-600">{error ?? ''}</p>
+                </div>
+            )}
+        />
+    );
+};
+
+const MultiChipField = ({ name, control, label, options, error, required = false, helperText, onToggleOption }) => {
+    return (
+        <Controller
+            name={name}
+            control={control}
+            render={({ field }) => {
+                const selectedValues = Array.isArray(field.value) ? field.value : [];
+
+                const handleToggle = (nextValue) => {
+                    const alreadySelected = selectedValues.includes(nextValue);
+                    const nextValues = alreadySelected
+                        ? selectedValues.filter((value) => value !== nextValue)
+                        : [...selectedValues, nextValue];
+
+                    if (onToggleOption) {
+                        onToggleOption(nextValues, field);
+                        return;
+                    }
+
+                    field.onChange(nextValues);
+                };
+
+                return (
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                            {label}
+                            {required && <span className="ms-1 text-rose-500">*</span>}
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                            {options.map((option) => {
+                                const isSelected = selectedValues.includes(option.value);
+
+                                return (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        onClick={() => handleToggle(option.value)}
+                                        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${isSelected
+                                            ? 'border-[#0d7a78] bg-[#10b981] text-white shadow-[0_12px_24px_-18px_rgba(16,185,129,0.9)]'
+                                            : 'border-slate-200 bg-white text-slate-600 hover:border-[#0d7a78] hover:text-[#0d7a78]'
+                                            }`}
+                                    >
+                                        {isSelected && <CheckIcon width={14} height={14} />}
+                                        <span>{option.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <p className="mt-1 min-h-4 text-xs text-red-600">{error ?? ''}</p>
+                        {helperText ? <p className="mt-1 text-xs text-[#0d7a78]">{helperText}</p> : null}
+                    </div>
+                );
+            }}
+        />
+    );
+};
+
+const TimeRangeField = ({ control, error, label, startLabel, endLabel }) => {
+    return (
+        <Controller
+            name="session_time"
+            control={control}
+            render={({ field }) => {
+                const match = (field.value || '').match(/^(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+                const startTime = match ? match[1] : '';
+                const endTime = match ? match[2] : '';
+
+                return (
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                            {label}
+                            <span className="ms-1 text-rose-500">*</span>
+                        </label>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                                <input
+                                    type="time"
+                                    value={startTime}
+                                    onChange={(event) => {
+                                        const nextStart = event.target.value;
+                                        const nextEnd = endTime || nextStart;
+                                        field.onChange(nextStart ? `${nextStart}-${nextEnd}` : '');
+                                    }}
+                                    onBlur={field.onBlur}
+                                    className={`w-full ${FIELD_INPUT_CLASS}`}
+                                    aria-label={startLabel}
+                                />
+                                <span className="mt-1 block text-xs text-slate-500">{startLabel}</span>
+                            </div>
+                            <div>
+                                <input
+                                    type="time"
+                                    value={endTime}
+                                    onChange={(event) => {
+                                        const nextEnd = event.target.value;
+                                        const nextStart = startTime || nextEnd;
+                                        field.onChange(nextEnd ? `${nextStart}-${nextEnd}` : '');
+                                    }}
+                                    onBlur={field.onBlur}
+                                    className={`w-full ${FIELD_INPUT_CLASS}`}
+                                    aria-label={endLabel}
+                                />
+                                <span className="mt-1 block text-xs text-slate-500">{endLabel}</span>
+                            </div>
+                        </div>
+                        <p className="mt-1 min-h-4 text-xs text-red-600">{error ?? ''}</p>
+                    </div>
+                );
+            }}
+        />
+    );
+};
+
+const AvailabilityPanel = ({
+    title,
+    description,
+    buttonLabel,
+    checkingLabel,
+    isChecking,
+    canCheckAvailability,
+    onCheckAvailability,
+    hasRequestError,
+    requestErrorText,
+    availabilityResult,
+    isAvailable,
+    hasConflict,
+    hasConflictsData,
+    generatedScheduleTitle,
+    conflictsTitle,
+    conflictsUnknownText,
+    teacherLabel,
+    checkingAvailabilityText,
+    availableText,
+    notAvailableText
+}) => {
+    return (
+        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 md:p-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1">
+                    <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+                    <p className="text-sm text-slate-500">{description}</p>
+                </div>
+                <Button
+                    type="button"
+                    variant="primary"
+                    onClick={onCheckAvailability}
+                    disabled={!canCheckAvailability || isChecking}
+                    loading={isChecking}
+                    className="w-full rounded-full bg-[#0d7a78] px-5 py-3 text-sm hover:bg-[#0b6664] md:w-auto"
+                >
+                    {isChecking ? checkingLabel : buttonLabel}
+                </Button>
+            </div>
+
+            {isChecking ? (
+                <div className="mt-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-slate-600">
+                    <CircleIcon width={18} height={18} className="animate-spin" />
+                    <span className="text-sm font-medium">{checkingAvailabilityText}</span>
+                </div>
+            ) : null}
+
+            {hasRequestError ? (
+                <div className="mt-4 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-700">
+                    <AlertTriangleIcon width={18} height={18} />
+                    <span className="text-sm font-medium">{requestErrorText}</span>
+                </div>
+            ) : null}
+
+            {availabilityResult ? (
+                <div className="mt-4 space-y-4">
+                    <div className={`rounded-[22px] border p-4 ${isAvailable
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                        : 'border-rose-200 bg-rose-50 text-rose-900'
+                        }`}>
+                        <div className="flex items-start gap-3">
+                            {isAvailable ? (
+                                <ClipboardCheckIcon width={22} height={22} className="mt-0.5 text-emerald-600" />
+                            ) : (
+                                <AlertTriangleIcon width={22} height={22} className="mt-0.5 text-rose-600" />
+                            )}
+                            <div className="space-y-1">
+                                <p className="text-sm font-semibold">{isAvailable ? availableText : notAvailableText}</p>
+                                <p className="text-sm">{availabilityResult.message}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {(hasConflict || hasConflictsData) && availabilityResult.conflicts ? (
+                        <div className="rounded-[22px] border border-rose-200 bg-white p-4">
+                            <div className="mb-3 flex items-center gap-2 text-rose-700">
+                                <AlertTriangleIcon width={18} height={18} />
+                                <p className="text-sm font-semibold">{conflictsTitle}</p>
+                            </div>
+                            <div className="rounded-2xl bg-rose-50 p-3 text-sm text-rose-800">
+                                {availabilityResult.conflicts.teacher ? (
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="font-semibold">{teacherLabel}:</span>
+                                        <span>{availabilityResult.conflicts.teacher.ar || availabilityResult.conflicts.teacher.en}</span>
+                                    </div>
+                                ) : (
+                                    <p>{conflictsUnknownText}</p>
+                                )}
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {availabilityResult.generated_schedule && availabilityResult.generated_schedule.length > 0 ? (
+                        <div className="rounded-[22px] border border-sky-200 bg-sky-50 p-4">
+                            <p className="mb-3 text-sm font-semibold text-sky-900">{generatedScheduleTitle}</p>
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                {availabilityResult.generated_schedule.map((schedule, index) => (
+                                    <div key={`${schedule.day}-${index}`} className="rounded-2xl border border-sky-100 bg-white p-3 text-sm text-sky-900">
+                                        <p className="font-medium">{schedule.day}</p>
+                                        <p className="text-sky-700">{schedule.from} - {schedule.to}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : null}
+                </div>
+            ) : null}
+        </div>
+    );
+};
+
 /**
  * Create Halaqa Form Component
  */
-const CreateHalaqaForm = () => {
-    const { t } = useTranslation();
+const CreateHalaqaForm = ({ onBack }) => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { lang } = useParams();
     const queryClient = useQueryClient();
     const createHalaqaMutation = useCreateHalaqa();
+    const updateHalaqaMutation = useUpdateHalaqa();
+    const checkAvailabilityMutation = useCheckAvailability();
+    const entity = useAuthStore((state) => state.user?.entity);
+    const isArabic = i18n.language === 'ar';
+    const copy = useCallback((arabicText, englishText) => (isArabic ? arabicText : englishText), [isArabic]);
     const { control, handleSubmit, formState: { errors }, setValue } = useFormWithValidation({
         schema: createHalaqaSchema,
         defaultValues: {
             name: { ar: '', en: '' },
+            memorization_program_entity_type_id: 0,
             teacher_id: 0,
             period: 'morning',
             start_date: '',
             end_date: '',
             activities: [],
             weekly_holiday: [],
-            evaluation_system_type: 'رقمي',
+            evaluation_system_type: HALAQA_EVALUATION_SYSTEM_TYPES[0]?.value ?? 'رقمي',
             custom_total_mark: undefined,
             max_students: undefined,
             session_time: '',
+            meeting_link: '',
             platform_id: undefined,
             teaching_method: 'in_person'
         }
     });
-    // Watch teaching_method to conditionally show platform field
-    const teachingMethod = useWatch({
-        control,
-        name: 'teaching_method'
-    });
-    const evaluationSystemType = useWatch({
-        control,
-        name: 'evaluation_system_type'
-    });
-    // Watch fields needed for availability check
+
+    const teachingMethod = useWatch({ control, name: 'teaching_method' });
+    const evaluationSystemType = useWatch({ control, name: 'evaluation_system_type' });
     const teacherId = useWatch({ control, name: 'teacher_id' });
+    const memorizationProgramEntityTypeId = useWatch({ control, name: 'memorization_program_entity_type_id' });
     const startDate = useWatch({ control, name: 'start_date' });
     const endDate = useWatch({ control, name: 'end_date' });
     const period = useWatch({ control, name: 'period' });
     const sessionTime = useWatch({ control, name: 'session_time' });
     const activities = useWatch({ control, name: 'activities' });
-    const { teachersOptions, platformsOptions, autoIncludeActivities, isLoadingTeachers, isLoadingPlatforms, } = useCreateHalaqaFormQueries({ includeStudents: false });
-    // State for availability check result
+
+    const {
+        teachersOptions,
+        studentsList,
+        platformsOptions,
+        memorizationProgramEntityTypeOptions,
+        currentEntity,
+        isLoadingTeachers,
+        isLoadingPlatforms
+    } = useCreateHalaqaFormQueries({ includeStudents: true });
+
     const [availabilityResult, setAvailabilityResult] = useState(null);
-    // Multi-step: after halaqa creation success, show step 2 (create plan)
     const [step, setStep] = useState(1);
     const [createdHalaqaId, setCreatedHalaqaId] = useState(null);
+    const [createdHalaqaContext, setCreatedHalaqaContext] = useState(null);
     const [createdActivities, setCreatedActivities] = useState([]);
-    // Step 2: multiple plan forms, each with its own submission
-    const [planFormKeys, setPlanFormKeys] = useState([0]);
-    const [submittedPlanIndices, setSubmittedPlanIndices] = useState(new Set());
-    // Clear platform_id when teaching method changes to in_person
-    useEffect(() => {
-        if (teachingMethod === 'in_person') {
-            setValue('platform_id', undefined);
-        }
-    }, [teachingMethod, setValue]);
-    useEffect(() => {
-        if (evaluationSystemType !== 'رقمي') {
-            setValue('custom_total_mark', undefined);
-        }
-    }, [evaluationSystemType, setValue]);
-    // When hifz is selected, auto-add activities from config (e.g. tasbit, murajaa).
-    useEffect(() => {
-        if (Array.isArray(activities) && activities.length > 0 && autoIncludeActivities.length > 0) {
-            const hasHifz = activities.includes('hifz');
-            if (!hasHifz)
-                return;
-            const toAdd = autoIncludeActivities.filter((a) => !activities.includes(a));
-            if (toAdd.length > 0) {
-                setValue('activities', [...activities, ...toAdd], {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                    shouldTouch: false
-                });
-            }
-        }
-    }, [activities, autoIncludeActivities, setValue]);
-    // Clear availability result when form fields change
-    useEffect(() => {
-        setAvailabilityResult(null);
-    }, [teacherId, startDate, endDate, period, sessionTime]);
-    // Check availability mutation
-    const checkAvailabilityMutation = useCheckAvailability();
-    // Check if all required fields are filled for availability check
-    const canCheckAvailability = useMemo(() => {
-        return !!(teacherId &&
-            startDate &&
-            endDate &&
-            period &&
-            sessionTime);
-    }, [teacherId, startDate, endDate, period, sessionTime]);
-    // Handle availability check button click
-    const handleCheckAvailability = useCallback(() => {
-        if (!canCheckAvailability)
-            return;
-        const payload = {
-            teacher_id: teacherId,
-            start_date: normalizeDate(startDate),
-            end_date: normalizeDate(endDate),
-            period: period,
-            session_time: normalizeSessionTime(sessionTime)
-        };
-        checkAvailabilityMutation.mutate(payload, {
-            onSuccess: (response) => {
-                // Axios interceptor already extracts response.data, so response IS the CheckAvailabilityResponse
-                // API returns 200 even when has_conflict is true
-                setAvailabilityResult(response);
-            },
-            onError: () => {
-                setAvailabilityResult(null);
-                toast.error(t('halaqa.availabilityCheckError', 'Unable to check availability. Please try again.'));
-            }
-        });
-    }, [canCheckAvailability, teacherId, startDate, endDate, period, sessionTime, checkAvailabilityMutation, t]);
-    // Check availability status - API returns 200 even with conflicts
-    const isAvailable = useMemo(() => {
-        return availabilityResult ? !availabilityResult.has_conflict : false;
-    }, [availabilityResult]);
-    const hasConflict = useMemo(() => {
-        return availabilityResult ? Boolean(availabilityResult.has_conflict) : false;
-    }, [availabilityResult]);
-    const hasConflictsData = useMemo(() => {
-        if (!availabilityResult?.conflicts)
-            return false;
-        return !!(availabilityResult.conflicts.teacher ||
-            (Array.isArray(availabilityResult.conflicts.students) && availabilityResult.conflicts.students.length > 0));
-    }, [availabilityResult]);
-    const isCheckingAvailability = checkAvailabilityMutation.isPending;
-    const entity = useAuthStore((s) => s.user?.entity);
-    // Get localized options for static fields (memoized)
-    const periodOptions = useMemo(() => HALAQA_PERIODS.map(period => ({
-        value: period.value,
-        label: t(period.labelKey, period.value)
+    const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+    const [studentSearch, setStudentSearch] = useState('');
+    const [planWizardStep, setPlanWizardStep] = useState(3);
+
+    const derivedEntityTypeId = useMemo(() => getPreferredEntityTypeId(
+        currentEntity?.memorization_program_entity_type?.id,
+        currentEntity?.memorization_program_entity_type_id,
+        entity?.memorization_program_entity_type?.id,
+        entity?.memorization_program_entity_type_id
+    ), [currentEntity, entity]);
+
+    const entityTypeOptions = useMemo(() => {
+        const sourceOptions = memorizationProgramEntityTypeOptions.length > 0
+            ? memorizationProgramEntityTypeOptions
+            : FALLBACK_ENTITY_TYPE_OPTIONS;
+
+        return sourceOptions.map((option) => ({
+            ...option,
+            value: Number(option.value ?? option.id),
+            label: resolveEntityTypeLabel(option, isArabic)
+        }));
+    }, [isArabic, memorizationProgramEntityTypeOptions]);
+
+    const periodOptions = useMemo(() => HALAQA_PERIODS.map((item) => ({
+        value: item.value,
+        label: t(item.labelKey, item.value)
     })), [t]);
-    const activityOptions = useMemo(() => HALAQA_ACTIVITIES.map(activity => ({
-        value: activity.value,
-        label: t(activity.labelKey, activity.value)
+
+    const activityOptions = useMemo(() => HALAQA_ACTIVITIES.map((item) => ({
+        value: item.value,
+        label: t(item.labelKey, item.value)
     })), [t]);
-    const teachingMethodOptions = useMemo(() => HALAQA_TEACHING_METHODS.map(method => ({
-        value: method.value,
-        label: t(method.labelKey, method.value)
+
+    const teachingMethodOptions = useMemo(() => HALAQA_TEACHING_METHODS.map((item) => ({
+        value: item.value,
+        label: t(item.labelKey, item.value)
     })), [t]);
-    const weeklyHolidayOptions = useMemo(() => HALAQA_WEEKLY_HOLIDAYS.map((day) => ({
-        value: day.value,
-        label: t(day.labelKey, day.label)
+
+    const weeklyHolidayOptions = useMemo(() => HALAQA_WEEKLY_HOLIDAYS.map((item) => ({
+        value: item.value,
+        label: t(item.labelKey, item.label)
     })), [t]);
+
     const evaluationSystemOptions = useMemo(() => HALAQA_EVALUATION_SYSTEM_TYPES.map((item) => ({
         value: item.value,
         label: t(item.labelKey, item.label)
     })), [t]);
-    const getErrorMessage = useCallback((message) => (message ? t(message, message) : undefined), [t]);
-    const onSubmit = async (data) => {
-        const memorization_program_entity_type_id = entity?.memorization_program_entity_type?.id ?? 0;
-        const session_mode_id = entity?.session_mode?.id;
-        // Build payload, excluding platform_id if teaching method is in_person
-        const { platform_id, weekly_holiday, custom_total_mark, ...restData } = data;
+
+    const numericEvaluationValue = evaluationSystemOptions[0]?.value ?? HALAQA_EVALUATION_SYSTEM_TYPES[0]?.value ?? 'رقمي';
+    const autoIncludedHifzActivities = useMemo(() => REQUIRED_HIFZ_ACTIVITIES, []);
+
+    const durationInDays = useMemo(() => getDurationInDays(startDate, endDate), [startDate, endDate]);
+    const durationLabel = durationInDays == null
+        ? ''
+        : `${durationInDays} ${copy('يوم', 'days')}`;
+
+    const showPlatformField = teachingMethod && teachingMethod !== 'in_person';
+
+    useEffect(() => {
+        if (!memorizationProgramEntityTypeId && derivedEntityTypeId) {
+            setValue('memorization_program_entity_type_id', derivedEntityTypeId, {
+                shouldValidate: true,
+                shouldDirty: false
+            });
+        }
+    }, [derivedEntityTypeId, memorizationProgramEntityTypeId, setValue]);
+
+    useEffect(() => {
+        if (teachingMethod === 'in_person') {
+            setValue('platform_id', undefined);
+            setValue('meeting_link', '');
+        }
+    }, [setValue, teachingMethod]);
+
+    useEffect(() => {
+        if (evaluationSystemType !== numericEvaluationValue) {
+            setValue('custom_total_mark', undefined);
+        }
+    }, [evaluationSystemType, numericEvaluationValue, setValue]);
+
+    useEffect(() => {
+        if (Array.isArray(activities) && activities.length > 0 && autoIncludedHifzActivities.length > 0) {
+            const hasHifz = activities.includes('hifz');
+            if (!hasHifz) {
+                return;
+            }
+
+            const toAdd = autoIncludedHifzActivities.filter((activity) => !activities.includes(activity));
+            if (toAdd.length > 0) {
+                setValue('activities', [...activities, ...toAdd], {
+                    shouldValidate: true,
+                    shouldDirty: true
+                });
+            }
+        }
+    }, [activities, autoIncludedHifzActivities, setValue]);
+
+    useEffect(() => {
+        setAvailabilityResult(null);
+    }, [teacherId, startDate, endDate, period, sessionTime]);
+
+    const canCheckAvailability = useMemo(() => Boolean(
+        teacherId &&
+        startDate &&
+        endDate &&
+        period &&
+        sessionTime
+    ), [teacherId, startDate, endDate, period, sessionTime]);
+
+    const handleCheckAvailability = useCallback(() => {
+        if (!canCheckAvailability) {
+            return;
+        }
+
+        checkAvailabilityMutation.mutate({
+            teacher_id: teacherId,
+            start_date: normalizeDate(startDate),
+            end_date: normalizeDate(endDate),
+            period,
+            session_time: normalizeSessionTime(sessionTime)
+        }, {
+            onSuccess: (response) => {
+                setAvailabilityResult(response);
+            },
+            onError: () => {
+                setAvailabilityResult(null);
+                toast.error(t('halaqa.availabilityCheckError', copy('تعذر التحقق من الإتاحة. حاول مرة أخرى.', 'Unable to check availability. Please try again.')));
+            }
+        });
+    }, [canCheckAvailability, checkAvailabilityMutation, copy, endDate, period, sessionTime, startDate, t, teacherId]);
+
+    const isAvailable = useMemo(() => availabilityResult ? !availabilityResult.has_conflict : false, [availabilityResult]);
+    const hasConflict = useMemo(() => availabilityResult ? Boolean(availabilityResult.has_conflict) : false, [availabilityResult]);
+    const hasConflictsData = useMemo(() => Boolean(
+        availabilityResult?.conflicts?.teacher ||
+        (Array.isArray(availabilityResult?.conflicts?.students) && availabilityResult.conflicts.students.length > 0)
+    ), [availabilityResult]);
+
+    const getErrorMessage = useCallback((message) => {
+        if (!message) {
+            return undefined;
+        }
+
+        if (message === 'halaqa.validation.memorizationProgramEntityTypeRequired') {
+            return copy('اختر نوع الحلقة', 'Select a halaqa type');
+        }
+
+        return t(message, message);
+    }, [copy, t]);
+
+    const handleActivitiesChange = useCallback((selectedValues, field) => {
+        let nextValues = selectedValues;
+        const hasHifz = nextValues.includes(HALAQA_ACTIVITIES[0].value);
+
+        if (hasHifz && autoIncludedHifzActivities.length > 0) {
+            const toAdd = autoIncludedHifzActivities.filter((activity) => !nextValues.includes(activity));
+            nextValues = [...nextValues, ...toAdd];
+        }
+
+        field.onChange(nextValues);
+    }, [autoIncludedHifzActivities]);
+
+    const onSubmit = (formData) => {
+        const resolvedEntityTypeId = getPreferredEntityTypeId(
+            formData.memorization_program_entity_type_id,
+            derivedEntityTypeId
+        );
+        const sessionModeId = entity?.session_mode?.id;
+
+        if (!resolvedEntityTypeId) {
+            toast.error(t('halaqa.entityTypeMissing', copy('تعذر تحديد نوع الحلقة لهذا الكيان.', 'Unable to determine the halaqa type for this entity.')));
+            return;
+        }
+
+        const {
+            platform_id,
+            meeting_link,
+            weekly_holiday,
+            custom_total_mark,
+            memorization_program_entity_type_id: _memorizationProgramEntityTypeId,
+            ...restData
+        } = formData;
+
         const payload = {
             ...restData,
-            start_date: normalizeDate(data.start_date),
-            end_date: normalizeDate(data.end_date),
-            session_time: normalizeSessionTime(data.session_time),
-            memorization_program_entity_type_id,
-            ...(session_mode_id != null && { session_mode_id }),
-            ...(Array.isArray(weekly_holiday) && weekly_holiday.length > 0
-                ? { weekly_holiday: weekly_holiday.join(',') }
-                : {}),
-            ...(data.evaluation_system_type === 'رقمي' && typeof custom_total_mark === 'number'
+            start_date: normalizeDate(formData.start_date),
+            end_date: normalizeDate(formData.end_date),
+            session_time: normalizeSessionTime(formData.session_time),
+            memorization_program_entity_type_id: resolvedEntityTypeId,
+            ...(sessionModeId != null ? { session_mode_id: sessionModeId } : {}),
+            ...(Array.isArray(weekly_holiday) && weekly_holiday.length > 0 ? { weekly_holiday: weekly_holiday.join(',') } : {}),
+            ...(formData.evaluation_system_type === numericEvaluationValue && typeof custom_total_mark === 'number'
                 ? { custom_total_mark }
                 : {}),
-            // Only include platform_id if teaching method is not in_person and it has a value
-            ...(data.teaching_method !== 'in_person' && platform_id ? { platform_id } : {})
+            ...(formData.teaching_method !== 'in_person' && meeting_link ? { platform_link: meeting_link } : {}),
+            ...(formData.teaching_method !== 'in_person' && platform_id ? { platform_id } : {})
         };
+
         createHalaqaMutation.mutate(payload, {
-            onSuccess: (res) => {
-                toast.success(t('halaqa.createSuccess', 'Halaqa created successfully'));
+            onSuccess: (response) => {
+                toast.success(t('halaqa.createSuccess', copy('تم إنشاء الحلقة بنجاح', 'Halaqa created successfully')));
                 queryClient.invalidateQueries({ queryKey: ['halaqas'] });
-                const resData = res?.data?.data ?? res?.data ?? res;
-                const id = resData?.id != null ? Number(resData.id) : null;
-                if (id != null) {
-                    setCreatedHalaqaId(id);
-                    setCreatedActivities(Array.isArray(data.activities) ? data.activities : []);
+
+                const responseData = response?.data?.data ?? response?.data ?? response;
+                const createdId = responseData?.id != null ? Number(responseData.id) : null;
+
+                if (createdId != null) {
+                    setCreatedHalaqaId(createdId);
+                    setCreatedHalaqaContext({
+                        name: payload.name,
+                        teacher_id: payload.teacher_id,
+                        period: payload.period,
+                        start_date: payload.start_date,
+                        end_date: payload.end_date,
+                        activities: Array.isArray(payload.activities) ? payload.activities : []
+                    });
+                    setCreatedActivities(Array.isArray(formData.activities) ? formData.activities : []);
                     setStep(2);
+                    return;
                 }
-                else {
-                    navigate(`/${lang || 'ar'}/halaqas`);
-                }
+
+                navigate(`/${lang || 'ar'}/halaqas`);
             },
             onError: (error) => {
-                toast.error(error?.message || t('halaqa.createError', 'Error creating halaqa. Please try again.'));
+                toast.error(error?.message || t('halaqa.createError', copy('حدث خطأ أثناء إنشاء الحلقة. حاول مرة أخرى.', 'Error creating halaqa. Please try again.')));
             }
         });
     };
-    // Step 2: create plan for the new halaqa (fetch halaqa for students list)
+
     const { data: createdHalaqaData } = useHalaqa(createdHalaqaId ?? '');
     const createdHalaqa = (() => {
         const raw = createdHalaqaData?.data;
         return raw && typeof raw === 'object' && 'data' in raw ? raw.data : raw;
     })();
-    const createdHalaqaStudents = createdHalaqa?.students ?? [];
+    const createdHalaqaStudents = useMemo(
+        () => (Array.isArray(createdHalaqa?.students) ? createdHalaqa.students : []),
+        [createdHalaqa?.students]
+    );
+
+    const getLocalizedName = useCallback((value) => {
+        if (typeof value === 'string') {
+            return value;
+        }
+
+        if (value && typeof value === 'object') {
+            return (isArabic ? value.ar : value.en) ?? value.ar ?? value.en ?? '';
+        }
+
+        return '';
+    }, [isArabic]);
+
+    const normalizedStudentOptions = useMemo(() => (
+        (studentsList ?? []).map((student) => {
+            const linkedHalaqa = student?.current_halaqa ?? student?.active_halaqa ?? student?.halaqa ?? student?.memorization_halaqa ?? null;
+            const linkedHalaqaId = Number(
+                linkedHalaqa?.id ??
+                student?.current_halaqa_id ??
+                student?.active_halaqa_id ??
+                student?.halaqa_id ??
+                0
+            );
+            const linkedHalaqaName = getLocalizedName(linkedHalaqa?.name);
+            const unavailable = Boolean(
+                student?.is_available === false ||
+                (linkedHalaqaId > 0 && linkedHalaqaId !== Number(createdHalaqaId ?? 0))
+            );
+
+            return {
+                ...student,
+                id: Number(student.id),
+                label: getLocalizedName(student.name) || student.email || `${copy('طالب', 'Student')} #${student.id}`,
+                unavailable,
+                linkedHalaqaName
+            };
+        })
+    ), [copy, createdHalaqaId, getLocalizedName, studentsList]);
+
+    useEffect(() => {
+        if (createdHalaqaStudents.length > 0) {
+            setSelectedStudentIds(createdHalaqaStudents.map((student) => Number(student.id)).filter(Boolean));
+        }
+    }, [createdHalaqaStudents]);
+
+    const filteredStudentOptions = useMemo(() => {
+        const searchValue = studentSearch.trim().toLowerCase();
+        if (!searchValue) {
+            return normalizedStudentOptions;
+        }
+
+        return normalizedStudentOptions.filter((student) => {
+            const haystacks = [
+                student.label,
+                student.email,
+                student.phone,
+                student.linkedHalaqaName
+            ]
+                .filter(Boolean)
+                .map((value) => String(value).toLowerCase());
+
+            return haystacks.some((value) => value.includes(searchValue));
+        });
+    }, [normalizedStudentOptions, studentSearch]);
+
+    const availableStudents = useMemo(
+        () => filteredStudentOptions.filter((student) => !student.unavailable),
+        [filteredStudentOptions]
+    );
+
+    const unavailableStudents = useMemo(
+        () => filteredStudentOptions.filter((student) => student.unavailable),
+        [filteredStudentOptions]
+    );
+
+    const selectedStudentsCount = selectedStudentIds.length;
+    const assignedStudentsForPlanning = useMemo(() => {
+        if (createdHalaqaStudents.length > 0) {
+            return createdHalaqaStudents;
+        }
+
+        return normalizedStudentOptions.filter((student) => selectedStudentIds.includes(student.id));
+    }, [createdHalaqaStudents, normalizedStudentOptions, selectedStudentIds]);
+
     const handleGoToHalaqa = () => {
         if (createdHalaqaId != null) {
             navigate(`/${lang || 'ar'}/halaqas/${createdHalaqaId}`);
+            return;
         }
-        else {
-            navigate(`/${lang || 'ar'}/halaqas`);
+
+        navigate(`/${lang || 'ar'}/halaqas`);
+    };
+
+    const handleStudentToggle = (studentId) => {
+        setSelectedStudentIds((previous) => (
+            previous.includes(studentId)
+                ? previous.filter((value) => value !== studentId)
+                : [...previous, studentId]
+        ));
+    };
+
+    const handleAssignStudents = () => {
+        const halaqaUpdateSource = createdHalaqa ?? createdHalaqaContext;
+
+        if (!halaqaUpdateSource) {
+            toast.error(copy('تعذر تجهيز بيانات الحلقة. حاول مرة أخرى.', 'Unable to prepare halaqa data. Please try again.'));
+            return;
         }
+
+        if (selectedStudentIds.length === 0) {
+            toast.error(copy('اختر طالباً واحداً على الأقل', 'Select at least one student'));
+            return;
+        }
+
+        const payload = {
+            name: halaqaUpdateSource.name,
+            teacher_id: halaqaUpdateSource.teacher?.id || halaqaUpdateSource.teacher_id,
+            period: halaqaUpdateSource.period,
+            start_date: normalizeDate(halaqaUpdateSource.start_date ?? halaqaUpdateSource.date?.from),
+            end_date: normalizeDate(halaqaUpdateSource.end_date ?? halaqaUpdateSource.date?.to),
+            activities: Array.isArray(halaqaUpdateSource.activities) && halaqaUpdateSource.activities.length > 0
+                ? halaqaUpdateSource.activities
+                : createdActivities,
+            student_ids: selectedStudentIds
+        };
+
+        updateHalaqaMutation.mutate({ id: createdHalaqaId, data: payload }, {
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['halaqa', createdHalaqaId] });
+                toast.success(copy('تمت إضافة الطلاب إلى الحلقة', 'Students were added to the halaqa'));
+                setPlanWizardStep(3);
+                setStep(3);
+            },
+            onError: (error) => {
+                toast.error(error?.message || copy('تعذر إضافة الطلاب إلى الحلقة. حاول مرة أخرى.', 'Unable to add students to the halaqa. Please try again.'));
+            }
+        });
     };
-    const handlePlanFormSuccess = (formIndex) => {
-        queryClient.invalidateQueries({ queryKey: ['halaqa', createdHalaqaId] });
-        toast.success(t('plan.createSuccess', 'Plan created successfully'));
-        setSubmittedPlanIndices((prev) => new Set(prev).add(formIndex));
-    };
-    const handleAddAnotherPlan = () => {
-        setPlanFormKeys((prev) => [...prev, prev.length]);
-    };
-    // Step 2: Create plans (optional), each with its own form and submission
+
     if (step === 2 && createdHalaqaId != null) {
-        return (<div className="space-y-6">
-                <div className="rounded-lg border-2 border-emerald-200 bg-emerald-50/50 px-4 py-3">
-                    <p className="text-sm font-medium text-emerald-800">
-                        {t('halaqa.createSuccess', 'Halaqa created successfully')}. {t('plan.createPlanOptional', 'You can create a plan below or go to the halaqa.')}
-                    </p>
-                </div>
-                <div className="rounded-lg border border-gray-200 bg-white p-6 space-y-6">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                        {t('plan.step2CreatePlan', 'Step 2: Create a plan (optional)')}
-                    </h3>
-                    {planFormKeys.map((formKey, index) => (<div key={formKey} className="border border-gray-200 rounded-lg p-4 bg-gray-50/50">
-                            {submittedPlanIndices.has(index) ? (<div className="flex items-center gap-2 text-emerald-700 font-medium py-2">
-                                    <span>{t('plan.planCreated', 'Plan created')} ✓</span>
-                                </div>) : (<>
-                                    <h4 className="text-sm font-medium text-gray-700 mb-3">
-                                        {planFormKeys.length > 1
-                        ? t('plan.planNumber', 'Plan {{number}}', { number: index + 1 })
-                        : t('plan.createNewPlan', 'Create New Plan')}
-                                    </h4>
-                                    <CreatePlanForm halaqaId={createdHalaqaId} students={createdHalaqaStudents} activities={createdActivities.length > 0 ? createdActivities : undefined} onSuccess={() => handlePlanFormSuccess(index)} onCancel={handleGoToHalaqa}/>
-                                </>)}
-                        </div>))}
-                    <div className="flex flex-wrap items-center gap-3 pt-2">
-                        <Button type="button" variant="secondary" onClick={handleAddAnotherPlan}>
-                            {t('plan.addAnotherPlan', 'Add another plan')}
-                        </Button>
-                        <Button type="button" variant="outline" onClick={handleGoToHalaqa}>
-                            {t('plan.goToHalaqa', 'Go to Halaqa')}
-                        </Button>
+        return (
+            <div className="overflow-hidden rounded-[32px] border border-slate-200/70 bg-white shadow-[0_32px_90px_-48px_rgba(15,23,42,0.45)]">
+                <StepHeader
+                    currentStep={2}
+                    stepLabel={copy('الخطوة 2 من 5', 'Step 2 of 5')}
+                    title={copy('إضافة الطلاب إلى الحلقة', 'Add Students to the Halaqa')}
+                    subtitle={copy('اختر الطلاب الذين تريد إضافتهم إلى الحلقة قبل الانتقال إلى بناء الخطة.', 'Choose the students you want to add to the halaqa before moving to plan building.')}
+                    onBack={typeof onBack === 'function' ? onBack : handleGoToHalaqa}
+                    isArabic={isArabic}
+                />
+                <div className="space-y-6 bg-[#f8fafc] px-4 py-6 md:px-8 md:py-8">
+                    <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800">
+                        {t('halaqa.createSuccess', copy('تم إنشاء الحلقة بنجاح', 'Halaqa created successfully'))}
                     </div>
-                </div>
-            </div>);
-    }
-    return (<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Name Fields (Arabic and English) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormInput name="name.en" control={control} label={t('halaqa.nameEn', 'Name (English)')} required error={getErrorMessage(errors.name?.en?.message)}/>
-                <FormInput name="name.ar" control={control} label={t('halaqa.nameAr', 'Name (Arabic)')} required error={getErrorMessage(errors.name?.ar?.message)}/>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                {/* Teacher */}
-                <SelectRFH name="teacher_id" control={control} label={t('halaqa.teacher', 'Teacher')} required options={teachersOptions} loading={isLoadingTeachers} error={getErrorMessage(errors.teacher_id?.message)} placeholder={t('halaqa.selectTeacher', 'Select a teacher')}/>
-                <SelectRFH name="weekly_holiday" control={control} label={t('halaqa.weeklyHoliday', 'Weekly holiday')} isMulti options={weeklyHolidayOptions} error={getErrorMessage(errors.weekly_holiday?.message)} placeholder={t('halaqa.selectWeeklyHoliday', 'Select weekly holidays')}/>
-            </div>
+                    <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.5)] md:p-6">
+                        <SearchField
+                            value={studentSearch}
+                            onChange={(event) => setStudentSearch(event.target.value)}
+                            placeholder={copy('ابحث عن اسم الطالب...', 'Search student name...')}
+                        />
 
-            {/* Dates */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormInput name="start_date" control={control} label={t('halaqa.startDate', 'Start Date')} required type="date" error={getErrorMessage(errors.start_date?.message)}/>
-                <FormInput name="end_date" control={control} label={t('halaqa.endDate', 'End Date')} required type="date" error={getErrorMessage(errors.end_date?.message)}/>
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
-                <FormSelect name="period" control={control} label={t('halaqa.period', 'Period')} required options={periodOptions} error={getErrorMessage(errors.period?.message)} className="w-full "/>
-                <Controller name="activities" control={control} render={({ field, fieldState }) => {
-            const handleChange = (selectedOptions) => {
-                let selectedValues = [];
-                if (selectedOptions) {
-                    if (Array.isArray(selectedOptions)) {
-                        selectedValues = selectedOptions.map((opt) => opt.value || opt.id);
-                    }
-                    else {
-                        selectedValues = [selectedOptions.value || selectedOptions.id];
-                    }
-                }
-                const hasHifz = selectedValues.includes(HALAQA_ACTIVITIES[0].value);
-                if (hasHifz && autoIncludeActivities.length > 0) {
-                    // Ensure all auto-include activities are present while hifz is selected
-                    const toAdd = autoIncludeActivities.filter((a) => !selectedValues.includes(a));
-                    selectedValues = [...selectedValues, ...toAdd];
-                }
-                field.onChange(selectedValues);
-            };
-            const currentValue = field.value || [];
-            const selectedOptions = Array.isArray(currentValue)
-                ? currentValue
-                    .map(val => activityOptions.find(opt => opt.value === val))
-                    .filter(Boolean)
-                : [];
-            return (<div>
-                                <label htmlFor="activities" className="block text-sm font-medium text-gray-700 mb-1">
-                                    {t('halaqa.activities', 'Activities')}
-                                    <span className="text-red-500 ml-1">*</span>
-                                </label>
-                                <Select isMulti value={selectedOptions} options={activityOptions} onChange={handleChange} onBlur={field.onBlur} name={field.name} placeholder={t('halaqa.selectActivities', 'Select activities')} className="react-select w-full" classNamePrefix="react-select" menuPortalTarget={document.body} menuPosition="fixed" getOptionValue={(option) => String(option.value ?? option.id ?? '')} getOptionLabel={(option) => option.label ?? option.name ?? ''} styles={{
-                    control: (base, state) => ({
-                        ...base,
-                        borderColor: fieldState.error ? '#ef4444' : state.isFocused ? '#004247' : '#d1d5db',
-                        boxShadow: state.isFocused
-                            ? (fieldState.error ? '0 0 0 1px #ef4444' : '0 0 0 1px #004247')
-                            : 'none',
-                        minHeight: '48px',
-                        '&:hover': {
-                            borderColor: fieldState.error ? '#ef4444' : '#004247'
-                        }
-                    }),
-                    menu: (base) => ({
-                        ...base,
-                        zIndex: 9999
-                    }),
-                    menuPortal: (base) => ({
-                        ...base,
-                        zIndex: 9999
-                    }),
-                    option: (base, state) => ({
-                        ...base,
-                        backgroundColor: state.isSelected
-                            ? '#004247'
-                            : state.isFocused
-                                ? '#f0f9fa'
-                                : 'white',
-                        color: state.isSelected ? 'white' : '#374151',
-                        cursor: 'pointer',
-                        '&:active': {
-                            backgroundColor: '#004247',
-                            color: 'white'
-                        }
-                    })
-                }}/>
-                                <p className="mt-1 h-4 text-xs text-red-600" role="alert">
-                                    {getErrorMessage((fieldState.error?.message || errors.activities?.message) ?? '') ?? ''}
-                                </p>
-                                {Array.isArray(field.value) && field.value.includes('hifz') && autoIncludeActivities.length > 0 && (<p className="mt-1 text-xs text-blue-600">
-                                        {t('halaqa.hifzRequiresTasbit', 'Note: Hifz automatically includes Tasbit')}
-                                    </p>)}
-                            </div>);
-        }}/>
-            </div>
-
-            <div className={`grid grid-cols-1 gap-4 items-start ${evaluationSystemType === 'رقمي' ? 'xl:grid-cols-3' : 'xl:grid-cols-2'}`}>
-                    <FormSelect name="evaluation_system_type" control={control} label={t('halaqa.evaluationSystemType', 'Evaluation system type')} required options={evaluationSystemOptions} error={getErrorMessage(errors.evaluation_system_type?.message)} placeholder={t('halaqa.selectEvaluationSystemType', 'Select evaluation system type')}/>
-                {evaluationSystemType === 'رقمي' && (<FormInput name="custom_total_mark" control={control} label={t('halaqa.customTotalMark', 'Custom total mark')} required type="number" error={getErrorMessage(errors.custom_total_mark?.message)}/>)}
-                <FormInput name="max_students" control={control} label={t('halaqa.maxStudents', 'Maximum students')} required type="number" error={getErrorMessage(errors.max_students?.message)}/>
-            </div>
-
-            {/* Session Time (time range picker) */}
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('halaqa.sessionTime', 'Session Time')}
-                    <span className="text-red-500 ms-1">*</span>
-                </label>
-                <Controller name="session_time" control={control} render={({ field, fieldState }) => {
-            const match = (field.value || '').match(/^(\d{2}:\d{2})-(\d{2}:\d{2})$/);
-            const startTime = match ? match[1] : '';
-            const endTime = match ? match[2] : '';
-            return (<div className="flex flex-wrap items-center gap-3">
-                                <div className="flex-1 min-w-[120px]">
-                                    <input type="time" value={startTime} onChange={(e) => {
-                    const start = e.target.value;
-                    const end = endTime || start;
-                    field.onChange(start ? `${start}-${end}` : '');
-                }} onBlur={field.onBlur} className={`w-full px-4 py-3 border outline-none rounded-lg focus:border-primary-600 transition-colors duration-200 ${fieldState.error ? 'border-red-300 focus:border-red-500' : 'border-gray-300'}`} aria-label={t('halaqa.sessionStartTime', 'Start time')}/>
-                                    <span className="block text-xs text-gray-500 mt-0.5">
-                                        {t('halaqa.sessionStartTime', 'Start time')}
-                                    </span>
-                                </div>
-                                <span className="text-gray-400 font-medium pt-5">–</span>
-                                <div className="flex-1 min-w-[120px]">
-                                    <input type="time" step="60" value={endTime} onChange={(e) => {
-                    const end = e.target.value; // Already in HH:MM format (24-hour)
-                    const start = startTime || end;
-                    field.onChange(end ? `${start}-${end}` : '');
-                }} onBlur={field.onBlur} className={`w-full px-4 py-3 border outline-none rounded-lg focus:border-primary-600 transition-colors duration-200 ${fieldState.error ? 'border-red-300 focus:border-red-500' : 'border-gray-300'}`} aria-label={t('halaqa.sessionEndTime', 'End time')}/>
-                                    <span className="block text-xs text-gray-500 mt-0.5">
-                                        {t('halaqa.sessionEndTime', 'End time')}
-                                    </span>
-                                </div>
-                            </div>);
-        }}/>
-                {errors.session_time?.message && (<p className="mt-1 text-xs text-red-600">{getErrorMessage(errors.session_time.message)}</p>)}
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
-                <div className={teachingMethod && teachingMethod !== 'in_person' ? '' : 'xl:col-span-2'}>
-                    <FormSelect name="teaching_method" control={control} label={t('halaqa.teachingMethod', 'Teaching Method')} required options={teachingMethodOptions} error={getErrorMessage(errors.teaching_method?.message)}/>
-                </div>
-
-                {/* Platform - Only show if teaching method is not in_person */}
-                {teachingMethod && teachingMethod !== 'in_person' && (<SelectRFH name="platform_id" control={control} label={t('halaqa.platform', 'Platform')} required options={platformsOptions} loading={isLoadingPlatforms} error={getErrorMessage(errors.platform_id?.message)} placeholder={t('halaqa.selectPlatform', 'Select a platform')}/>)}
-            </div>
-
-            {/* Availability Check Button */}
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                            {t('halaqa.checkAvailability', 'Check Availability')}
-                        </h3>
-                        <p className="text-xs text-gray-600">
-                            {t('halaqa.checkAvailabilityDescription', 'Verify teacher availability before creating the halaqa')}
-                        </p>
-                    </div>
-                    <Button type="button" variant="secondary" onClick={handleCheckAvailability} disabled={!canCheckAvailability || isCheckingAvailability} loading={isCheckingAvailability}>
-                        {isCheckingAvailability
-            ? t('halaqa.checking', 'Checking...')
-            : t('halaqa.checkAvailability', 'Check Availability')}
-                    </Button>
-                </div>
-
-                {/* Availability Check Status */}
-                {isCheckingAvailability && (<div className="flex items-center gap-3 text-gray-600 p-3 bg-white rounded-lg border border-gray-200">
-                        <CircleIcon width={20} height={20} className="animate-spin"/>
-                        <span className="text-sm font-medium">{t('halaqa.checkingAvailability', 'Checking availability...')}</span>
-                    </div>)}
-
-                {checkAvailabilityMutation.error && (<div className="flex items-center gap-3 text-amber-600 p-3 bg-white rounded-lg border border-amber-200">
-                        <AlertTriangleIcon width={20} height={20}/>
-                        <span className="text-sm font-medium">{t('halaqa.availabilityCheckError', 'Unable to check availability. Please try again.')}</span>
-                    </div>)}
-
-                {availabilityResult && (<div className="space-y-4 mt-4">
-                        {/* Availability Status */}
-                        <div className={`flex items-center gap-3 p-4 rounded-lg border-2 ${isAvailable
-                ? 'bg-green-50 border-green-300'
-                : 'bg-red-50 border-red-300'}`}>
-                            {isAvailable ? (<>
-                                    <ClipboardCheckIcon width={24} height={24} className="text-green-600 flex-shrink-0"/>
-                                    <div className="flex-1">
-                                        <p className="text-base font-bold text-green-900">
-                                            {t('halaqa.available', 'Available')}
-                                        </p>
-                                        <p className="text-sm text-green-700 mt-1">{availabilityResult.message}</p>
-                                    </div>
-                                </>) : (<>
-                                    <AlertTriangleIcon width={24} height={24} className="text-red-600 flex-shrink-0"/>
-                                    <div className="flex-1">
-                                        <p className="text-base font-bold text-red-900">
-                                            {t('halaqa.notAvailable', 'Not Available')}
-                                        </p>
-                                        <p className="text-sm text-red-700 mt-1">{availabilityResult.message}</p>
-                                    </div>
-                                </>)}
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+                            <div className="inline-flex items-center gap-2 rounded-full bg-[#e7f5f3] px-3 py-1.5 font-medium text-[#0d7a78]">
+                                <UsersIcon width={16} height={16} />
+                                <span>{copy(`المكان المتاح بالحَلْقة ${createdHalaqa?.max_students ?? ''} طالب`, `${createdHalaqa?.max_students ?? ''} student slots`)}</span>
+                            </div>
+                            <span className="font-semibold text-slate-600">
+                                {copy(`تم اختيار ${selectedStudentsCount} طالب`, `${selectedStudentsCount} students selected`)}
+                            </span>
                         </div>
 
-                        {/* Conflicts - Show when has_conflict is true OR when conflicts object exists */}
-                        {(hasConflict || hasConflictsData) && availabilityResult?.conflicts && (<div className="p-4 bg-red-50 border-2 border-red-300 rounded-lg mt-4">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <AlertTriangleIcon width={20} height={20} className="text-red-600"/>
-                                    <p className="text-base font-bold text-red-900">
-                                        {t('halaqa.conflicts', 'Conflicts Detected')}
-                                    </p>
-                                </div>
-                                <div className="space-y-3 text-sm bg-white p-3 rounded border border-red-200">
-                                    {availabilityResult.conflicts.teacher && (<div className="flex items-start gap-2">
-                                            <span className="font-semibold text-red-800 min-w-[80px]">{t('halaqa.teacher', 'Teacher')}:</span>
-                                            <span className="text-red-700 font-medium">
-                                                {availabilityResult.conflicts.teacher.ar || availabilityResult.conflicts.teacher.en}
-                                            </span>
-                                        </div>)}
-                                    {!availabilityResult.conflicts.teacher && (<p className="text-red-700">{t('halaqa.conflictsUnknown', 'Conflicts detected but details are not available')}</p>)}
-                                </div>
-                            </div>)}
+                        <div className="mt-5 space-y-3">
+                            {availableStudents.map((student) => (
+                                <StudentSelectionCard
+                                    key={student.id}
+                                    student={student}
+                                    selected={selectedStudentIds.includes(student.id)}
+                                    subtitle={copy('متاح في هذا الوقت', 'Available right now')}
+                                    onToggle={() => handleStudentToggle(student.id)}
+                                />
+                            ))}
+                        </div>
 
-                        {/* Generated Schedule */}
-                        {availabilityResult.generated_schedule && availabilityResult.generated_schedule.length > 0 && (<div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                <p className="text-sm font-semibold text-blue-900 mb-2">
-                                    {t('halaqa.generatedSchedule', 'Generated Schedule')}:
+                        {unavailableStudents.length > 0 ? (
+                            <div className="mt-6 border-t border-slate-200 pt-5">
+                                <p className="mb-3 text-sm font-semibold text-slate-500">
+                                    {copy('غير متاحين حالياً', 'Currently unavailable')}
                                 </p>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-                                    {availabilityResult.generated_schedule.map((schedule, index) => (<div key={index} className="p-2 bg-white rounded border border-blue-100">
-                                            <p className="font-medium text-blue-900">{schedule.day}</p>
-                                            <p className="text-blue-700">{schedule.from} - {schedule.to}</p>
-                                        </div>))}
+                                <div className="space-y-3">
+                                    {unavailableStudents.map((student) => (
+                                        <StudentSelectionCard
+                                            key={student.id}
+                                            student={student}
+                                            disabled
+                                            selected={false}
+                                            subtitle={student.linkedHalaqaName
+                                                ? copy(`مسجل في ${student.linkedHalaqaName}`, `Assigned to ${student.linkedHalaqaName}`)
+                                                : copy('مسجل في حلقة أخرى', 'Assigned to another halaqa')}
+                                        />
+                                    ))}
                                 </div>
-                            </div>)}
-                    </div>)}
+                            </div>
+                        ) : null}
+                    </div>
+
+                    <Button
+                        type="button"
+                        variant="primary"
+                        onClick={handleAssignStudents}
+                        loading={updateHalaqaMutation.isPending}
+                        disabled={updateHalaqaMutation.isPending || selectedStudentsCount === 0}
+                        className="w-full justify-between rounded-[20px] bg-[#0d7a78] px-6 py-4 text-base font-semibold hover:bg-[#0b6664]"
+                    >
+                        <span>{copy('بناء خطة', 'Build Plan')}</span>
+                        <ChevronRightIcon width={18} height={18} className={isArabic ? 'rotate-180' : ''} />
+                    </Button>
+                </div>
             </div>
+        );
+    }
 
-            {/* Error Message */}
-            {createHalaqaMutation.error && (<div className="text-red-600 text-sm">
-                    {createHalaqaMutation.error.message || t('halaqa.createError', 'Error creating halaqa. Please try again.')}
-                </div>)}
+    if (step === 3 && createdHalaqaId != null) {
+        return (
+            <div className="overflow-hidden rounded-[32px] border border-slate-200/70 bg-white shadow-[0_32px_90px_-48px_rgba(15,23,42,0.45)]">
+                <StepHeader
+                    currentStep={planWizardStep}
+                    stepLabel={copy(`الخطوة ${planWizardStep} من 5`, `Step ${planWizardStep} of 5`)}
+                    title={copy('بناء الخطة', 'Build the Plan')}
+                    subtitle={copy('أكمل اختيار الطلاب ومسار النشاط ثم راجع الخطة قبل اعتمادها النهائي.', 'Finish selecting students and activity direction, then review the plan before final approval.')}
+                    onBack={handleGoToHalaqa}
+                    isArabic={isArabic}
+                />
+                <div className="space-y-6 bg-[#f8fafc] px-4 py-6 md:px-8 md:py-8">
+                    <CreatePlanForm
+                        halaqaId={createdHalaqaId}
+                        students={assignedStudentsForPlanning}
+                        activities={createdActivities.length > 0 ? createdActivities : undefined}
+                        onSuccess={() => {
+                            queryClient.invalidateQueries({ queryKey: ['halaqa', createdHalaqaId] });
+                            handleGoToHalaqa();
+                        }}
+                        onCancel={handleGoToHalaqa}
+                        wizardMode
+                        onWizardStepChange={setPlanWizardStep}
+                    />
+                </div>
+            </div>
+        );
+    }
 
-            {/* Submit Button */}
-            <div className="flex justify-end gap-4">
-                <Button type="submit" variant="primary" loading={createHalaqaMutation.isPending} disabled={createHalaqaMutation.isPending || !isAvailable}>
-                    {createHalaqaMutation.isPending ? t('common.loading', 'Loading...') : t('halaqa.createTitle', 'Create Halaqa')}
+    return (
+        <div className="mx-auto max-w-3xl overflow-hidden rounded-[32px] border border-slate-200/70 bg-white shadow-[0_32px_90px_-48px_rgba(15,23,42,0.45)]">
+            <StepHeader
+                currentStep={1}
+                stepLabel={copy('الخطوة 1 من 5', 'Step 1 of 5')}
+                title={copy('إنشاء حلقة جديدة', 'Create a New Halaqa')}
+                subtitle={copy('ابدأ بإدخال بيانات الحلقة الأساسية والمنهج والجدول قبل متابعة بقية الخطوات.', 'Start with the core halaqa details, curriculum, and schedule before moving to the next steps.')}
+                onBack={typeof onBack === 'function' ? onBack : () => navigate(`/${lang || 'ar'}/halaqas`)}
+                isArabic={isArabic}
+            />
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-[#f8fafc] px-4 py-6 md:px-8 md:py-8">
+                <div className="space-y-5">
+                    <SectionCard icon={UsersIcon} title={copy('البيانات الأساسية', 'Basic Details')}>
+                        <div className="grid grid-cols-1 gap-4">
+                            <FormInput
+                                name="name.en"
+                                control={control}
+                                label={t('halaqa.nameEn', copy('الاسم (بالإنجليزية)', 'Name (English)'))}
+                                required
+                                error={getErrorMessage(errors.name?.en?.message)}
+                                className={FIELD_INPUT_CLASS}
+                            />
+                            <FormInput
+                                name="name.ar"
+                                control={control}
+                                label={t('halaqa.nameAr', copy('الاسم (بالعربية)', 'Name (Arabic)'))}
+                                required
+                                error={getErrorMessage(errors.name?.ar?.message)}
+                                className={FIELD_INPUT_CLASS}
+                            />
+                        </div>
+
+                        <SingleSelectPillsField
+                            name="memorization_program_entity_type_id"
+                            control={control}
+                            label={copy('نوع الحلقة', 'Halaqa Type')}
+                            required
+                            options={entityTypeOptions}
+                            error={getErrorMessage(errors.memorization_program_entity_type_id?.message)}
+                        />
+
+                        <FormInput
+                            name="max_students"
+                            control={control}
+                            label={t('halaqa.maxStudents', copy('الحد الأقصى للطلاب بالحَلْقة', 'Maximum Students'))}
+                            required
+                            type="number"
+                            error={getErrorMessage(errors.max_students?.message)}
+                            className={FIELD_INPUT_CLASS}
+                        />
+                    </SectionCard>
+
+                    <SectionCard icon={BookOpenIcon} title={copy('المنهج والأنشطة', 'Curriculum & Activities')}>
+                        <MultiChipField
+                            name="activities"
+                            control={control}
+                            label={copy('أنشطة الحلقة', 'Halaqa Activities')}
+                            required
+                            options={activityOptions}
+                            error={getErrorMessage(errors.activities?.message)}
+                            helperText={Array.isArray(activities) && activities.includes('hifz') && autoIncludedHifzActivities.length > 0
+                                ? t('halaqa.hifzRequiresTasbit', copy('عند اختيار الحفظ سيتم تضمين التثبيت تلقائياً.', 'Selecting Hifz will automatically include Tasbit.'))
+                                : undefined}
+                            onToggleOption={handleActivitiesChange}
+                        />
+
+                        <SingleSelectPillsField
+                            name="evaluation_system_type"
+                            control={control}
+                            label={t('halaqa.evaluationSystemType', copy('نظام التقييم', 'Evaluation System'))}
+                            required
+                            options={evaluationSystemOptions}
+                            error={getErrorMessage(errors.evaluation_system_type?.message)}
+                        />
+
+                        {evaluationSystemType === numericEvaluationValue ? (
+                            <FormInput
+                                name="custom_total_mark"
+                                control={control}
+                                label={t('halaqa.customTotalMark', copy('الدرجة الكلية المخصصة', 'Custom Total Mark'))}
+                                required
+                                type="number"
+                                error={getErrorMessage(errors.custom_total_mark?.message)}
+                                className={FIELD_INPUT_CLASS}
+                            />
+                        ) : null}
+                    </SectionCard>
+
+                    <SectionCard icon={CalendarIcon} title={copy('زمان ومكان الحلقة', 'Halaqa Schedule & Place')}>
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                            <SingleSelectPillsField
+                                name="period"
+                                control={control}
+                                label={t('halaqa.period', copy('الفترة', 'Period'))}
+                                required
+                                options={periodOptions}
+                                error={getErrorMessage(errors.period?.message)}
+                            />
+
+                            <SingleSelectPillsField
+                                name="teaching_method"
+                                control={control}
+                                label={t('halaqa.teachingMethod', copy('طريقة عقد الحلقة', 'Teaching Method'))}
+                                required
+                                options={teachingMethodOptions}
+                                error={getErrorMessage(errors.teaching_method?.message)}
+                            />
+                        </div>
+
+                        {showPlatformField ? (
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <SelectRFH
+                                    name="platform_id"
+                                    control={control}
+                                    label={t('halaqa.platform', copy('المنصة', 'Platform'))}
+                                    required
+                                    options={platformsOptions}
+                                    loading={isLoadingPlatforms}
+                                    error={getErrorMessage(errors.platform_id?.message)}
+                                    placeholder={t('halaqa.selectPlatform', copy('اختر منصة', 'Select a platform'))}
+                                    classes={SELECT_FIELD_CLASSES}
+                                />
+                                <FormInput
+                                    name="meeting_link"
+                                    control={control}
+                                    label={copy('رابط الاجتماع', 'Meeting Link')}
+                                    required
+                                    type="url"
+                                    error={getErrorMessage(errors.meeting_link?.message)}
+                                    className={FIELD_INPUT_CLASS}
+                                    placeholder="https://..."
+                                />
+                            </div>
+                        ) : null}
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <FormInput
+                                name="start_date"
+                                control={control}
+                                label={t('halaqa.startDate', copy('تاريخ البدء', 'Start Date'))}
+                                required
+                                type="date"
+                                error={getErrorMessage(errors.start_date?.message)}
+                                className={FIELD_INPUT_CLASS}
+                            />
+                            <div>
+                                <FormInput
+                                    name="end_date"
+                                    control={control}
+                                    label={t('halaqa.endDate', copy('تاريخ الانتهاء', 'End Date'))}
+                                    required
+                                    type="date"
+                                    error={getErrorMessage(errors.end_date?.message)}
+                                    className={FIELD_INPUT_CLASS}
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+
+                                <label className="mb-1 block text-sm font-medium text-slate-700">{copy('مدة الدورة', 'Course Duration')}</label>
+                                <div className={`flex min-h-[52px] items-center rounded-[16px] border border-slate-200 bg-slate-50 px-4 text-sm ${durationLabel ? 'text-slate-800' : 'text-slate-400'}`}>
+                                    {durationLabel || copy('سيتم احتسابها تلقائياً', 'Calculated automatically')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <TimeRangeField
+                            control={control}
+                            error={getErrorMessage(errors.session_time?.message)}
+                            label={t('halaqa.sessionTime', copy('وقت الجلسة', 'Session Time'))}
+                            startLabel={t('halaqa.sessionStartTime', copy('وقت البداية', 'Start Time'))}
+                            endLabel={t('halaqa.sessionEndTime', copy('وقت النهاية', 'End Time'))}
+                        />
+
+                        <MultiChipField
+                            name="weekly_holiday"
+                            control={control}
+                            label={t('halaqa.weeklyHoliday', copy('العطلة الأسبوعية', 'Weekly Holidays'))}
+                            options={weeklyHolidayOptions}
+                            error={getErrorMessage(errors.weekly_holiday?.message)}
+                        />
+                    </SectionCard>
+
+                    <SectionCard icon={TeacherIcon} title={copy('اختر معلم الحلقة', 'Choose the Halaqa Teacher')}>
+                        <SelectRFH
+                            name="teacher_id"
+                            control={control}
+                            label={t('halaqa.teacher', copy('المعلم', 'Teacher'))}
+                            required
+                            options={teachersOptions}
+                            loading={isLoadingTeachers}
+                            error={getErrorMessage(errors.teacher_id?.message)}
+                            placeholder={t('halaqa.selectTeacher', copy('اختر المعلم', 'Select a teacher'))}
+                            classes={SELECT_FIELD_CLASSES}
+                        />
+                    </SectionCard>
+
+                    <AvailabilityPanel
+                        title={t('halaqa.checkAvailability', copy('التحقق من الإتاحة', 'Check Availability'))}
+                        description={t('halaqa.checkAvailabilityDescription', copy('تحقق من توفر المعلم قبل إنشاء الحلقة.', 'Verify the teacher availability before creating the halaqa.'))}
+                        buttonLabel={t('halaqa.checkAvailability', copy('التحقق من الإتاحة', 'Check Availability'))}
+                        checkingLabel={t('halaqa.checking', copy('جارٍ التحقق...', 'Checking...'))}
+                        isChecking={checkAvailabilityMutation.isPending}
+                        canCheckAvailability={canCheckAvailability}
+                        onCheckAvailability={handleCheckAvailability}
+                        hasRequestError={Boolean(checkAvailabilityMutation.error)}
+                        requestErrorText={t('halaqa.availabilityCheckError', copy('تعذر التحقق من الإتاحة. حاول مرة أخرى.', 'Unable to check availability. Please try again.'))}
+                        availabilityResult={availabilityResult}
+                        isAvailable={isAvailable}
+                        hasConflict={hasConflict}
+                        hasConflictsData={hasConflictsData}
+                        generatedScheduleTitle={t('halaqa.generatedSchedule', copy('الجدول المُنشأ', 'Generated Schedule'))}
+                        conflictsTitle={t('halaqa.conflicts', copy('تعارضات مكتشفة', 'Conflicts Detected'))}
+                        conflictsUnknownText={t('halaqa.conflictsUnknown', copy('تم اكتشاف تعارض ولكن التفاصيل غير متاحة حالياً.', 'Conflicts were detected but details are not available.'))}
+                        teacherLabel={t('halaqa.teacher', copy('المعلم', 'Teacher'))}
+                        checkingAvailabilityText={t('halaqa.checkingAvailability', copy('جارٍ التحقق من الإتاحة...', 'Checking availability...'))}
+                        availableText={t('halaqa.available', copy('متاح', 'Available'))}
+                        notAvailableText={t('halaqa.notAvailable', copy('غير متاح', 'Not Available'))}
+                    />
+
+                </div>
+
+                {createHalaqaMutation.error ? (
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        {createHalaqaMutation.error.message || t('halaqa.createError', copy('حدث خطأ أثناء إنشاء الحلقة. حاول مرة أخرى.', 'Error creating halaqa. Please try again.'))}
+                    </div>
+                ) : null}
+
+                <Button
+                    type="submit"
+                    variant="primary"
+                    loading={createHalaqaMutation.isPending}
+                    disabled={createHalaqaMutation.isPending || !isAvailable}
+                    className="w-full justify-between rounded-[20px] bg-[#0d7a78] px-6 py-4 text-base font-semibold hover:bg-[#0b6664]"
+                >
+                    <span>{createHalaqaMutation.isPending
+                        ? t('common.loading', copy('جارٍ الحفظ...', 'Saving...'))
+                        : copy('إضافة الطلاب إلى الحلقة', 'Add Students to the Halaqa')}</span>
+                    <ChevronRightIcon width={18} height={18} className={isArabic ? 'rotate-180' : ''} />
                 </Button>
-            </div>
-        </form>);
+            </form>
+        </div>
+    );
 };
+
 export default CreateHalaqaForm;

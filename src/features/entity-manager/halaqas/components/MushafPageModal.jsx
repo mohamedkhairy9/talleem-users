@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XIcon, ChevronRightIcon } from '@/globals/icons';
+import { XIcon, ChevronRightIcon } from '@/shared/icons';
 import MushafPage from './MushafPage';
-import { dbLoader } from '@/utils/helpers/databaseLoader';
-import { fontLoader } from '@/utils/helpers/fontLoader';
-import { loadMushafPages, getPageForVerseKey, verseKeysBetween, compareVerseKeys } from '@/utils/helpers/surahHelper';
+import { dbLoader } from '@/shared/utils/helpers/databaseLoader';
+import { fontLoader } from '@/shared/utils/helpers/fontLoader';
+import { loadMushafPages, getPageForVerseKey, verseKeysBetween, compareVerseKeys } from '@/shared/utils/helpers/surahHelper';
 import { quranSegmentsService } from '../services/quran-segments.service';
 /**
  * MushafPageModal Component

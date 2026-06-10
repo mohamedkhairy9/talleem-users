@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpenIcon, CalendarIcon } from '@/globals/icons';
-import { Button } from '@/globals/components';
+import { BookOpenIcon, CalendarIcon } from '@/shared/icons';
+import { Button } from '@/shared/components';
 import PlanScheduleModal from './PlanScheduleModal';
 const HalaqaPlanCard = ({ plan, planStudents, onViewStudents, getLocalizedText }) => {
     const { t } = useTranslation();

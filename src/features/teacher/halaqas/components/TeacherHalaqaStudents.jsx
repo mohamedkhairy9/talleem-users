@@ -2,16 +2,17 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { UsersIcon, UserIcon, AlertTriangleIcon, XIcon, CheckIcon, BookIcon, ClipboardCheckIcon } from '@/globals/icons';
+import { UsersIcon, UserIcon, AlertTriangleIcon, XIcon, CheckIcon, BookIcon, ClipboardCheckIcon } from '@/shared/icons';
 import { useStudentPlan } from '../hooks/useStudentPlan';
 import { teacherHalaqasService } from '../services/halaqas.service';
-import { getDisplayDate, getGregorianDate } from '@/utils';
-import { useDateFormatStore } from '@/stores';
-import { Button } from '@/globals/components';
+import { getDisplayDate, getGregorianDate } from '@/shared/utils';
+import { useDateFormatStore } from '@/app/stores';
+import { Button } from '@/shared/components';
 import MushafPageModal from '@/features/entity-manager/halaqas/components/MushafPageModal';
-import { loadSurahData, getVerseKeyDisplay } from '@/utils/helpers/surahHelper';
-import { getErrorMessage } from '@/utils/helpers/errorHandler';
+import { loadSurahData, getVerseKeyDisplay } from '@/shared/utils/helpers/surahHelper';
+import { getErrorMessage } from '@/shared/utils/helpers/errorHandler';
 const TeacherHalaqaStudents = ({ students, isLoading, error, getLocalizedText, halaqaId, attendanceTypes = [], currentDate: sessionDate }) => {
+    console.log("halaqaId", halaqaId);
     
     const { t, i18n } = useTranslation();
     useDateFormatStore((s) => s.dateFormat); // re-render when date format changes

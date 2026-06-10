@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { UsersIcon, BookOpenIcon, CalendarIcon, BookIcon } from '@/globals/icons';
+import { UsersIcon, BookOpenIcon, CalendarIcon, BookIcon } from '@/shared/icons';
 const HalaqaQuickStats = ({ studentCount, maxStudents, plansCount, durationInDays, activitiesCount }) => {
     const { t } = useTranslation();
     const capacityPercentage = maxStudents && maxStudents > 0

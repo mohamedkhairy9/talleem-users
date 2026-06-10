@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XIcon, BookOpenIcon } from '@/globals/icons';
+import { XIcon, BookOpenIcon } from '@/shared/icons';
 import InlineMushafSegmentPicker from './InlineMushafSegmentPicker';
 import MushafPageModal from './MushafPageModal';
-import { verseKeysBetween } from '@/utils/helpers/surahHelper';
+import { verseKeysBetween } from '@/shared/utils/helpers/surahHelper';
 /**
  * Modal that combines segment selection (InlineMushafSegmentPicker) and mushaf viewer.
  * Used from the plan form to pick segments and view the mushaf in one place.

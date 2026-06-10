@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormWithValidation } from '@/utils';
-import { FormSelect, FormTextarea, Button } from '@/globals/components';
-import { XIcon } from '@/globals/icons';
+import { useFormWithValidation } from '@/shared/utils';
+import { FormSelect, FormTextarea, Button } from '@/shared/components';
+import { XIcon } from '@/shared/icons';
 import { useProcessJoinRequestStep } from '../hooks/useJoinRequests';
 import { processStepSchema } from '../schemas/process-step.schema';
 import {
@@ -10,7 +10,7 @@ import {
     getLocalizedText,
     localizeJoinRequestStatusText
 } from '../config/join-requests.config';
-import { getDisplayDate } from '@/utils';
+import { getDisplayDate } from '@/shared/utils';
 import { toast } from 'react-toastify';
 const SECTION_KEYS = {
     entity_info: ['name', 'registration_date', 'license_number', 'phone', 'email', 'address', 'area', 'status', 'activities'],

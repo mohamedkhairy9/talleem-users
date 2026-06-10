@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { dbLoader } from '@/utils/helpers/databaseLoader';
-import { fontLoader } from '@/utils/helpers/fontLoader';
-import { compareVerseKeys, verseKeysBetween, getVerseKeyDisplay, getJuzNumberForVerseKey, getSurahNumbersInJuz, getPageNumbersForJuzAndSurah, loadMushafPages, loadJuzPages, getSurahNameForPage } from '@/utils/helpers/surahHelper';
+import { dbLoader } from '@/shared/utils/helpers/databaseLoader';
+import { fontLoader } from '@/shared/utils/helpers/fontLoader';
+import { compareVerseKeys, verseKeysBetween, getVerseKeyDisplay, getJuzNumberForVerseKey, getSurahNumbersInJuz, getPageNumbersForJuzAndSurah, loadMushafPages, loadJuzPages, getSurahNameForPage } from '@/shared/utils/helpers/surahHelper';
 import { quranSegmentsService } from '../services/quran-segments.service';
-import { CheckIcon } from '@/globals/icons';
-import { ReactSelect } from '@/globals/components';
+import { CheckIcon } from '@/shared/icons';
+import { ReactSelect } from '@/shared/components';
 import MushafPage from './MushafPage';
 import MushafPageNavigator from './MushafPageNavigator';
 /**

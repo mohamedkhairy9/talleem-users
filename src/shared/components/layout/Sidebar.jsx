@@ -1,0 +1,230 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useAuthStore } from '@/app/stores';
+import { useLogoutMutation } from '@/features/auth';
+import { useLocale } from '@/shared/utils';
+import { getMenuItems } from '@/config';
+import { useLanguagePath } from '@/shared/utils/hooks/useLanguagePath';
+import { Button } from '@/shared/components';
+import { HomeIcon, BookIcon, CalendarIcon, StarIcon, AwardIcon, AlertTriangleIcon, ArrowRightLeftIcon, ClipboardCheckIcon, BookOpenIcon, SettingsIcon, TeacherIcon, UsersIcon, UserIcon, CircleIcon, PlusIcon, ChevronDownIcon, ChevronRightIcon, LogoutIcon } from '@/shared/icons';
+/**
+ * Sidebar Component
+ */
+const Sidebar = ({ isCollapsed, onToggleCollapse, direction = 'ltr' }) => {
+    const { user } = useAuthStore();
+    const logout = useLogoutMutation();
+    const { currentLocale, t } = useLocale();
+    const { getPath, getCurrentPathWithoutLang } = useLanguagePath();
+    const [expandedItems, setExpandedItems] = React.useState(new Set());
+    const handleLogout = () => {
+        logout.mutate();
+    };
+    // Get user display name (handles bilingual name structure)
+    const getUserDisplayName = () => {
+        if (!user)
+            return t('common.user', 'User');
+        if (typeof user.name === 'object' && user.name !== null) {
+            // Bilingual name object – ar/en may be undefined
+            const name = currentLocale === 'ar' ? user.name.ar : user.name.en;
+            return name ?? user.name.en ?? user.name.ar ?? t('common.user', 'User');
+        }
+        // String name or fallback
+        return user.name || user.email || t('common.user', 'User');
+    };
+    // Get menu items based on main_program and roles
+    const mainProgramId = user?.entity?.main_program?.id;
+    const programMenuItems = getMenuItems(mainProgramId, user?.roles);
+    // Filter menu items based on user roles and permissions
+    const visibleMenuItems = programMenuItems.filter(item => {
+        // If no restrictions, show to everyone
+        if (!item.roles && !item.permissions)
+            return true;
+        // Check roles - user needs at least one of the specified roles
+        if (item.roles && item.roles.length > 0) {
+            const hasRole = item.roles.some(role => user?.roles?.includes(role));
+            if (!hasRole)
+                return false;
+        }
+        // Check permissions - user needs at least one of the specified permissions
+        if (item.permissions && item.permissions.length > 0) {
+            const hasPermission = item.permissions.some(permission => user?.permissions?.includes(permission));
+            if (!hasPermission)
+                return false;
+        }
+        return true;
+    });
+    const rawCurrentPath = getCurrentPathWithoutLang();
+    /** Normalize for comparison: no leading/trailing slashes (e.g. "/halaqas" → "halaqas") */
+    const currentPath = rawCurrentPath.replace(/^\/+|\/+$/g, '') || '';
+    const handleLinkClick = () => {
+        if (window.innerWidth < 1024) {
+            onToggleCollapse();
+        }
+    };
+    // Icon mapping - maps icon name to component
+    const iconMap = {
+        HomeIcon,
+        BookIcon,
+        CalendarIcon,
+        StarIcon,
+        AwardIcon,
+        AlertTriangleIcon,
+        ArrowRightLeftIcon,
+        ClipboardCheckIcon,
+        BookOpenIcon,
+        SettingsIcon,
+        TeacherIcon,
+        UsersIcon,
+        UserIcon,
+        CircleIcon,
+        PlusIcon
+    };
+    // Get icon component by name
+    const getIcon = (iconName) => {
+        if (!iconName)
+            return null;
+        const IconComponent = iconMap[iconName];
+        if (!IconComponent)
+            return null;
+        return <IconComponent width={isCollapsed ? 24 : 20} height={isCollapsed ? 24 : 20} className="shrink-0"/>;
+    };
+    // Toggle expandable menu item
+    const toggleExpand = (path) => {
+        setExpandedItems(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(path)) {
+                newSet.delete(path);
+            }
+            else {
+                newSet.add(path);
+            }
+            return newSet;
+        });
+    };
+    /** Normalize menu path for comparison (strip slashes, treat empty as '') */
+    const normalizeMenuPath = (path) => (path ?? '').replace(/^\/+|\/+$/g, '') || '';
+    // Check if a path matches current path (including subitems and sub-routes)
+    const isPathActive = (itemPath, subItems) => {
+        const normalizedItem = normalizeMenuPath(itemPath);
+        // Exact match
+        if (currentPath === normalizedItem)
+            return true;
+        // Check if current path starts with the menu item path (for sub-routes like /halaqas/:id/edit)
+        // Only match if followed by '/' or at the end (to avoid matching partial words)
+        if (normalizedItem && currentPath.startsWith(normalizedItem + '/')) {
+            return true;
+        }
+        // Check subitems
+        if (subItems) {
+            return subItems.some(subItem => {
+                const normalizedSubItem = normalizeMenuPath(subItem.path);
+                if (currentPath === normalizedSubItem)
+                    return true;
+                // Also check if current path starts with subitem path
+                if (normalizedSubItem && currentPath.startsWith(normalizedSubItem + '/')) {
+                    return true;
+                }
+                return false;
+            });
+        }
+        return false;
+    };
+    // Auto-expand parent when current page is a sub-item (so active sub-link is visible)
+    React.useEffect(() => {
+        visibleMenuItems.forEach(item => {
+            if (item.subItems?.length && !expandedItems.has(item.path)) {
+                const hasActiveChild = item.subItems.some(sub => currentPath === normalizeMenuPath(sub.path));
+                if (hasActiveChild) {
+                    setExpandedItems(prev => new Set(prev).add(item.path));
+                }
+            }
+        });
+    }, [currentPath]);
+    return (<>
+            {/* Backdrop when sidebar overlay is open – small screens only */}
+            {/* Backdrop: below navbar only, so navbar stays visible when overlay is open */}
+            {!isCollapsed && (<div className="fixed top-20 left-0 right-0 bottom-0 z-[45] bg-black/20 lg:hidden" onClick={onToggleCollapse} aria-hidden="true"/>)}
+
+            {/* Sidebar: starts below navbar (top-20); overlay on small, persistent on lg+ */}
+            <aside className={`
+                    fixed start-0 top-20 bottom-0 z-[46]
+                    ${isCollapsed ? 'w-16 lg:w-16' : 'w-64 lg:w-64'} bg-white shadow-xl
+                    border-e border-gray-200
+                    transform transition-all duration-300 ease-in-out
+                    ${isCollapsed
+            ? direction === 'rtl'
+                ? 'translate-x-full lg:translate-x-0'
+                : '-translate-x-full lg:translate-x-0'
+            : 'translate-x-0'}
+                    flex flex-col
+                `}>
+                {/* Toggle moved to navbar on all screens */}
+                <nav className={`${isCollapsed ? 'p-2' : 'p-4'} flex-1 overflow-y-auto`}>
+                    <ul className="space-y-1 lg:space-y-0.5">
+                        {visibleMenuItems.map(item => {
+            const itemPath = getPath(item.path);
+            const normalizedItemPath = item.path === '' ? '' : item.path;
+            const hasSubItems = item.subItems && item.subItems.length > 0;
+            const isExpanded = expandedItems.has(item.path);
+            const isActive = isPathActive(normalizedItemPath, item.subItems);
+            if (hasSubItems) {
+                return (<li key={item.path}>
+                                        <button onClick={() => toggleExpand(item.path)} className={`w-full flex items-center gap-3 ${isCollapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2'} rounded-lg transition-colors text-sm lg:text-xs ${isActive
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'}`}>
+                                            {getIcon(item.icon)}
+                                            {!isCollapsed && (<>
+                                                    <span className="flex-1 text-start">{item.labelKey ? t(item.labelKey, item.label || '') : item.label}</span>
+                                                    {isExpanded ? (<ChevronDownIcon width={16} height={16}/>) : (<ChevronRightIcon width={16} height={16}/>)}
+                                                </>)}
+                                        </button>
+                                        {!isCollapsed && isExpanded && item.subItems && (<ul className="ms-4 mt-1 space-y-1">
+                                                {item.subItems.map(subItem => {
+                            const subItemPath = getPath(subItem.path);
+                            const isSubActive = currentPath === normalizeMenuPath(subItem.path);
+                            return (<li key={subItem.path}>
+                                                            <Link to={subItemPath} onClick={handleLinkClick} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm lg:text-xs ${isSubActive
+                                    ? 'bg-primary-100 text-primary-700 font-medium'
+                                    : 'text-gray-600 hover:bg-gray-50'}`}>
+                                                                {getIcon(subItem.icon)}
+                                                                <span>{subItem.labelKey ? t(subItem.labelKey, subItem.label || '') : subItem.label}</span>
+                                                            </Link>
+                                                        </li>);
+                        })}
+                                            </ul>)}
+                                    </li>);
+            }
+            return (<li key={item.path}>
+                                    <Link to={itemPath} onClick={handleLinkClick} className={`flex items-center gap-3 ${isCollapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2'} rounded-lg transition-colors text-sm lg:text-xs ${isActive
+                    ? 'bg-primary-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'}`} title={isCollapsed ? (item.labelKey ? t(item.labelKey, item.label || '') : item.label) : undefined}>
+                                        {getIcon(item.icon)}
+                                        {!isCollapsed && (<span>{item.labelKey ? t(item.labelKey, item.label || '') : item.label}</span>)}
+                                    </Link>
+                                </li>);
+        })}
+                    </ul>
+                </nav>
+
+                {/* User Info and Logout – full when expanded; icon-only when collapsed on lg */}
+                {!isCollapsed && (<div className="p-4 border-t border-gray-200 space-y-3">
+                        <div className="px-4 py-2">
+                            <p className="text-xs text-gray-500 mb-1">{t('common.user', 'User')}</p>
+                            <p className="text-sm font-medium text-gray-800 truncate">
+                                {getUserDisplayName()}
+                            </p>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={handleLogout} loading={logout.isPending} className="w-full">
+                            <LogoutIcon width={16} height={16} className="me-2"/>
+                            {t('navbar.logout', 'Logout')}
+                        </Button>
+                    </div>)}
+                {isCollapsed && (<div className="p-2 border-t border-gray-200 lg:block hidden">
+                        <button onClick={handleLogout} disabled={logout.isPending} className="w-full p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center" title={t('navbar.logout', 'Logout')}>
+                            {logout.isPending ? (<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"/>) : (<LogoutIcon width={20} height={20}/>)}
+                        </button>
+                    </div>)}
+            </aside>
+        </>);
+};
+export default Sidebar;

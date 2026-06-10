@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookIcon } from '@/globals/icons';
+import { BookIcon } from '@/shared/icons';
 const HalaqaActivities = ({ activities }) => {
     const { t } = useTranslation();
     if (!activities || activities.length === 0)

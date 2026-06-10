@@ -1,10 +1,10 @@
 import React from 'react';
-import { useFormWithValidation } from '@/utils';
+import { useFormWithValidation } from '@/shared/utils';
 import { useJoinRequestForm, useSubmitJoinRequest } from '../hooks/useRegistration';
 import { buildDynamicSchema } from '../utils/buildDynamicSchema';
 import { buildDefaultValues } from '../utils/buildDefaultValues';
 import DynamicFormRenderer from './DynamicFormRenderer';
-import { Button } from '@/globals/components';
+import { Button } from '@/shared/components';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ROUTE_PATHS } from '@/config';

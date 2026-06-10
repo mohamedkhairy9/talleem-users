@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocale } from '@/utils';
+import { useLocale } from '@/shared/utils';
 /**
  * Language switcher for auth pages (login, register)
  */

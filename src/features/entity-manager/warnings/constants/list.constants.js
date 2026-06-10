@@ -1,4 +1,4 @@
-import { PAGINATION } from '@/utils/constants/api.constants';
+import { PAGINATION } from '@/shared/utils/constants/api.constants';
 /** API path for warnings list (GET /api/front/warnings with baseURL) - single source of truth */
 export const WARNINGS_LIST_PATH = '/warnings';
 /**

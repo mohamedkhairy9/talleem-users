@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Table, Pagination } from '@/globals/components';
+import { Table, Pagination } from '@/shared/components';
 import { useTeacherWarnings } from '../hooks/useTeacherWarnings';
 import TeacherWarningsListMobile from './TeacherWarningsListMobile';
 import { createTeacherWarningsListColumns } from '../config/table.config';
-import { getLocalizedText as getLocalizedTextHelper } from '@/utils/helpers/getLocalizedText';
-import { useDateFormatStore } from '@/stores';
+import { getLocalizedText as getLocalizedTextHelper } from '@/shared/utils/helpers/getLocalizedText';
+import { useDateFormatStore } from '@/app/stores';
 const PER_PAGE = 15;
 /**
  * Teacher Warnings List

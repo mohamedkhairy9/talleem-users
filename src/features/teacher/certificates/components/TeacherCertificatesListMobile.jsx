@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { AwardIcon } from '@/globals/icons';
+import { AwardIcon } from '@/shared/icons';
 const TeacherCertificatesListMobile = ({ list, isLoading, hasError, errorMessage, emptyMessage, getLocalizedText, onViewCertificates }) => {
     const { t } = useTranslation();
     if (isLoading && list.length === 0) {

@@ -1,11 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Table } from '@/globals/components';
+import { Table } from '@/shared/components';
 import { useTeacherHalaqas } from '../hooks/useTeacherHalaqas';
 import TeacherHalaqaListMobile from './TeacherHalaqaListMobile';
 import { createTeacherHalaqaListColumns } from '../config/table.config';
-import { useDateFormatStore } from '@/stores';
+import { useDateFormatStore } from '@/app/stores';
 /**
  * Teacher Halaqa List Component
  * Displays active halaqas for the teacher

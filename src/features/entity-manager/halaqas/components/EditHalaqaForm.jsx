@@ -2,20 +2,35 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { Controller, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useFormWithValidation } from '@/utils';
-import { FormInput, FormSelect, Button } from '@/globals/components';
-import SelectRFH from '@/globals/components/ui/SelectRFH';
 import Select from 'react-select';
-import { useHalaqa, useUpdateHalaqa } from '../hooks/useHalaqas';
-import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
-import { normalizeSessionTime } from '@/utils';
-import { HALAQA_ACTIVITIES, HALAQA_EVALUATION_SYSTEM_TYPES, HALAQA_PERIODS, HALAQA_TEACHING_METHODS, HALAQA_WEEKLY_HOLIDAYS } from '../config';
+import { useFormWithValidation, normalizeDate, getGregorianDate } from '@/shared/utils';
+import { FormInput, FormSelect, Button } from '@/shared/components';
+import SelectRFH from '@/shared/components/ui/SelectRFH';
+import { useHalaqa, useUpdateHalaqa } from '../hooks/useHalaqas';
+import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
+import { HALAQA_ACTIVITIES, HALAQA_PERIODS } from '../config';
 import { updateHalaqaSchema } from '../schemas/halaqa.schema';
+import { generateOptions } from '../utils/formOptionsUtils';
+
+const REQUIRED_HIFZ_ACTIVITIES = ['tasbit'];
+
+function mergeOptions(primary = [], fallback = []) {
+    const map = new Map();
+    [...primary, ...fallback].forEach((option) => {
+        const value = option?.value ?? option?.id;
+        if (value == null || map.has(value))
+            return;
+        map.set(value, option);
+    });
+    return Array.from(map.values());
+}
+
 /**
  * Edit Halaqa Form Component
- * Same fields as create form; submits via PUT /halaqas/:id
+ * Matches PUT /halaqas/:id payload:
+ * { name, teacher_id, period, start_date, end_date, activities, student_ids }
  */
 const EditHalaqaForm = () => {
     const { t } = useTranslation();
@@ -30,85 +45,103 @@ const EditHalaqaForm = () => {
             name: { ar: '', en: '' },
             teacher_id: 0,
             period: 'morning',
+            start_date: '',
+            end_date: '',
             activities: [],
-            weekly_holiday: [],
-            evaluation_system_type: 'رقمي',
-            custom_total_mark: undefined,
-            max_students: undefined,
-            session_time: '',
-            platform_id: undefined,
-            teaching_method: 'in_person'
+            student_ids: []
         }
     });
-    const teachingMethod = useWatch({ control, name: 'teaching_method' });
-    const evaluationSystemType = useWatch({ control, name: 'evaluation_system_type' });
     const activities = useWatch({ control, name: 'activities' });
-    const { teachersOptions, platformsOptions, autoIncludeActivities, isLoadingTeachers, isLoadingPlatforms } = useCreateHalaqaFormQueries({ includeStudents: false });
+    const { teachersOptions: fetchedTeachersOptions, studentsOptions: fetchedStudentsOptions, isLoadingTeachers, isLoadingStudents } = useCreateHalaqaFormQueries();
+
     useEffect(() => {
-        if (teachingMethod === 'in_person')
-            setValue('platform_id', undefined);
-    }, [teachingMethod, setValue]);
-    useEffect(() => {
-        if (evaluationSystemType !== 'رقمي')
-            setValue('custom_total_mark', undefined);
-    }, [evaluationSystemType, setValue]);
-    useEffect(() => {
-        if (Array.isArray(activities) && activities.length > 0 && autoIncludeActivities.length > 0) {
+        if (Array.isArray(activities) && activities.length > 0 && REQUIRED_HIFZ_ACTIVITIES.length > 0) {
             const hasHifz = activities.includes('hifz');
             if (!hasHifz)
                 return;
-            const toAdd = autoIncludeActivities.filter((a) => !activities.includes(a));
+            const toAdd = REQUIRED_HIFZ_ACTIVITIES.filter((activity) => !activities.includes(activity));
             if (toAdd.length > 0) {
-                setValue('activities', [...activities, ...toAdd], { shouldValidate: true, shouldDirty: true, shouldTouch: false });
+                setValue('activities', [...activities, ...toAdd], {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                    shouldTouch: false
+                });
             }
         }
-    }, [activities, autoIncludeActivities, setValue]);
-    const periodOptions = useMemo(() => HALAQA_PERIODS.map((p) => ({ value: p.value, label: t(p.labelKey, p.value) })), [t]);
-    const activityOptions = useMemo(() => HALAQA_ACTIVITIES.map((a) => ({ value: a.value, label: t(a.labelKey, a.value) })), [t]);
-    const teachingMethodOptions = useMemo(() => HALAQA_TEACHING_METHODS.map((m) => ({ value: m.value, label: t(m.labelKey, m.value) })), [t]);
-    const weeklyHolidayOptions = useMemo(() => HALAQA_WEEKLY_HOLIDAYS.map((day) => ({ value: day.value, label: t(day.labelKey, day.label) })), [t]);
-    const evaluationSystemOptions = useMemo(() => HALAQA_EVALUATION_SYSTEM_TYPES.map((item) => ({ value: item.value, label: t(item.labelKey, item.label) })), [t]);
+    }, [activities, setValue]);
+
+    const periodOptions = useMemo(() => HALAQA_PERIODS.map((period) => ({
+        value: period.value,
+        label: t(period.labelKey, period.value)
+    })), [t]);
+    const activityOptions = useMemo(() => HALAQA_ACTIVITIES.map((activity) => ({
+        value: activity.value,
+        label: t(activity.labelKey, activity.value)
+    })), [t]);
     const getErrorMessage = useCallback((message) => (message ? t(message, message) : undefined), [t]);
-    const raw = data?.data;
+
+    const raw = data;
     const halaqa = raw && typeof raw === 'object' && 'data' in raw ? raw.data : raw;
+    
+    const teacherFallbackOptions = useMemo(() => {
+        if (!halaqa?.teacher?.id)
+            return [];
+        return generateOptions([{
+            id: halaqa.teacher.id,
+            name: halaqa.teacher.name
+        }]);
+    }, [halaqa?.teacher]);
+
+    const studentsFallbackOptions = useMemo(() => {
+        if (!Array.isArray(halaqa?.students) || halaqa.students.length === 0)
+            return [];
+        return generateOptions(halaqa.students.map((student) => ({
+            id: student.id,
+            name: student.name
+        })));
+    }, [halaqa?.students]);
+
+    const teachersOptions = useMemo(() => mergeOptions(fetchedTeachersOptions, teacherFallbackOptions), [fetchedTeachersOptions, teacherFallbackOptions]);
+    const studentsOptions = useMemo(() => mergeOptions(fetchedStudentsOptions, studentsFallbackOptions), [fetchedStudentsOptions, studentsFallbackOptions]);
+
     useEffect(() => {
         if (!halaqa)
             return;
-        const weeklyHoliday = typeof halaqa.weekly_holiday === 'string'
-            ? halaqa.weekly_holiday.split(',').map((d) => d.trim()).filter(Boolean)
-            : [];
-        const evalType = halaqa.evaluation_system_type === 'رقمي' || halaqa.evaluation_system_type === 'مئوي'
-            ? halaqa.evaluation_system_type
-            : (halaqa.evaluation_system === 'رقمي' || halaqa.evaluation_system === 'مئوي' ? halaqa.evaluation_system : 'رقمي');
-        const customTotalMark = halaqa.custom_total_mark != null
-            ? halaqa.custom_total_mark
-            : (evalType === 'رقمي' && halaqa.total_mark != null ? halaqa.total_mark : undefined);
-        const sessionTime = halaqa.session_time || (halaqa.session_from && halaqa.session_to ? `${halaqa.session_from}-${halaqa.session_to}` : '');
+
+        const studentIds = Array.isArray(halaqa.students)
+            ? halaqa.students.map((student) => student.id).filter(Boolean)
+            : Array.isArray(halaqa.student_ids)
+                ? halaqa.student_ids.filter(Boolean)
+                : [];
+
         reset({
-            name: { ar: halaqa.name?.ar || '', en: halaqa.name?.en || '' },
+            name: {
+                ar: halaqa?.name?.ar ?? (typeof halaqa?.name === 'string' ? halaqa.name : ''),
+                en: halaqa?.name?.en ?? (typeof halaqa?.name === 'string' ? halaqa.name : '')
+            },
             teacher_id: halaqa.teacher?.id || halaqa.teacher_id || 0,
             period: halaqa.period || 'morning',
+            start_date: normalizeDate(getGregorianDate(halaqa.start_date ?? halaqa.date?.from)),
+            end_date: normalizeDate(getGregorianDate(halaqa.end_date ?? halaqa.date?.to)),
             activities: Array.isArray(halaqa.activities) ? halaqa.activities : [],
-            weekly_holiday: weeklyHoliday,
-            evaluation_system_type: evalType,
-            custom_total_mark: customTotalMark,
-            max_students: halaqa.max_students ?? undefined,
-            session_time: normalizeSessionTime(sessionTime),
-            platform_id: halaqa.platform?.id ?? halaqa.platform_id ?? undefined,
-            teaching_method: halaqa.teaching_method || 'in_person'
+            student_ids: studentIds
         });
     }, [halaqa, reset]);
-    const onSubmit = async (data) => {
+
+    const onSubmit = async (formData) => {
         if (!id)
             return;
-        const { platform_id, weekly_holiday, custom_total_mark, ...rest } = data;
+
         const payload = {
-            ...rest,
-            session_time: normalizeSessionTime(data.session_time),
-            weekly_holiday: Array.isArray(weekly_holiday) && weekly_holiday.length > 0 ? weekly_holiday.join(',') : '',
-            custom_total_mark: data.evaluation_system_type === 'رقمي' && typeof custom_total_mark === 'number' ? custom_total_mark : null,
-            ...(data.teaching_method !== 'in_person' && platform_id ? { platform_id } : {})
+            name: formData.name,
+            teacher_id: formData.teacher_id,
+            period: formData.period,
+            start_date: normalizeDate(formData.start_date),
+            end_date: normalizeDate(formData.end_date),
+            activities: formData.activities,
+            student_ids: formData.student_ids
         };
+
         updateHalaqaMutation.mutate({ id, data: payload }, {
             onSuccess: () => {
                 toast.success(t('halaqa.updateSuccess', 'Halaqa updated successfully'));
@@ -121,16 +154,19 @@ const EditHalaqaForm = () => {
             }
         });
     };
+
     if (isLoadingHalaqa) {
         return (<div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>);
     }
+
     if (halaqaError || !halaqa) {
         return (<div className="text-center py-12 text-red-600">
                 {t('halaqa.notFound', 'Halaqa not found')}
             </div>);
     }
+
     return (<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormInput name="name.en" control={control} label={t('halaqa.nameEn', 'Name (English)')} required error={getErrorMessage(errors.name?.en?.message)}/>
@@ -139,39 +175,42 @@ const EditHalaqaForm = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 <SelectRFH name="teacher_id" control={control} label={t('halaqa.teacher', 'Teacher')} required options={teachersOptions} loading={isLoadingTeachers} error={getErrorMessage(errors.teacher_id?.message)} placeholder={t('halaqa.selectTeacher', 'Select a teacher')}/>
-                <SelectRFH name="weekly_holiday" control={control} label={t('halaqa.weeklyHoliday', 'Weekly holiday')} isMulti options={weeklyHolidayOptions} error={getErrorMessage(errors.weekly_holiday?.message)} placeholder={t('halaqa.selectWeeklyHoliday', 'Select weekly holidays')}/>
+                <FormSelect name="period" control={control} label={t('halaqa.period', 'Period')} required options={periodOptions} error={getErrorMessage(errors.period?.message)} className="w-full"/>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
-                <FormSelect name="period" control={control} label={t('halaqa.period', 'Period')} required options={periodOptions} error={getErrorMessage(errors.period?.message)} className="w-full"/>
-                <Controller name="activities" control={control} render={({ field, fieldState }) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormInput name="start_date" control={control} label={t('halaqa.startDate', 'Start Date')} required type="date" error={getErrorMessage(errors.start_date?.message)}/>
+                <FormInput name="end_date" control={control} label={t('halaqa.endDate', 'End Date')} required type="date" error={getErrorMessage(errors.end_date?.message)}/>
+            </div>
+
+            <Controller name="activities" control={control} render={({ field, fieldState }) => {
             const handleChange = (selectedOptions) => {
                 let selectedValues = [];
                 if (selectedOptions) {
                     if (Array.isArray(selectedOptions)) {
-                        selectedValues = selectedOptions.map((opt) => opt.value || opt.id);
+                        selectedValues = selectedOptions.map((option) => option.value || option.id);
                     }
                     else {
                         selectedValues = [selectedOptions.value || selectedOptions.id];
                     }
                 }
                 const hasHifz = selectedValues.includes('hifz');
-                if (hasHifz && autoIncludeActivities.length > 0) {
-                    const toAdd = autoIncludeActivities.filter((a) => !selectedValues.includes(a));
+                if (hasHifz && REQUIRED_HIFZ_ACTIVITIES.length > 0) {
+                    const toAdd = REQUIRED_HIFZ_ACTIVITIES.filter((activity) => !selectedValues.includes(activity));
                     selectedValues = [...selectedValues, ...toAdd];
                 }
                 field.onChange(selectedValues);
             };
             const currentValue = field.value || [];
             const selectedOptions = Array.isArray(currentValue)
-                ? currentValue.map(val => activityOptions.find(opt => opt.value === val)).filter(Boolean)
+                ? currentValue.map((value) => activityOptions.find((option) => option.value === value)).filter(Boolean)
                 : [];
             return (<div>
-                                <label htmlFor="activities" className="block text-sm font-medium text-gray-700 mb-1">
-                                    {t('halaqa.activities', 'Activities')}
-                                    <span className="text-red-500 ml-1">*</span>
-                                </label>
-                                <Select isMulti value={selectedOptions} options={activityOptions} onChange={handleChange} onBlur={field.onBlur} name={field.name} placeholder={t('halaqa.selectActivities', 'Select activities')} className="react-select w-full" classNamePrefix="react-select" menuPortalTarget={document.body} menuPosition="fixed" getOptionValue={(option) => String(option.value ?? option.id ?? '')} getOptionLabel={(option) => option.label ?? option.name ?? ''} styles={{
+                            <label htmlFor="activities" className="block text-sm font-medium text-gray-700 mb-1">
+                                {t('halaqa.activities', 'Activities')}
+                                <span className="text-red-500 ml-1">*</span>
+                            </label>
+                            <Select isMulti value={selectedOptions} options={activityOptions} onChange={handleChange} onBlur={field.onBlur} name={field.name} placeholder={t('halaqa.selectActivities', 'Select activities')} className="react-select w-full" classNamePrefix="react-select" menuPortalTarget={document.body} menuPosition="fixed" getOptionValue={(option) => String(option.value ?? option.id ?? '')} getOptionLabel={(option) => option.label ?? option.name ?? ''} styles={{
                     control: (base, state) => ({
                         ...base,
                         borderColor: fieldState.error ? '#ef4444' : state.isFocused ? '#004247' : '#d1d5db',
@@ -189,60 +228,16 @@ const EditHalaqaForm = () => {
                         '&:active': { backgroundColor: '#004247', color: 'white' }
                     })
                 }}/>
-                                <p className="mt-1 h-4 text-xs text-red-600" role="alert">
-                                    {getErrorMessage((fieldState.error?.message || errors.activities?.message) ?? '') ?? ''}
-                                </p>
-                                {Array.isArray(field.value) && field.value.includes('hifz') && autoIncludeActivities.length > 0 && (<p className="mt-1 text-xs text-blue-600">
-                                        {t('halaqa.hifzRequiresTasbit', 'Note: Hifz automatically includes Tasbit')}
-                                    </p>)}
-                            </div>);
+                            <p className="mt-1 h-4 text-xs text-red-600" role="alert">
+                                {getErrorMessage((fieldState.error?.message || errors.activities?.message) ?? '') ?? ''}
+                            </p>
+                            {Array.isArray(field.value) && field.value.includes('hifz') && REQUIRED_HIFZ_ACTIVITIES.length > 0 && (<p className="mt-1 text-xs text-blue-600">
+                                    {t('halaqa.hifzRequiresTasbit', 'Note: Hifz automatically includes Tasbit')}
+                                </p>)}
+                        </div>);
         }}/>
-            </div>
 
-            <div className={`grid grid-cols-1 gap-4 items-start ${evaluationSystemType === 'رقمي' ? 'xl:grid-cols-3' : 'xl:grid-cols-2'}`}>
-                <FormSelect name="evaluation_system_type" control={control} label={t('halaqa.evaluationSystemType', 'Evaluation system type')} required options={evaluationSystemOptions} error={getErrorMessage(errors.evaluation_system_type?.message)} placeholder={t('halaqa.selectEvaluationSystemType', 'Select evaluation system type')}/>
-                {evaluationSystemType === 'رقمي' && (<FormInput name="custom_total_mark" control={control} label={t('halaqa.customTotalMark', 'Custom total mark')} required type="number" error={getErrorMessage(errors.custom_total_mark?.message)}/>)}
-                <FormInput name="max_students" control={control} label={t('halaqa.maxStudents', 'Maximum students')} required type="number" error={getErrorMessage(errors.max_students?.message)}/>
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('halaqa.sessionTime', 'Session Time')}
-                    <span className="text-red-500 ms-1">*</span>
-                </label>
-                <Controller name="session_time" control={control} render={({ field, fieldState }) => {
-            const match = (field.value || '').match(/^(\d{2}:\d{2})-(\d{2}:\d{2})$/);
-            const startTime = match ? match[1] : '';
-            const endTime = match ? match[2] : '';
-            return (<div className="flex flex-wrap items-center gap-3">
-                                <div className="flex-1 min-w-[120px]">
-                                    <input type="time" value={startTime} onChange={(e) => {
-                    const start = e.target.value;
-                    const end = endTime || start;
-                    field.onChange(start ? `${start}-${end}` : '');
-                }} onBlur={field.onBlur} className={`w-full px-4 py-3 border outline-none rounded-lg focus:border-primary-600 transition-colors duration-200 ${fieldState.error ? 'border-red-300 focus:border-red-500' : 'border-gray-300'}`} aria-label={t('halaqa.sessionStartTime', 'Start time')}/>
-                                    <span className="block text-xs text-gray-500 mt-0.5">{t('halaqa.sessionStartTime', 'Start time')}</span>
-                                </div>
-                                <span className="text-gray-400 font-medium pt-5">–</span>
-                                <div className="flex-1 min-w-[120px]">
-                                    <input type="time" step="60" value={endTime} onChange={(e) => {
-                    const end = e.target.value;
-                    const start = startTime || end;
-                    field.onChange(end ? `${start}-${end}` : '');
-                }} onBlur={field.onBlur} className={`w-full px-4 py-3 border outline-none rounded-lg focus:border-primary-600 transition-colors duration-200 ${fieldState.error ? 'border-red-300 focus:border-red-500' : 'border-gray-300'}`} aria-label={t('halaqa.sessionEndTime', 'End time')}/>
-                                    <span className="block text-xs text-gray-500 mt-0.5">{t('halaqa.sessionEndTime', 'End time')}</span>
-                                </div>
-                            </div>);
-        }}/>
-                {errors.session_time?.message && (<p className="mt-1 text-xs text-red-600">{getErrorMessage(errors.session_time.message)}</p>)}
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
-                <div className={teachingMethod && teachingMethod !== 'in_person' ? '' : 'xl:col-span-2'}>
-                    <FormSelect name="teaching_method" control={control} label={t('halaqa.teachingMethod', 'Teaching Method')} required options={teachingMethodOptions} error={getErrorMessage(errors.teaching_method?.message)}/>
-                </div>
-                {teachingMethod && teachingMethod !== 'in_person' && (<SelectRFH name="platform_id" control={control} label={t('halaqa.platform', 'Platform')} required options={platformsOptions} loading={isLoadingPlatforms} error={getErrorMessage(errors.platform_id?.message)} placeholder={t('halaqa.selectPlatform', 'Select a platform')}/>)}
-            </div>
+            <SelectRFH name="student_ids" control={control} label={t('plan.students', 'Students')} required isMulti options={studentsOptions} loading={isLoadingStudents} error={getErrorMessage(errors.student_ids?.message)} placeholder={t('plan.selectStudents', 'Select one or more students')}/>
 
             {updateHalaqaMutation.error && (<div className="text-red-600 text-sm">
                     {updateHalaqaMutation.error.message || t('halaqa.updateError', 'Error updating halaqa. Please try again.')}
@@ -258,4 +253,5 @@ const EditHalaqaForm = () => {
             </div>
         </form>);
 };
+
 export default EditHalaqaForm;

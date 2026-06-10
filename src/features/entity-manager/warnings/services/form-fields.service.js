@@ -1,4 +1,4 @@
-import { axiosInstance } from '@/api/axiosInstance';
+import { axiosInstance } from '@/shared/api/axiosInstance';
 /**
  * Form Fields Service for Warnings
  * Handles API calls for form field options
@@ -8,13 +8,13 @@ export const warningsFormFieldsService = {
      * Get students (for student warnings)
      */
     getStudents: (params) => {
-        return axiosInstance.get('/students', { params });
+        return axiosInstance.get('/entity-manager/mirror/students', { params });
     },
     /**
      * Get teachers (for teacher warnings)
      */
     getTeachers: (params) => {
-        return axiosInstance.get('/teachers', { params });
+        return axiosInstance.get('/entity-manager/mirror/teachers', { params });
     },
     /**
      * Get entities (for entity warnings)

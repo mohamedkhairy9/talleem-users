@@ -52,6 +52,10 @@ export function useHalaqasListState() {
         setSearchParams((prev) => {
             const next = new URLSearchParams(prev);
             const trimmed = (value ?? '').trim();
+            const currentSearch = (prev.get(URL_KEYS.SEARCH) ?? '').trim();
+            if (trimmed === currentSearch) {
+                return next;
+            }
             if (trimmed === '')
                 next.delete(URL_KEYS.SEARCH);
             else

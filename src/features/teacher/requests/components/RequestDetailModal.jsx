@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { XIcon } from '@/globals/icons';
+import { XIcon } from '@/shared/icons';
 import { useTeacherRequestDetail } from '../hooks/useTeacherRequests';
-import { getDisplayDate, getLocalizedText as getLocalizedTextHelper } from '@/utils';
-import { useDateFormatStore } from '@/stores';
+import { getDisplayDate, getLocalizedText as getLocalizedTextHelper } from '@/shared/utils';
+import { useDateFormatStore } from '@/app/stores';
 function DetailRow({ label, value }) {
     return (<div className="flex flex-wrap gap-2 py-2 border-b border-gray-100 last:border-0">
             <dt className="text-sm font-medium text-gray-500 min-w-[120px]">{label}</dt>

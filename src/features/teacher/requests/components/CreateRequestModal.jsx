@@ -2,13 +2,13 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useWatch } from 'react-hook-form';
 import { toast } from 'react-toastify';
-import { Button, FormInput, FormSelect, FormAsyncPaginate, ReactSelect } from '@/globals/components';
-import { XIcon } from '@/globals/icons';
-import { useFormWithValidation } from '@/utils';
-import { getLocalizedText } from '@/utils/helpers/getLocalizedText';
+import { Button, FormInput, FormSelect, FormAsyncPaginate, ReactSelect } from '@/shared/components';
+import { XIcon } from '@/shared/icons';
+import { useFormWithValidation } from '@/shared/utils';
+import { getLocalizedText } from '@/shared/utils/helpers/getLocalizedText';
 import { useCreateTeacherRequest, useRequestTypes, useJoinRequestForm, getSelectOptionsSource, createBranchesLoader, createEntitiesLoader } from '../hooks/useTeacherRequests';
 import { buildCreateRequestFormSchema, buildCreateRequestDefaultValues } from '../schemas/createRequest.schema';
-import { getErrorMessage } from '@/utils/helpers/errorHandler';
+import { getErrorMessage } from '@/shared/utils/helpers/errorHandler';
 /** Single dynamic field from form definition (text, date, number, select with branches/entities) */
 function DynamicFormField({ field, control, setValue, error }) {
     const { t, i18n } = useTranslation();

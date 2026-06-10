@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Table, Pagination } from '@/globals/components';
-import { SearchIcon, SettingsIcon, XIcon } from '@/globals/icons';
-import ReactSelectComponent from '@/globals/components/ui/ReactSelect';
+import { Table, Pagination } from '@/shared/components';
+import { SearchIcon, SettingsIcon, XIcon } from '@/shared/icons';
+import ReactSelectComponent from '@/shared/components/ui/ReactSelect';
 import { useHalaqas, useDeleteHalaqa } from '../hooks/useHalaqas';
 import { useHalaqasListState } from '../hooks/useHalaqasListState';
 import { HalaqaListMobile } from './HalaqaListMobile';
 import { HALAQA_PERIODS, HALAQA_TEACHING_METHODS, createHalaqaListColumns } from '../config';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
-import { useConfirmationModal } from '@/globals/hooks/useConfirmationModal';
-import { useDateFormatStore } from '@/stores';
+import { useConfirmationModal } from '@/shared/hooks/useConfirmationModal';
+import { useDateFormatStore } from '@/app/stores';
+
+const getHalaqaRowId = (row) =>
+    row?.id ??
+    row?.halaqa?.id ??
+    row?.halaqa_id ??
+    row?.memorization_halaqa_id ??
+    row?.memorization_ring_id ??
+    null;
 /**
  * Halaqa List Component
  * Pagination and filters are synced with URL search params (?page=2&search=...&period=...).
@@ -38,11 +46,25 @@ const HalaqaList = () => {
         setLocalSearch(search);
     }, [search]);
     useEffect(() => {
+        if (localSearch.trim() === search.trim())
+            return;
         const timer = setTimeout(() => {
             setSearch(localSearch);
         }, 400);
         return () => clearTimeout(timer);
-    }, [localSearch]);
+    }, [localSearch, search, setSearch]);
+    useEffect(() => {
+        console.log('Halaqa pagination state debug:', {
+            params,
+            pageFromUrl: page,
+            perPage,
+            meta,
+            currentPage,
+            totalPages,
+            total,
+            listLength: list.length
+        });
+    }, [params, page, perPage, meta, currentPage, totalPages, total, list.length]);
     const periodOptions = [
         { value: '', label: t('common.all', 'All') },
         ...HALAQA_PERIODS.map((p) => ({ value: p.value, label: t(p.labelKey, p.value) }))
@@ -68,13 +90,28 @@ const HalaqaList = () => {
         return activities.map((a) => t(`halaqa.activity.${a}`, a)).join(', ');
     };
     const handleView = (id) => {
+        if (!id) {
+            console.warn('Unable to navigate to halaqa detail: missing halaqa id');
+            toast.error(t('halaqa.notFound', 'Halaqa not found'));
+            return;
+        }
         navigate(`/${lang || currentLang}/halaqas/${id}`);
     };
     const handleEdit = (id) => {
+        if (!id) {
+            console.warn('Unable to navigate to halaqa edit: missing halaqa id');
+            toast.error(t('halaqa.notFound', 'Halaqa not found'));
+            return;
+        }
         navigate(`/${lang || currentLang}/halaqas/${id}/edit`);
     };
     
     const handleDelete = async (id) => {
+        if (!id) {
+            console.warn('Unable to delete halaqa: missing halaqa id');
+            toast.error(t('halaqa.notFound', 'Halaqa not found'));
+            return;
+        }
         showConfirmation({
             title: t('halaqa.deleteTitle', 'Delete Halaqa'),
             message: t('halaqa.deleteConfirm', 'Are you sure you want to delete this halaqa?'),
@@ -172,11 +209,11 @@ const HalaqaList = () => {
             showView: true,
             showEdit: true,
             showDelete: true,
-            onView: (row) => handleView(row.id),
-            onEdit: (row) => handleEdit(row.id),
-            onDelete: (row) => handleDelete(row.id),
+            onView: (row) => handleView(getHalaqaRowId(row)),
+            onEdit: (row) => handleEdit(getHalaqaRowId(row)),
+            onDelete: (row) => handleDelete(getHalaqaRowId(row)),
             isDeleting: deleteMutation.isPending,
-            getRowId: (row) => row.id
+            getRowId: (row) => getHalaqaRowId(row)
         }}/>
                 </div>
                 {totalPages > 1 && (<div className="flex-shrink-0 pt-3">

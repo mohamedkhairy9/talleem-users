@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { XIcon } from '@/globals/icons';
+import { XIcon } from '@/shared/icons';
 import PlanDailySchedule from './PlanDailySchedule';
 const PlanScheduleModal = ({ isOpen, onClose, dailySchedule, planTitle }) => {
     const { t } = useTranslation();

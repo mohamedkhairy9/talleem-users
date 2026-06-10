@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormattedDate } from '@/globals/components/ui';
-import { UsersIcon, UserIcon } from '@/globals/icons';
+import { FormattedDate } from '@/shared/components/ui';
+import { UsersIcon, UserIcon } from '@/shared/icons';
 const HalaqaStudents = ({ students, onViewAll, onViewStudent, getLocalizedText }) => {
     const { t } = useTranslation();
     if (!students || students.length === 0)

@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTeacherCalendar } from '../hooks/useCalendar';
-import { getDisplayDate } from '@/utils';
-import { useDateFormatStore } from '@/stores';
-import { CircleIcon, CalendarIcon } from '@/globals/icons';
+import { getDisplayDate } from '@/shared/utils';
+import { useDateFormatStore } from '@/app/stores';
+import { CircleIcon, CalendarIcon } from '@/shared/icons';
 const CalendarHalaqasList = ({ getLocalizedText }) => {
     const { t } = useTranslation();
     useDateFormatStore((s) => s.dateFormat);

@@ -2,6 +2,31 @@ import { warningsFormFieldsService } from '../services/form-fields.service';
 import i18n from 'i18next';
 const ITEMS_PER_PAGE = 20;
 const DEBOUNCE_DELAY = 400; // milliseconds
+const normalizeSearchTerm = (inputValue) => {
+    if (typeof inputValue !== 'string') {
+        return undefined;
+    }
+    const trimmed = inputValue.trim();
+    return trimmed === '' ? undefined : trimmed;
+};
+const extractResponseItems = (response) => {
+    if (Array.isArray(response?.data)) {
+        return response.data;
+    }
+    if (Array.isArray(response?.items)) {
+        return response.items;
+    }
+    if (Array.isArray(response?.data?.items)) {
+        return response.data.items;
+    }
+    if (Array.isArray(response?.data?.data)) {
+        return response.data.data;
+    }
+    if (Array.isArray(response)) {
+        return response;
+    }
+    return [];
+};
 /**
  * Debounce utility function for async functions
  */
@@ -52,14 +77,18 @@ function transformToOptions(items = []) {
  */
 export const createStudentsLoader = (branchId, mainProgramId, entityId) => {
     const loadStudents = async (inputValue) => {
+        const params = {
+            branch_id: branchId,
+            main_program_id: mainProgramId,
+            entity_id: entityId,
+            search: normalizeSearchTerm(inputValue),
+            page: 1,
+            per_page: ITEMS_PER_PAGE
+        };
         try {
-            const response = await warningsFormFieldsService.getStudents({
-                branch_id: branchId,
-                main_program_id: mainProgramId,
-                entity_id: entityId,
-                search: inputValue.trim() || undefined
-            });
-            return transformToOptions(response.data || []);
+            const response = await warningsFormFieldsService.getStudents(params);
+            const items = extractResponseItems(response);
+            return transformToOptions(items);
         }
         catch (error) {
             console.error('Error loading students:', error);
@@ -74,16 +103,18 @@ export const createStudentsLoader = (branchId, mainProgramId, entityId) => {
  */
 export const createTeachersLoader = (branchId, mainProgramId, entityId) => {
     const loadTeachers = async (inputValue) => {
+        const params = {
+            branch_id: branchId,
+            main_program_id: mainProgramId,
+            entity_id: entityId,
+            search: normalizeSearchTerm(inputValue),
+            page: 1,
+            per_page: ITEMS_PER_PAGE
+        };
         try {
-            const response = await warningsFormFieldsService.getTeachers({
-                branch_id: branchId,
-                main_program_id: mainProgramId,
-                entity_id: entityId,
-                search: inputValue.trim() || undefined,
-                page: 1,
-                per_page: ITEMS_PER_PAGE
-            });
-            return transformToOptions(response.data || []);
+            const response = await warningsFormFieldsService.getTeachers(params);
+            const items = extractResponseItems(response);
+            return transformToOptions(items);
         }
         catch (error) {
             console.error('Error loading teachers:', error);
@@ -102,11 +133,11 @@ export const createEntitiesLoader = (branchId, mainProgramId) => {
             const response = await warningsFormFieldsService.getEntities({
                 branch_id: branchId,
                 main_program_id: mainProgramId,
-                search: inputValue.trim() || undefined,
+                search: normalizeSearchTerm(inputValue),
                 page: 1,
                 per_page: ITEMS_PER_PAGE
             });
-            return transformToOptions(response.data || []);
+            return transformToOptions(extractResponseItems(response));
         }
         catch (error) {
             console.error('Error loading entities:', error);

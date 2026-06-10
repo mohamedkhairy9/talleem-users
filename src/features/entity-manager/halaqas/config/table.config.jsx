@@ -1,4 +1,14 @@
-import { getDisplayDate } from '@/utils';
+import { getDisplayDate } from '@/shared/utils';
+const getHalaqaPeriodValue = (row) => row.period ?? row.session_period ?? row.time_period ?? row.shift ?? null;
+const getHalaqaStartDateValue = (row) =>
+    row.date?.from ?? row.start_date ?? row.startDate ?? row.from_date ?? null;
+
+const getHalaqaEndDateValue = (row) =>
+    row.date?.to ?? row.end_date ?? row.endDate ?? row.to_date ?? null;
+const getHalaqaSessionTimeValue = (row) => row.session_time ??
+    row.sessionTime ??
+    (row.session_from && row.session_to ? `${row.session_from}-${row.session_to}` : null) ??
+    null;
 /**
  * Table Columns Configuration for Halaqa List
  * Returns a function that creates table columns with the necessary dependencies
@@ -16,19 +26,29 @@ export const createHalaqaListColumns = (params) => {
         },
         {
             header: t('halaqa.period', 'Period'),
-            accessor: (row) => (row.period ? t(`halaqa.period.${row.period}`, row.period) : '-')
+            accessor: (row) => {
+                console.log('Row:', row);
+
+                const periodValue = getHalaqaPeriodValue(row);
+
+                console.log('Period Value:', periodValue);
+
+                return periodValue
+                    ? t(`halaqa.period.${periodValue}`, periodValue)
+                    : '-';
+            }
         },
         {
             header: t('halaqa.startDate', 'Start Date'),
-            accessor: (row) => getDisplayDate(row.start_date)
+            accessor: (row) => getDisplayDate(getHalaqaStartDateValue(row))
         },
         {
             header: t('halaqa.endDate', 'End Date'),
-            accessor: (row) => getDisplayDate(row.end_date)
+            accessor: (row) => getDisplayDate(getHalaqaEndDateValue(row))
         },
         {
             header: t('halaqa.sessionTime', 'Session Time'),
-            accessor: (row) => row.session_time || '-'
+            accessor: (row) => getHalaqaSessionTimeValue(row) || '-'
         },
         {
             header: t('halaqa.activities', 'Activities'),

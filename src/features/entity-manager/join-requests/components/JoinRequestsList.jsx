@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Table, Pagination, Button } from '@/globals/components';
-import { SearchIcon, SettingsIcon, XIcon } from '@/globals/icons';
+import { Table, Pagination, Button } from '@/shared/components';
+import { SearchIcon, SettingsIcon, XIcon } from '@/shared/icons';
 import { useAllJoinRequests } from '../hooks/useJoinRequests';
 import { useJoinRequestsListState } from '../hooks/useJoinRequestsListState';
 import { createJoinRequestsColumns, getLocalizedText } from '../config/join-requests.config';

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { XIcon } from '@/globals/icons';
-import Button from '@/globals/components/ui/Button';
+import { XIcon } from '@/shared/icons';
+import Button from '@/shared/components/ui/Button';
 /**
  * Plan Students Modal Component
  * Displays list of students associated with a plan

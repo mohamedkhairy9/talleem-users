@@ -1,10 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CalendarIcon, BookOpenIcon } from '@/globals/icons';
+import { CalendarIcon, BookOpenIcon } from '@/shared/icons';
 import MushafPageModal from './MushafPageModal';
-import { getDisplayDate, getGregorianDate } from '@/utils';
-import { useDateFormatStore } from '@/stores';
-import { loadSurahData, loadMushafPages, loadJuzPages, getVerseKeyDisplay, getJuzForVerseKey } from '@/utils/helpers/surahHelper';
+import { getDisplayDate, getGregorianDate } from '@/shared/utils';
+import { useDateFormatStore } from '@/app/stores';
+import { loadSurahData, loadMushafPages, loadJuzPages, getVerseKeyDisplay, getJuzForVerseKey } from '@/shared/utils/helpers/surahHelper';
 const PlanDailySchedule = ({ dailySchedule, currentDate, compact = false, maxItems = 10 }) => {
     const { t, i18n } = useTranslation();
     const lang = i18n.language || 'ar';

@@ -1,4 +1,4 @@
-import { axiosInstance } from '@/api/axiosInstance';
+import { axiosInstance } from '@/shared/api/axiosInstance';
 /**
  * Teacher Certificates Service
  * GET /teacher/halaqas/students, GET /student-certificates/:id

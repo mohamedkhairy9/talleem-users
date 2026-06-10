@@ -1,8 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { EyeIcon, TrashIcon } from '@/globals/icons';
-import { getDisplayDate } from '@/utils';
-import { useDateFormatStore } from '@/stores';
+import { EyeIcon, TrashIcon } from '@/shared/icons';
+import { getDisplayDate } from '@/shared/utils';
+import { useDateFormatStore } from '@/app/stores';
 export const WarningsListMobile = ({ list, isLoading, hasError, errorMessage, emptyMessage, getLocalizedText, onView, onDelete, isDeleting = false }) => {
     const { t } = useTranslation();
     useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
@@ -33,6 +33,9 @@ export const WarningsListMobile = ({ list, isLoading, hasError, errorMessage, em
                 }
                 if (row.warning_type === 'teacher' && row.teacher) {
                     return getLocalizedText(row.teacher.name);
+                }
+                if (row.warning_type === 'entity' && row.entity) {
+                    return getLocalizedText(row.entity.name);
                 }
                 return '-';
             };
@@ -67,10 +70,10 @@ export const WarningsListMobile = ({ list, isLoading, hasError, errorMessage, em
                                     {getLocalizedText(row.warning_reason?.name)}
                                 </span>
                             </div>
-                            {row.note && (<div className="flex flex-col gap-1 pt-1">
+                            {(row.note || row.notes) && (<div className="flex flex-col gap-1 pt-1">
                                     <span className="text-gray-500">{t('warning.note', 'Note')}</span>
                                     <span className="text-gray-900 break-words">
-                                        {row.note}
+                                        {row.note || row.notes}
                                     </span>
                                 </div>)}
                         </dl>

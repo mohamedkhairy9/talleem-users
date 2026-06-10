@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { authService } from '../services/auth.service';
-import { useAuthStore } from '@/stores';
-import { cookieService } from '@/utils/cookies';
+import { useAuthStore } from '@/app/stores';
+import { cookieService } from '@/shared/utils/cookies';
 /**
  * Normalize role names from API to match app's expected format
  * Converts "entity manager" -> "entity_manager", etc.
@@ -52,6 +52,34 @@ const buildCandidateSources = (response) => {
     const nestedPayload = body?.payload;
     const nestedResult = body?.result;
     return [body, nestedData, nestedPayload, nestedResult, nestedData?.data, nestedPayload?.data, response?.headers].filter(Boolean);
+};
+const extractRoleProfilesMainProgram = (response) => {
+    const body = response?.data ?? response ?? {};
+    const sources = [
+        body,
+        body?.data,
+        body?.payload,
+        body?.result,
+        body?.data?.data,
+        body?.payload?.data,
+        body?.role_profiles,
+        body?.data?.role_profiles
+    ].filter(Boolean);
+    for (const source of sources) {
+        if (Array.isArray(source?.role_profiles) && source.role_profiles.length > 0) {
+            const withMainProgram = source.role_profiles.find((profile) => profile?.main_program != null);
+            if (withMainProgram) {
+                return withMainProgram.main_program;
+            }
+        }
+        if (source?.role_profiles?.main_program != null) {
+            return source.role_profiles.main_program;
+        }
+        if (source?.main_program != null && source === body?.role_profiles) {
+            return source.main_program;
+        }
+    }
+    return undefined;
 };
 const readHeader = (headers, name) => {
     if (!headers) {
@@ -164,6 +192,12 @@ export const useLoginMutation = () => {
         mutationFn: (credentials) => authService.login(credentials),
         onSuccess: async (response) => {
             let { token, user, teacher } = extractAuthPayload(response);
+            const roleProfilesMainProgram = extractRoleProfilesMainProgram(response);
+            console.log('Login response inspection:', {
+                role_profiles_main_program: roleProfilesMainProgram,
+                extracted_user_entity: user?.entity ?? null,
+                extracted_user_roles: user?.roles ?? null
+            });
             let sessionVerified = false;
             if (!token || !user) {
                 try {

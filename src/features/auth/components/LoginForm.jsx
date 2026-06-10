@@ -1,9 +1,9 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLoginMutation } from '@/features/auth';
-import { useFormWithValidation } from '@/utils';
+import { useFormWithValidation } from '@/shared/utils';
 import * as yup from 'yup';
-import { FormInput } from '@/globals/components';
+import { FormInput } from '@/shared/components';
 import { ROUTE_PATHS } from '@/config';
 import { useTranslation } from 'react-i18next';
 import i18n, { DEFAULT_LANG } from '@/i18n';

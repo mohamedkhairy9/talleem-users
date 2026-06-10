@@ -1,4 +1,4 @@
-import { DateCell } from '@/globals/components';
+import { DateCell } from '@/shared/components';
 /**
  * Table Columns Configuration for Warnings List
  * Returns a function that creates table columns with the necessary dependencies
@@ -24,6 +24,9 @@ export const createWarningsListColumns = (params) => {
                 if (row.warning_type === 'teacher' && row.teacher) {
                     return getLocalizedText(row.teacher.name);
                 }
+                if (row.warning_type === 'entity' && row.entity) {
+                    return getLocalizedText(row.entity.name);
+                }
                 return '-';
             }
         },
@@ -33,7 +36,7 @@ export const createWarningsListColumns = (params) => {
         },
         {
             header: t('warning.note', 'Note'),
-            accessor: (row) => row.note || '-'
+            accessor: (row) => row.note || row.notes || '-'
         },
         {
             header: t('warning.status', 'Status'),

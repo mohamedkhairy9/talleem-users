@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CircleIcon, TeacherIcon } from '@/globals/icons';
+import { CircleIcon, TeacherIcon } from '@/shared/icons';
 const HalaqaBasicInfo = ({ name, teacher, entityType, period, teachingMethod, platform, getLocalizedText }) => {
     const { t } = useTranslation();
     return (<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

@@ -1,4 +1,4 @@
-import { axiosInstance } from '@/api/axiosInstance';
+import { axiosInstance } from '@/shared/api/axiosInstance';
 /**
  * Teacher Warnings Service
  * GET /teacher/warnings - read-only list for teacher role

@@ -1,36 +1,84 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Table, Pagination, ConfirmationModal } from '@/globals/components';
-import { SearchIcon, SettingsIcon, XIcon } from '@/globals/icons';
-import ReactSelectComponent from '@/globals/components/ui/ReactSelect';
-import { useWarnings, useDeleteWarning, useWarningsListState } from '../hooks';
+import { Table, Pagination, ConfirmationModal } from '@/shared/components';
+import { SearchIcon, SettingsIcon, XIcon } from '@/shared/icons';
+import ReactSelectComponent from '@/shared/components/ui/ReactSelect';
+import { useWarnings, useIncomingWarnings, useIssuedWarnings, useDeleteWarning, useWarningsListState } from '../hooks';
 import { WarningsListMobile } from './WarningsListMobile';
 import WarningViewEditModal from './WarningViewEditModal';
 import { toast } from 'react-toastify';
-import { createWarningsListColumns, WARNING_TYPES, WARNING_STATUS_OPTIONS } from '../config';
-import { useDateFormatStore } from '@/stores';
+import { createWarningsListColumns, WARNING_FILTER_TYPES, WARNING_STATUS_OPTIONS } from '../config';
+import { useDateFormatStore } from '@/app/stores';
 /**
  * Warnings List Component
  * Pagination and filters are synced with URL search params (?page=2&search=...&warning_type=...).
  */
-const WarningsList = () => {
+const WarningsList = ({ scope = 'all' }) => {
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'ar';
     useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
     const listState = useWarningsListState();
     const { params, page, perPage, search, warningType, status, setPage, setSearch, setWarningType, setStatus, resetFilters } = listState;
-    const { list, meta, isLoading, error } = useWarnings(params);
+    const isIncomingScope = scope === 'incoming';
+    const isIssuedScope = scope === 'issued';
+    const warningsQuery = useWarnings(params, { enabled: !isIncomingScope && !isIssuedScope });
+    const incomingWarningsQuery = useIncomingWarnings(params, { enabled: isIncomingScope });
+    const issuedWarningsQuery = useIssuedWarnings(params, { enabled: isIssuedScope });
     const deleteWarningMutation = useDeleteWarning();
     // Modal and delete confirmation state
     const [selectedWarningId, setSelectedWarningId] = useState(null);
+    const [selectedWarning, setSelectedWarning] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('view');
     const [deleteWarningId, setDeleteWarningId] = useState(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    // Pagination from API meta (current_page, per_page, total, last_page)
-    const total = meta?.total ?? 0;
-    const totalPages = meta?.last_page ?? 1;
-    const currentPage = meta?.current_page ?? page;
+    const incomingList = incomingWarningsQuery.list;
+    const incomingMeta = incomingWarningsQuery.meta;
+    const incomingHasServerPagination = !!incomingMeta;
+    const issuedList = issuedWarningsQuery.list;
+    const issuedMeta = issuedWarningsQuery.meta;
+    const issuedHasServerPagination = !!issuedMeta;
+    const total = isIncomingScope
+        ? (incomingMeta?.total ?? incomingList.length)
+        : isIssuedScope
+            ? (issuedMeta?.total ?? issuedList.length)
+            : (warningsQuery.meta?.total ?? 0);
+    const totalPages = isIncomingScope
+        ? (incomingMeta?.last_page ?? Math.max(1, Math.ceil(incomingList.length / perPage)))
+        : isIssuedScope
+            ? (issuedMeta?.last_page ?? Math.max(1, Math.ceil(issuedList.length / perPage)))
+            : (warningsQuery.meta?.last_page ?? 1);
+    const currentPage = isIncomingScope
+        ? (incomingMeta?.current_page ?? Math.min(page, totalPages))
+        : isIssuedScope
+            ? (issuedMeta?.current_page ?? Math.min(page, totalPages))
+            : (warningsQuery.meta?.current_page ?? page);
+    const list = isIncomingScope
+        ? (incomingHasServerPagination
+            ? incomingList
+            : incomingList.slice((currentPage - 1) * perPage, currentPage * perPage))
+        : isIssuedScope
+            ? (issuedHasServerPagination
+                ? issuedList
+                : issuedList.slice((currentPage - 1) * perPage, currentPage * perPage))
+            : warningsQuery.list;
+    const meta = isIncomingScope
+        ? (incomingMeta ?? {
+            total,
+            last_page: totalPages,
+            current_page: currentPage,
+            per_page: perPage
+        })
+        : isIssuedScope
+            ? (issuedMeta ?? {
+                total,
+                last_page: totalPages,
+                current_page: currentPage,
+                per_page: perPage
+            })
+            : warningsQuery.meta;
+    const isLoading = isIncomingScope ? incomingWarningsQuery.isLoading : isIssuedScope ? issuedWarningsQuery.isLoading : warningsQuery.isLoading;
+    const error = isIncomingScope ? incomingWarningsQuery.error : isIssuedScope ? issuedWarningsQuery.error : warningsQuery.error;
     const hasActiveFilters = !!(search.trim() || warningType || status !== '');
     const [localSearch, setLocalSearch] = useState(search);
     useEffect(() => {
@@ -42,6 +90,11 @@ const WarningsList = () => {
         }, 400);
         return () => clearTimeout(timer);
     }, [localSearch, setSearch]);
+    useEffect(() => {
+        if ((isIncomingScope || isIssuedScope) && page > totalPages) {
+            setPage(totalPages);
+        }
+    }, [isIncomingScope, isIssuedScope, page, setPage, totalPages]);
     const getLocalizedText = (obj) => {
         if (typeof obj === 'string')
             return obj;
@@ -55,6 +108,7 @@ const WarningsList = () => {
     };
     // Action handlers
     const handleView = (warning) => {
+        setSelectedWarning(warning);
         setSelectedWarningId(warning.id);
         setModalMode('view');
         setIsModalOpen(true);
@@ -83,11 +137,13 @@ const WarningsList = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedWarningId(null);
+        setSelectedWarning(null);
     };
+    const canDelete = isIssuedScope;
     // Get static data from config
     const warningTypeOptions = useMemo(() => [
         { value: '', label: t('common.all', 'All') },
-        ...WARNING_TYPES.map(type => ({
+        ...WARNING_FILTER_TYPES.map(type => ({
             value: type.value,
             label: t(type.labelKey, type.value)
         }))
@@ -100,6 +156,11 @@ const WarningsList = () => {
         }))
     ], [t]);
     const columns = useMemo(() => createWarningsListColumns({ t, getLocalizedText }), [t, getLocalizedText]);
+    const emptyMessage = scope === 'incoming'
+        ? t('warning.noIncomingWarnings', 'No incoming warnings found')
+        : scope === 'issued'
+            ? t('warning.noIssuedWarnings', 'No issued warnings found')
+            : t('warning.noWarnings', 'No warnings found');
     if (error) {
         return (<div className="text-center py-12 text-red-600">
                 {t('warning.loadError', 'Error loading warnings. Please try again.')}
@@ -160,7 +221,7 @@ const WarningsList = () => {
             {/* Mobile: cards - min-h-[280px] keeps area visible on small screens */}
             <div className="flex flex-1 flex-col overflow-hidden md:hidden min-h-[280px] bg-white rounded-lg">
                 <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-                    <WarningsListMobile list={list} isLoading={isLoading} hasError={!!error} errorMessage={error ? t('warning.loadError', 'Error loading warnings.') : undefined} emptyMessage={t('warning.noWarnings', 'No warnings found')} getLocalizedText={getLocalizedText} onView={handleView} onDelete={handleDelete} isDeleting={deleteWarningMutation.isPending}/>
+                    <WarningsListMobile list={list} isLoading={isLoading} hasError={!!error} errorMessage={error ? t('warning.loadError', 'Error loading warnings.') : undefined} emptyMessage={emptyMessage} getLocalizedText={getLocalizedText} onView={handleView} onDelete={canDelete ? handleDelete : undefined} isDeleting={deleteWarningMutation.isPending}/>
                 </div>
                 {totalPages > 1 && (<div className="flex-shrink-0 border-t border-gray-200 pt-3 px-4">
                         <Pagination currentPage={currentPage} totalPages={totalPages} perPage={meta?.per_page ?? perPage} total={total} onPageChange={setPage}/>
@@ -170,10 +231,10 @@ const WarningsList = () => {
             {/* Desktop: table with scroll */}
             <div className="hidden md:flex flex-col flex-1 min-h-0 overflow-hidden">
                 <div className="flex-1 min-h-0 overflow-hidden">
-                    <Table data={list} columns={columns} loading={isLoading} emptyMessage={t('warning.noWarnings', 'No warnings found')} scrollable actionButtons={{
+                    <Table data={list} columns={columns} loading={isLoading} emptyMessage={emptyMessage} scrollable actionButtons={{
             showView: true,
             showEdit: false,
-            showDelete: true,
+            showDelete: canDelete,
             onView: handleView,
             onDelete: handleDelete,
             isDeleting: deleteWarningMutation.isPending,
@@ -186,7 +247,7 @@ const WarningsList = () => {
             </div>
 
             {/* View/Edit Modal */}
-            <WarningViewEditModal isOpen={isModalOpen} warningId={selectedWarningId} onClose={handleCloseModal} mode={modalMode}/>
+            <WarningViewEditModal isOpen={isModalOpen} warningId={selectedWarningId} warningData={selectedWarning} onClose={handleCloseModal} mode={modalMode}/>
 
             {/* Delete Confirmation Modal */}
             <ConfirmationModal isOpen={isDeleteModalOpen} title={t('warning.deleteTitle')} message={t('warning.deleteMessage')} confirmText={t('common.delete')} cancelText={t('common.cancel')} variant="danger" onConfirm={confirmDelete} onCancel={() => {

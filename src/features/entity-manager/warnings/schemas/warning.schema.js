@@ -17,6 +17,6 @@ export const createWarningSchema = yup.object({
     }),
     warning_reason_id: yup.number().required('Warning reason is required').positive(),
     date: yup.string().required('Date is required'),
-    note: yup.string().required('Note is required'),
-    status: yup.boolean().required('Status is required')
+    note: yup.string().nullable().transform((value) => value ?? ''),
+    status: yup.boolean().optional()
 });

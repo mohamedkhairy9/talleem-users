@@ -1,5 +1,5 @@
-import { axiosInstance } from '@/api/axiosInstance';
-import { API_ENDPOINTS } from '@/api/config';
+import { axiosInstance } from '@/shared/api/axiosInstance';
+import { API_ENDPOINTS } from '@/shared/api/config';
 function buildQueryParams(params) {
     const result = {};
     Object.entries(params).forEach(([key, value]) => {

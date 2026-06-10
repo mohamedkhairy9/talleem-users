@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useFormWithValidation } from '@/utils';
+import { useFormWithValidation } from '@/shared/utils';
 import { useCheckJoinRequestStatus } from '../hooks/useRegistration';
 import * as yup from 'yup';
-import { FormInput } from '@/globals/components';
-import { Button } from '@/globals/components';
+import { FormInput } from '@/shared/components';
+import { Button } from '@/shared/components';
 import { toast } from 'react-toastify';
 import JoinRequestStatusDisplay from './JoinRequestStatusDisplay';
 import { ROUTE_PATHS } from '@/config';

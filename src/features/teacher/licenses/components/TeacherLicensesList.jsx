@@ -1,11 +1,11 @@
 import React, { useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Table } from '@/globals/components';
+import { Table } from '@/shared/components';
 import { useTeacherLicenses } from '../hooks/useLicenses';
 import TeacherLicensesListMobile from './TeacherLicensesListMobile';
 import { createTeacherLicensesListColumns } from '../config/table.config';
-import { getLocalizedText as getLocalizedTextHelper } from '@/utils/helpers/getLocalizedText';
-import { useDateFormatStore } from '@/stores';
+import { getLocalizedText as getLocalizedTextHelper } from '@/shared/utils/helpers/getLocalizedText';
+import { useDateFormatStore } from '@/app/stores';
 /**
  * Teacher Licenses List
  * Responsive: cards on mobile, table on desktop (no pagination - API returns full list)

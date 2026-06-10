@@ -1,4 +1,4 @@
-import { axiosInstance } from '@/api/axiosInstance';
+import { axiosInstance } from '@/shared/api/axiosInstance';
 /**
  * Build query params object (strip undefined, keep only defined filters)
  */
@@ -23,12 +23,32 @@ export const warningsService = {
         return axiosInstance.get('/warnings', { params: queryParams });
     },
     /**
+     * Get incoming warnings for the current entity manager context.
+     * The shared axios instance automatically sends auth and acting-context headers.
+     */
+    getIncomingWarnings: (params = {}) => {
+        const queryParams = buildListQueryParams(params);
+        return axiosInstance.get('/entity-manager/warnings/incoming', { params: queryParams });
+    },
+    /**
+     * Get issued warnings for the current entity manager context.
+     * The shared axios instance automatically sends auth and acting-context headers.
+     */
+    getIssuedWarnings: (params = {}) => {
+        const queryParams = buildListQueryParams(params);
+        return axiosInstance.get('/entity-manager/warnings/issued', { params: queryParams });
+    },
+    /**
+     * Create an issued warning for the current entity manager context.
+     */
+    createIssuedWarning: (data) => {
+        return axiosInstance.post('/entity-manager/warnings/issued', data);
+    },
+    /**
      * Get warning reasons by main_program_id
      */
-    getWarningReasons: (mainProgramId) => {
-        return axiosInstance.get('/warning-reasons', {
-            params: { main_program_id: mainProgramId }
-        });
+    getWarningReasons: () => {
+        return axiosInstance.get('/warning-reasons');
     },
     /**
      * Create a new warning
@@ -46,12 +66,15 @@ export const warningsService = {
      * Update a warning by ID
      */
     updateWarning: (id, data) => {
-        return axiosInstance.put(`/warnings/${id}`, data);
+        return axiosInstance.put(
+            `/entity-manager/warnings/issued/${id}`,
+            data
+        );
     },
     /**
-     * Delete a warning by ID
+     * Delete an issued warning by ID
      */
-    deleteWarning: (id) => {
-        return axiosInstance.delete(`/warnings/${id}`);
+    deleteIssuedWarning: (id) => {
+        return axiosInstance.delete(`/entity-manager/warnings/issued/${id}`);
     }
 };

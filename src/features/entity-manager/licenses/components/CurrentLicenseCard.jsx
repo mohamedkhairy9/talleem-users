@@ -1,8 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useEntityCurrentLicense } from '../hooks/useLicenses';
-import { getDisplayDate } from '@/utils';
-import { useDateFormatStore } from '@/stores';
+import { getDisplayDate } from '@/shared/utils';
+import { useDateFormatStore } from '@/app/stores';
 /**
  * Displays the entity's current (active) license from GET /entity/licenses/current
  */

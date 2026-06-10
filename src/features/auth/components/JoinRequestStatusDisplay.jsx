@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormWithValidation } from '@/utils';
+import { useFormWithValidation } from '@/shared/utils';
 import * as yup from 'yup';
-import { FormFile, Button } from '@/globals/components';
+import { FormFile, Button } from '@/shared/components';
 import { useSubmitJoinRequestStep } from '../hooks/useRegistration';
 import { toast } from 'react-toastify';
 /**

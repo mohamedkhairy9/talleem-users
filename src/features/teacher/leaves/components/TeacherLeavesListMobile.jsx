@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { getDisplayDate } from '@/utils';
-import { ImageWithViewer } from '@/globals/components';
+import { getDisplayDate } from '@/shared/utils';
+import { ImageWithViewer } from '@/shared/components';
 const TeacherLeavesListMobile = ({ list, isLoading, hasError, errorMessage, emptyMessage, onCancel, cancellingId }) => {
     const { t } = useTranslation();
     if (isLoading && list.length === 0) {

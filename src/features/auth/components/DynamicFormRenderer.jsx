@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { AsyncPaginate } from 'react-select-async-paginate';
-import { FormInput, FormSelect, FormAsyncPaginate, FormTextarea, FormFile, FormCheckbox, MapPicker } from '@/globals/components';
+import { FormInput, FormSelect, FormAsyncPaginate, FormTextarea, FormFile, FormCheckbox, MapPicker } from '@/shared/components';
 import { registrationService } from '../services/registration.service';
 import { useRequiredDocumentsHint } from '../hooks/useRegistration';
 import { extractLabel } from '../utils/extractLabel';

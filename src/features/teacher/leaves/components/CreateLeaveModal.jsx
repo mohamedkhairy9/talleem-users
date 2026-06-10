@@ -2,12 +2,12 @@ import React from 'react';
 import { Controller, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
-import { Button, FormInput, FormSelect, FormTextarea, FormFile } from '@/globals/components';
-import { XIcon } from '@/globals/icons';
-import { useFormWithValidation } from '@/utils';
+import { Button, FormInput, FormSelect, FormTextarea, FormFile } from '@/shared/components';
+import { XIcon } from '@/shared/icons';
+import { useFormWithValidation } from '@/shared/utils';
 import { useCreateTeacherLeave } from '../hooks/useTeacherLeaves';
 import { createLeaveFormSchema } from '../schemas/createLeave.schema';
-import { getErrorMessage } from '@/utils/helpers/errorHandler';
+import { getErrorMessage } from '@/shared/utils/helpers/errorHandler';
 import { LEAVE_SUB_TYPES } from '../config/table.config';
 const CreateLeaveModal = ({ isOpen, onClose, onSuccess }) => {
     const { t } = useTranslation();

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/globals/components';
-import { BookOpenIcon, PlusIcon, XIcon } from '@/globals/icons';
+import { Button } from '@/shared/components';
+import { BookOpenIcon, PlusIcon, XIcon } from '@/shared/icons';
 import CreatePlanForm from './CreatePlanForm';
 import HalaqaPlanCard from './HalaqaPlanCard';
 const HalaqaPlansSection = ({ plans, halaqaId, students, activities, showPlanForm, onTogglePlanForm, onPlanFormSuccess, onViewPlanStudents, getPlanStudent, getLocalizedText }) => {

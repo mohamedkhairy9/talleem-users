@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { getDisplayDate } from '@/utils';
-import { useDateFormatStore } from '@/stores';
+import { getDisplayDate } from '@/shared/utils';
+import { useDateFormatStore } from '@/app/stores';
 const TeacherLicensesListMobile = ({ list, isLoading, hasError, errorMessage, emptyMessage, getLocalizedText }) => {
     const { t } = useTranslation();
     useDateFormatStore((s) => s.dateFormat);

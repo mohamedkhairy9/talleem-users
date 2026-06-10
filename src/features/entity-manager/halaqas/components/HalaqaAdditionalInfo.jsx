@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClipboardCheckIcon } from '@/globals/icons';
+import { ClipboardCheckIcon } from '@/shared/icons';
 const HalaqaAdditionalInfo = ({ durationInDays, weeklyHoliday, evaluationSystem, totalMark }) => {
     const { t } = useTranslation();
     if (!durationInDays && !weeklyHoliday && !evaluationSystem && totalMark == null) {

@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Table, Pagination } from '@/globals/components';
+import { Table, Pagination } from '@/shared/components';
 import { useTeacherStudents } from '../hooks/useCertificates';
 import TeacherCertificatesListMobile from './TeacherCertificatesListMobile';
 import StudentCertificatesModal from './StudentCertificatesModal';
 import { createTeacherCertificatesListColumns } from '../config/table.config';
-import { getLocalizedText as getLocalizedTextHelper } from '@/utils/helpers/getLocalizedText';
+import { getLocalizedText as getLocalizedTextHelper } from '@/shared/utils/helpers/getLocalizedText';
 const PER_PAGE = 15;
 /**
  * Teacher Certificates List
