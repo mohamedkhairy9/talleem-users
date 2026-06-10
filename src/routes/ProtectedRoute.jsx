@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores';
-import { cookieService } from '@/utils/cookies';
 import { Loader } from '@/globals/components';
 import { ROUTE_PATHS } from '@/config';
 import { DEFAULT_LANG } from '@/i18n';
@@ -24,7 +23,7 @@ const ProtectedRoute = ({ children, roles = [], permissions = [] }) => {
                 <Loader size="lg"/>
             </div>);
     }
-    if (!isAuthenticated || !cookieService.hasToken()) {
+    if (!isAuthenticated) {
         // Redirect to login with current language
         const lang = location.pathname.split('/')[1] || DEFAULT_LANG;
         return <Navigate to={`/${lang}/${ROUTE_PATHS.LOGIN}`} state={{ from: location }} replace/>;

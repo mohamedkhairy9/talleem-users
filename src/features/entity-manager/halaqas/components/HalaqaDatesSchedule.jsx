@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { FormattedDate } from '@/globals/components/ui';
 import { CalendarIcon } from '@/globals/icons';
 const HalaqaDatesSchedule = ({ startDate, endDate, sessionTime }) => {
+
+    
     const { t } = useTranslation();
     return (<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-2 mb-6">

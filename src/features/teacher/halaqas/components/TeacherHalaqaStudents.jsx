@@ -12,7 +12,6 @@ import MushafPageModal from '@/features/entity-manager/halaqas/components/Mushaf
 import { loadSurahData, getVerseKeyDisplay } from '@/utils/helpers/surahHelper';
 import { getErrorMessage } from '@/utils/helpers/errorHandler';
 const TeacherHalaqaStudents = ({ students, isLoading, error, getLocalizedText, halaqaId, attendanceTypes = [], currentDate: sessionDate }) => {
-    console.log("halaqaId", halaqaId);
     
     const { t, i18n } = useTranslation();
     useDateFormatStore((s) => s.dateFormat); // re-render when date format changes

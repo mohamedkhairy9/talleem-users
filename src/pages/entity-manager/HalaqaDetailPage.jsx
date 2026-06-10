@@ -114,124 +114,124 @@ const HalaqaDetailPage = () => {
             badges.push({
                 key: 'entity-type',
                 label: getLocalizedText(halaqa.memorization_program_entity_type.name),
-                icon: <CircleIcon width={16} height={16}/>
+                icon: <CircleIcon width={16} height={16} />
             });
         }
         if (halaqa.period) {
             badges.push({
                 key: 'period',
                 label: String(t(`halaqa.period.${halaqa.period}`, halaqa.period)),
-                icon: <CalendarIcon width={16} height={16}/>
+                icon: <CalendarIcon width={16} height={16} />
             });
         }
         return badges;
     }, [halaqa?.memorization_program_entity_type?.name, halaqa?.period, currentLang, t, getLocalizedText]);
     if (isLoading) {
         return (<div className="flex items-center justify-center min-h-[60vh]">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-200 border-t-primary-600"></div>
-                    <p className="text-gray-600 text-sm">{t('common.loading')}</p>
-                </div>
-            </div>);
+            <div className="flex flex-col items-center gap-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-200 border-t-primary-600"></div>
+                <p className="text-gray-600 text-sm">{t('common.loading')}</p>
+            </div>
+        </div>);
     }
     if (error || !halaqa) {
         return (<div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
-                <div className="text-center">
-                    <AlertTriangleIcon width={64} height={64} className="mx-auto text-red-500 mb-4"/>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('halaqa.notFound')}</h2>
-                    <p className="text-gray-600">{t('halaqa.notFoundDescription')}</p>
-                </div>
-                <Button type="button" variant="primary" onClick={handleBack}>
-                    {t('halaqa.backToHalaqas')}
-                </Button>
-            </div>);
+            <div className="text-center">
+                <AlertTriangleIcon width={64} height={64} className="mx-auto text-red-500 mb-4" />
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('halaqa.notFound')}</h2>
+                <p className="text-gray-600">{t('halaqa.notFoundDescription')}</p>
+            </div>
+            <Button type="button" variant="primary" onClick={handleBack}>
+                {t('halaqa.backToHalaqas')}
+            </Button>
+        </div>);
     }
     // Calculate stats
     const studentCount = halaqa.current_students_count ?? halaqa.students?.length ?? 0;
     const maxStudents = halaqa.max_students ?? 0;
-    return (<div className="space-y-6">
-            {/* Header Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <PageHeader title={getLocalizedText(halaqa.name)} breadcrumb={{
-            label: t('halaqa.backToHalaqas'),
-            onClick: handleBack
-        }} badges={headerBadges} actions={[
-            {
-                label: t('common.edit'),
-                onClick: handleEdit,
-                variant: 'primary',
-                icon: <EditIcon width={16} height={16} className="me-2"/>
-            }
-        ]}/>
-                <HalaqaQuickStats studentCount={studentCount} maxStudents={maxStudents} plansCount={halaqa.plans?.length ?? 0} durationInDays={halaqa.duration_in_days} activitiesCount={halaqa.activities?.length ?? 0}/>
+    return (<div className="space-y-6 ">
+        {/* Header Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <PageHeader title={getLocalizedText(halaqa.name)} breadcrumb={{
+                label: t('halaqa.backToHalaqas'),
+                onClick: handleBack
+            }} badges={headerBadges} actions={[
+                {
+                    label: t('common.edit'),
+                    onClick: handleEdit,
+                    variant: 'primary',
+                    icon: <EditIcon width={16} height={16} className="me-2" />
+                }
+            ]} />
+            <HalaqaQuickStats studentCount={studentCount} maxStudents={maxStudents} plansCount={halaqa.plans?.length ?? 0} durationInDays={halaqa.duration_in_days} activitiesCount={halaqa.activities?.length ?? 0} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Main Information */}
+            <div className="lg:col-span-2 space-y-6">
+                <HalaqaBasicInfo name={getLocalizedText(halaqa.name)} teacher={halaqa.teacher?.name} entityType={halaqa.memorization_program_entity_type?.name} period={halaqa.period} teachingMethod={halaqa.teaching_method} platform={halaqa.platform?.name} getLocalizedText={getLocalizedText} />
+
+                {halaqa.students && halaqa.students.length > 0 && (<HalaqaStudents students={halaqa.students} onViewAll={handleViewAllStudents} onViewStudent={handleViewStudent} getLocalizedText={getLocalizedText} />)}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column - Main Information */}
-                <div className="lg:col-span-2 space-y-6">
-                    <HalaqaBasicInfo name={getLocalizedText(halaqa.name)} teacher={halaqa.teacher?.name} entityType={halaqa.memorization_program_entity_type?.name} period={halaqa.period} teachingMethod={halaqa.teaching_method} platform={halaqa.platform?.name} getLocalizedText={getLocalizedText}/>
+            {/* Right Column - Additional Info */}
+            <div className="space-y-6">
+                <HalaqaAdditionalInfo durationInDays={halaqa.duration_in_days} weeklyHoliday={halaqa.weekly_holiday} evaluationSystem={halaqa.evaluation_system} totalMark={halaqa.total_mark} />
 
-                    {halaqa.students && halaqa.students.length > 0 && (<HalaqaStudents students={halaqa.students} onViewAll={handleViewAllStudents} onViewStudent={handleViewStudent} getLocalizedText={getLocalizedText}/>)}
-                </div>
+                {halaqa.activities && halaqa.activities.length > 0 && (<HalaqaActivities activities={halaqa.activities} />)}
 
-                {/* Right Column - Additional Info */}
-                <div className="space-y-6">
-                    <HalaqaAdditionalInfo durationInDays={halaqa.duration_in_days} weeklyHoliday={halaqa.weekly_holiday} evaluationSystem={halaqa.evaluation_system} totalMark={halaqa.total_mark}/>
-
-                    {halaqa.activities && halaqa.activities.length > 0 && (<HalaqaActivities activities={halaqa.activities}/>)}
-
-                    <HalaqaDatesSchedule startDate={halaqa.start_date} endDate={halaqa.end_date} sessionTime={halaqa.session_time}/>
-                </div>
+                <HalaqaDatesSchedule startDate={halaqa.start_date} endDate={halaqa.end_date} sessionTime={halaqa.session_time} />
             </div>
+        </div>
 
-            {/* Missing plans warning modal */}
-            {showMissingPlansModal && studentsWithMissingPlans.length > 0 && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/50" aria-hidden onClick={() => setShowMissingPlansModal(false)}/>
-                    <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-                        <div className="flex items-start justify-between gap-4 mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-amber-100 rounded-lg">
-                                    <AlertTriangleIcon width={24} height={24} className="text-amber-600"/>
-                                </div>
-                                <h3 className="text-lg font-semibold text-gray-900">
-                                    {t('plan.studentsWithMissingPlans')}
-                                </h3>
-                            </div>
-                            <button type="button" onClick={() => setShowMissingPlansModal(false)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg" aria-label={t('common.close')}>
-                                <XIcon width={20} height={20}/>
-                            </button>
+        {/* Missing plans warning modal */}
+        {showMissingPlansModal && studentsWithMissingPlans.length > 0 && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50" aria-hidden onClick={() => setShowMissingPlansModal(false)} />
+            <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                <div className="flex items-start justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-amber-100 rounded-lg">
+                            <AlertTriangleIcon width={24} height={24} className="text-amber-600" />
                         </div>
-                        <p className="text-sm text-gray-600 mb-4">
-                            {t('plan.missingPlansDescription')}
-                        </p>
-                        <ul className="space-y-3 mb-6 max-h-48 overflow-y-auto">
-                            {studentsWithMissingPlans.map((item) => (<li key={item.student_id} className="text-sm">
-                                    <span className="font-medium text-gray-900">
-                                        {getLocalizedText(item.student_name)}
-                                    </span>
-                                    <span className="text-gray-500 ml-1">
-                                        — {t('plan.missingActivities')}: {item.missing_activities.join(', ')}
-                                    </span>
-                                </li>))}
-                        </ul>
-                        <div className="flex justify-end gap-2">
-                            <Button type="button" variant="secondary" onClick={() => setShowMissingPlansModal(false)}>
-                                {t('common.close')}
-                            </Button>
-                            <Button type="button" variant="primary" onClick={handleCloseMissingPlansModalAndScrollToPlans}>
-                                {t('plan.goToPlansSection')}
-                            </Button>
-                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            {t('plan.studentsWithMissingPlans')}
+                        </h3>
                     </div>
-                </div>)}
-
-            {/* Plans Section */}
-            <div id="halaqa-plans-section" ref={plansSectionRef}>
-                <HalaqaPlansSection plans={halaqa.plans || []} halaqaId={id || ''} students={halaqa.students} activities={halaqa.activities} showPlanForm={showPlanForm} onTogglePlanForm={() => setShowPlanForm(!showPlanForm)} onPlanFormSuccess={() => setShowPlanForm(false)} onViewPlanStudents={handleShowPlanStudents} getPlanStudent={getPlanStudent} getLocalizedText={getLocalizedText}/>
+                    <button type="button" onClick={() => setShowMissingPlansModal(false)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg" aria-label={t('common.close')}>
+                        <XIcon width={20} height={20} />
+                    </button>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                    {t('plan.missingPlansDescription')}
+                </p>
+                <ul className="space-y-3 mb-6 max-h-48 overflow-y-auto">
+                    {studentsWithMissingPlans.map((item) => (<li key={item.student_id} className="text-sm">
+                        <span className="font-medium text-gray-900">
+                            {getLocalizedText(item.student_name)}
+                        </span>
+                        <span className="text-gray-500 ml-1">
+                            — {t('plan.missingActivities')}: {item.missing_activities.join(', ')}
+                        </span>
+                    </li>))}
+                </ul>
+                <div className="flex justify-end gap-2">
+                    <Button type="button" variant="secondary" onClick={() => setShowMissingPlansModal(false)}>
+                        {t('common.close')}
+                    </Button>
+                    <Button type="button" variant="primary" onClick={handleCloseMissingPlansModalAndScrollToPlans}>
+                        {t('plan.goToPlansSection')}
+                    </Button>
+                </div>
             </div>
+        </div>)}
 
-            {/* Students Modal */}
-            <PlanStudentsModal isOpen={isStudentsModalOpen} students={selectedPlanStudents} onClose={() => setIsStudentsModalOpen(false)} currentLang={currentLang}/>
-        </div>);
+        {/* Plans Section */}
+        <div id="halaqa-plans-section" ref={plansSectionRef}>
+            <HalaqaPlansSection plans={halaqa.plans || []} halaqaId={id || ''} students={halaqa.students} activities={halaqa.activities} showPlanForm={showPlanForm} onTogglePlanForm={() => setShowPlanForm(!showPlanForm)} onPlanFormSuccess={() => setShowPlanForm(false)} onViewPlanStudents={handleShowPlanStudents} getPlanStudent={getPlanStudent} getLocalizedText={getLocalizedText} />
+        </div>
+
+        {/* Students Modal */}
+        <PlanStudentsModal isOpen={isStudentsModalOpen} students={selectedPlanStudents} onClose={() => setIsStudentsModalOpen(false)} currentLang={currentLang} />
+    </div>);
 };
 export default HalaqaDetailPage;

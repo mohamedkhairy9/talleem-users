@@ -148,6 +148,7 @@ const CreateWarningForm = ({ onSuccess, onCancel }) => {
                         {t('warning.status', 'Active')}
                     </label>
                 </div>
+                
             </div>
 
             {/* Note */}

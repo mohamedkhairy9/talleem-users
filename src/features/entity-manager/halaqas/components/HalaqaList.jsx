@@ -73,6 +73,7 @@ const HalaqaList = () => {
     const handleEdit = (id) => {
         navigate(`/${lang || currentLang}/halaqas/${id}/edit`);
     };
+    
     const handleDelete = async (id) => {
         showConfirmation({
             title: t('halaqa.deleteTitle', 'Delete Halaqa'),
@@ -103,6 +104,7 @@ const HalaqaList = () => {
                 {t('halaqa.loadError', 'Error loading halaqas. Please try again.')}
             </div>);
     }
+    
     return (<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             {/* Filters bar */}
             <div className="flex-shrink-0 rounded-xl border border-gray-200 bg-gray-50/80 p-4 shadow-sm mb-4">

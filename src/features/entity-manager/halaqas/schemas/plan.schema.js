@@ -1,59 +1,65 @@
 import * as yup from 'yup';
+
 /**
  * Create Plan Form Schema
  */
 export const createPlanSchema = yup.object({
-    activity: yup.string().oneOf(['hifz', 'tasbit', 'murajaa'], 'Activity must be hifz, tasbit, or murajaa').required('Activity is required'),
-    student_ids: yup.array().of(yup.number().positive()).min(1, 'Select at least one student').required('At least one student is required'),
-    plan_type: yup.string().oneOf(['daily_amount', 'start_end'], 'Plan type must be daily_amount or start_end').required('Plan type is required'),
-    unit: yup.string().oneOf(['segments', 'parts', 'surahs'], 'Unit must be segments, parts, or surahs').required('Unit is required'),
-    direction: yup.string().oneOf(['incremental', 'decremental'], 'Direction must be incremental or decremental').required('Direction is required'),
+    activity: yup.string().oneOf(['hifz', 'tasbit', 'murajaa'], 'plan.validation.activityInvalid').required('plan.validation.activityRequired'),
+    student_ids: yup.array()
+        .of(yup.number().positive('plan.validation.studentInvalid'))
+        .min(1, 'plan.validation.studentRequired')
+        .required('plan.validation.studentRequired'),
+    plan_type: yup.string().oneOf(['daily_amount', 'start_end'], 'plan.validation.planTypeInvalid').required('plan.validation.planTypeRequired'),
+    unit: yup.string().oneOf(['segments', 'parts', 'surahs'], 'plan.validation.unitInvalid').required('plan.validation.unitRequired'),
+    direction: yup.string().oneOf(['incremental', 'decremental'], 'plan.validation.directionInvalid').required('plan.validation.directionRequired'),
     daily_amount: yup
         .number()
         .transform((value, originalValue) => {
-        if (originalValue === '' || originalValue === null || originalValue === undefined)
-            return undefined;
-        const num = typeof value === 'number' ? value : Number(value);
-        return Number.isNaN(num) ? undefined : num;
-    })
+            if (originalValue === '' || originalValue === null || originalValue === undefined) {
+                return undefined;
+            }
+
+            const num = typeof value === 'number' ? value : Number(value);
+            return Number.isNaN(num) ? undefined : num;
+        })
         .when('plan_type', {
-        is: 'daily_amount',
-        then: (schema) => schema
-            .required('Daily amount is required')
-            .positive('Daily amount must be a positive number')
-            .integer('Daily amount must be a whole number'),
-        otherwise: (schema) => schema.notRequired().nullable()
-    }),
+            is: 'daily_amount',
+            then: (schema) => schema
+                .required('plan.validation.dailyAmountRequired')
+                .positive('plan.validation.dailyAmountPositive')
+                .integer('plan.validation.dailyAmountInteger'),
+            otherwise: (schema) => schema.notRequired().nullable()
+        }),
     // Conditional fields based on unit
     start_segment_verse_key: yup.string().when('unit', {
         is: 'segments',
-        then: (schema) => schema.required('Start segment verse key is required when unit is segments').matches(/^\d+:\d+$/, 'Verse key must be in format "surah:ayah" (e.g., "1:1")'),
+        then: (schema) => schema.required('plan.validation.startSegmentRequired').matches(/^\d+:\d+$/, 'plan.validation.verseKeyFormat'),
         otherwise: (schema) => schema.notRequired()
     }),
     start_juz_number: yup.number().when('unit', {
         is: 'parts',
-        then: (schema) => schema.required('Start juz number is required when unit is parts').positive('Start juz number must be positive').max(30, 'Juz must be 1–30'),
+        then: (schema) => schema.required('plan.validation.startJuzRequired').positive('plan.validation.startJuzPositive').max(30, 'plan.validation.juzRange'),
         otherwise: (schema) => schema.notRequired()
     }),
     start_surah_id: yup.number().when('unit', {
         is: 'surahs',
-        then: (schema) => schema.required('Start surah ID is required when unit is surahs').positive('Start surah ID must be positive'),
+        then: (schema) => schema.required('plan.validation.startSurahRequired').positive('plan.validation.startSurahPositive'),
         otherwise: (schema) => schema.notRequired()
     }),
     // End fields - required when plan_type is 'start_end'
     end_segment_verse_key: yup.string().when(['unit', 'plan_type'], {
         is: (unit, planType) => unit === 'segments' && planType === 'start_end',
-        then: (schema) => schema.required('End segment verse key is required when plan type is start_end and unit is segments').matches(/^\d+:\d+$/, 'Verse key must be in format "surah:ayah" (e.g., "1:2")'),
+        then: (schema) => schema.required('plan.validation.endSegmentRequired').matches(/^\d+:\d+$/, 'plan.validation.verseKeyFormat'),
         otherwise: (schema) => schema.notRequired()
     }),
     end_juz_number: yup.number().when(['unit', 'plan_type'], {
         is: (unit, planType) => unit === 'parts' && planType === 'start_end',
-        then: (schema) => schema.required('End juz number is required when plan type is start_end and unit is parts').positive('End juz number must be positive'),
+        then: (schema) => schema.required('plan.validation.endJuzRequired').positive('plan.validation.endJuzPositive').max(30, 'plan.validation.juzRange'),
         otherwise: (schema) => schema.notRequired()
     }),
     end_surah_id: yup.number().when(['unit', 'plan_type'], {
         is: (unit, planType) => unit === 'surahs' && planType === 'start_end',
-        then: (schema) => schema.required('End surah ID is required when plan type is start_end and unit is surahs').positive('End surah ID must be positive'),
+        then: (schema) => schema.required('plan.validation.endSurahRequired').positive('plan.validation.endSurahPositive'),
         otherwise: (schema) => schema.notRequired()
     })
 });

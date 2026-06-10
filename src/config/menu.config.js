@@ -132,19 +132,21 @@ export const TEACHER_MENU_ITEMS = [
         roles: ['teacher']
     }
 ];
+const hasEntityManagerAccess = (userRoles = []) => userRoles.includes('entity_manager') || userRoles.includes('admin');
 /**
  * Get menu items based on user's main_program and roles
  */
 export const getMenuItems = (mainProgramId, userRoles) => {
     const menuItems = [];
+    const canSeeEntityManagerMenu = hasEntityManagerAccess(userRoles || []);
     // Add program-specific menu items
-    if (mainProgramId === 2) {
+    if (canSeeEntityManagerMenu && (mainProgramId === 2 || mainProgramId == null)) {
         // Memorization program
         menuItems.push(...MEMORIZATION_MENU_ITEMS);
     }
-    else if (mainProgramId !== undefined && mainProgramId !== 2) {
+    else if (canSeeEntityManagerMenu && mainProgramId !== undefined && mainProgramId !== 2) {
         // Other programs (education, etc.)
-        menuItems.push(...EDUCATION_MENU_ITEMS);
+        menuItems.push(...(EDUCATION_MENU_ITEMS.length > 0 ? EDUCATION_MENU_ITEMS : MEMORIZATION_MENU_ITEMS));
     }
     // Add teacher menu items if user has teacher role
     if (userRoles?.includes('teacher')) {

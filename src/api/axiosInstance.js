@@ -2,6 +2,7 @@ import axios from 'axios';
 import { API_CONFIG } from './config';
 import { cookieService } from '@/utils/cookies';
 import { useAuthStore } from '@/stores';
+import { useDateFormatStore } from '@/stores/dateFormat.store';
 import i18n, { DEFAULT_LANG } from '@/i18n';
 /**
  * Axios instance with interceptors
@@ -30,6 +31,23 @@ axiosInstance.interceptors.request.use((config) => {
     if (config.headers) {
         config.headers['Accept-Language'] = currentLanguage;
     }
+    const currentDateFormat = useDateFormatStore.getState().dateFormat;
+    const { actingRole, actingEntityId } = useAuthStore.getState();
+    if (config.headers) {
+        config.headers['X-Date-Format'] = currentDateFormat;
+        if (actingRole) {
+            config.headers['X-Act-As-Role'] = actingRole;
+        }
+        else {
+            delete config.headers['X-Act-As-Role'];
+        }
+        if (actingEntityId != null && actingEntityId !== '') {
+            config.headers['X-Entity-Id'] = String(actingEntityId);
+        }
+        else {
+            delete config.headers['X-Entity-Id'];
+        }
+    }
     // Clean empty parameters from GET requests
     if (config.params) {
         const cleanedParams = {};
@@ -56,6 +74,9 @@ axiosInstance.interceptors.request.use((config) => {
  * - Handles token refresh if needed
  */
 axiosInstance.interceptors.response.use((response) => {
+    if (response.config?.rawResponse) {
+        return response;
+    }
     // Return data directly for cleaner API calls
     return response.data;
 }, async (error) => {
