@@ -45,7 +45,7 @@ const MushafPage = ({
         }
 
         const surah = surahData[surahNumber];
-        return surah.glyph || (surah.name_arabic ? `Ø³ÙÙˆØ±ÙŽØ©Ù ${surah.name_arabic}` : surah.name || '');
+        return surah.glyph || (surah.name_arabic ? `سُورَةُ ${surah.name_arabic}` : surah.name || '');
     };
 
     const getSurahNumberForSurahNameAt = (lineIndex) => {
