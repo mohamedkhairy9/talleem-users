@@ -27,6 +27,18 @@ function verseKeysForSegment(seg) {
     const keys = verseKeysBetween(seg.first_verse_key.trim(), seg.last_verse_key.trim());
     return new Set(keys);
 }
+function createPageFaceSelection(pageEntry) {
+    if (!pageEntry) {
+        return null;
+    }
+    return {
+        id: `page-${pageEntry.page}`,
+        page_number: pageEntry.page,
+        face_number: pageEntry.page,
+        first_verse_key: pageEntry.start_verse_key,
+        last_verse_key: pageEntry.end_verse_key
+    };
+}
 function segmentLabel(seg) {
     return seg.first_verse_key === seg.last_verse_key
         ? seg.first_verse_key
@@ -65,6 +77,8 @@ function isSameSegment(a, b) {
 const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, onSelectStartSegment, onSelectEndSegment, planType, hideInlineMushaf = false, onPageChange, selectionVerseKeyFromOutside, onCurrentSelectionChange, onNavigablePagesChange, viewerPageSync }) => {
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'ar';
+    const isDailyAmountPlan = planType === 'daily_amount';
+    const faceLabel = currentLang === 'ar' ? 'وجه' : 'Face';
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedJuz, setSelectedJuz] = useState('all');
     const [selectedSurah, setSelectedSurah] = useState('all');
@@ -126,6 +140,10 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
             return Array.from({ length: 604 }, (_, i) => i + 1);
         return getPageNumbersForJuzAndSurah(selectedJuz, selectedSurah, mushafPages, juzPages);
     }, [selectedJuz, selectedSurah, mushafPages, juzPages]);
+    const currentPageFaceSelection = useMemo(() => {
+        const pageEntry = mushafPages.find((page) => page.page === currentPage);
+        return createPageFaceSelection(pageEntry);
+    }, [currentPage, mushafPages]);
     // Keep currentPage within selected range
     useEffect(() => {
         if (pageNumbers.length === 0)
@@ -150,11 +168,17 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
     }, [viewerPageSync, pageNumbers]);
     // When parent sets verse key (e.g. from mushaf word click), find segment and set as current selection
     useEffect(() => {
-        if (!selectionVerseKeyFromOutside?.trim() || !currentPageSegments.length)
+        if (!selectionVerseKeyFromOutside?.trim())
+            return;
+        if (isDailyAmountPlan) {
+            setCurrentSelection(currentPageFaceSelection);
+            return;
+        }
+        if (!currentPageSegments.length)
             return;
         const segment = findSegmentForVerseKey(selectionVerseKeyFromOutside, currentPageSegments);
         setCurrentSelection(segment ?? null);
-    }, [selectionVerseKeyFromOutside, currentPageSegments]);
+    }, [currentPageFaceSelection, currentPageSegments, isDailyAmountPlan, selectionVerseKeyFromOutside]);
     // Notify parent when current selection changes (so parent can highlight in mushaf)
     useEffect(() => {
         onCurrentSelectionChange?.(currentSelection);
@@ -242,6 +266,11 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
     useEffect(() => {
         if (currentPage < 1 || currentPage > 604)
             return;
+        if (isDailyAmountPlan) {
+            setCurrentPageSegments([]);
+            setIsLoadingSegments(false);
+            return;
+        }
         const cached = segmentsByPageCache[currentPage];
         if (cached !== undefined) {
             setCurrentPageSegments(cached);
@@ -268,7 +297,7 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
                 setIsLoadingSegments(false);
         });
         return () => { cancelled = true; };
-    }, [currentPage, segmentsByPageCache]);
+    }, [currentPage, isDailyAmountPlan, segmentsByPageCache]);
     // Highlight: current selection (as soon as user clicks) + committed start/end when on current page
     const selectedAyahs = useMemo(() => {
         const set = new Set();
@@ -284,11 +313,15 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
         return set;
     }, [currentPage, selectedStartSegment, selectedEndSegment, currentSelection]);
     const handleWordClick = useCallback((_wordId, location) => {
+        if (isDailyAmountPlan) {
+            setCurrentSelection(currentPageFaceSelection);
+            return;
+        }
         const segment = findSegmentForVerseKey(location, currentPageSegments);
         if (!segment)
             return;
         setCurrentSelection(segment);
-    }, [currentPageSegments]);
+    }, [currentPageFaceSelection, currentPageSegments, isDailyAmountPlan]);
     const handleSetStart = useCallback(() => {
         if (currentSelection)
             onSelectStartSegment(currentSelection);
@@ -312,11 +345,13 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
                 <div className={`grid gap-3 ${planType === 'start_end' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
                     <div className="rounded-lg border-2 border-emerald-200 bg-emerald-50/50 px-3 py-2">
                         <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700 mb-0.5">
-                            {t('quran.startSegment', 'Start')}
+                            {planType === 'daily_amount'
+                                ? t('quran.selectedFace', 'Selected Face')
+                                : t('quran.startSegment', 'Start')}
                         </div>
                         <div className="text-sm font-medium text-emerald-900">
                             {selectedStartSegment
-            ? `${t('quran.segment', 'Segment')} ${selectedStartSegment.segment_number}${selectedStartSegment.page_number != null ? ` · ${t('quran.page', 'Page')} ${selectedStartSegment.page_number}` : ''} (${surahData ? formatSegmentVerseLabel(selectedStartSegment, surahData, currentLang, t) : segmentLabel(selectedStartSegment)})`
+            ? `${isDailyAmountPlan ? faceLabel : t('quran.segment', 'Segment')} ${isDailyAmountPlan ? (selectedStartSegment.face_number ?? selectedStartSegment.page_number) : selectedStartSegment.segment_number}${selectedStartSegment.page_number != null ? ` · ${t('quran.page', 'Page')} ${selectedStartSegment.page_number}` : ''} (${surahData ? formatSegmentVerseLabel(selectedStartSegment, surahData, currentLang, t) : segmentLabel(selectedStartSegment)})`
             : `— ${t('quran.notSet', 'Not set')}`}
                         </div>
                     </div>
@@ -352,7 +387,7 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
             <p className="text-sm text-gray-500">
                 {planType === 'start_end'
             ? t('quran.hintStartEnd', 'Click a segment (on the page or in the list), then click "Set as Start" or "Set as End".')
-            : t('quran.clickSegmentThenStartEnd', 'Click on a segment in the page or list, then use Start to set it.')}
+            : t('quran.clickFaceThenSet', 'Click on a face in the page or list, then set it as the selected face.')}
             </p>
 
             {/* Grid: optionally mushaf page, then segments list and selection actions */}
@@ -374,9 +409,29 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
                         {/* Segments list for current page */}
                         <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 min-w-0">
                             <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                                {t('quran.segmentsForPage', 'Segments for Page')} {currentPage}
+                                {isDailyAmountPlan
+                                    ? `${faceLabel} ${t('quran.forPage', 'for Page')} ${currentPage}`
+                                    : `${t('quran.segmentsForPage', 'Segments for Page')} ${currentPage}`}
                             </h4>
-                            {currentPageSegments.length > 0 ? (<div className="flex flex-col gap-2 max-h-[min(70vh,520px)] overflow-y-auto">
+                            {isDailyAmountPlan ? (currentPageFaceSelection ? (<div className="flex flex-col gap-2">
+                                    <button type="button" onClick={() => setCurrentSelection(currentPageFaceSelection)} className={`rounded-lg px-3 py-2 text-left text-sm border-2 transition-colors ${selectedStartSegment && isSameSegment(currentPageFaceSelection, selectedStartSegment)
+                    ? 'border-primary-500 bg-primary-50 text-primary-900'
+                    : isSameSegment(currentSelection, currentPageFaceSelection)
+                        ? 'border-primary-400 bg-primary-50/70 text-primary-900'
+                        : 'border-gray-200 bg-white hover:border-primary-300'}`}>
+                                        <span className="font-medium">{faceLabel} {currentPageFaceSelection.face_number ?? currentPageFaceSelection.page_number}</span>
+                                        {currentPageFaceSelection.page_number != null && (<span className="text-gray-500 ml-1">
+                                                · {t('quran.page', 'Page')} {currentPageFaceSelection.page_number}
+                                            </span>)}
+                                        <p className="text-gray-500 mt-0.5">
+                                            ({currentPageFaceSelection.first_verse_key}
+                                            {currentPageFaceSelection.first_verse_key !== currentPageFaceSelection.last_verse_key ? ` - ${currentPageFaceSelection.last_verse_key}` : ''})
+                                        </p>
+                                        {selectedStartSegment && isSameSegment(currentPageFaceSelection, selectedStartSegment) && (<span className="ml-1 text-primary-600 text-xs block mt-0.5">
+                                                [{t('quran.selectedFace', 'Selected Face')}]
+                                            </span>)}
+                                    </button>
+                                </div>) : (<p className="text-sm text-gray-500 py-2">{t('quran.noFaceFoundForPage', 'No face found for this page')}</p>)) : currentPageSegments.length > 0 ? (<div className="flex flex-col gap-2 max-h-[min(70vh,520px)] overflow-y-auto">
                                     {currentPageSegments.map((seg) => {
                         const isStart = selectedStartSegment?.id === seg.id;
                         const isEnd = selectedEndSegment?.id === seg.id;
@@ -402,11 +457,13 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
                         {/* Third column: current selection + Set as Start / Set as End */}
                         <div className="rounded-lg border border-gray-200 bg-white p-3 min-w-0 space-y-3">
                             <h4 className="text-sm font-semibold text-gray-700">
-                                {t('quran.selectSegment', 'Select segment')}
+                                {planType === 'daily_amount'
+                                    ? t('quran.selectFace', 'Select Face')
+                                    : t('quran.selectSegment', 'Select segment')}
                             </h4>
                             {currentSelection ? (<>
                                     <div className="text-sm text-gray-800">
-                                        <span className="font-medium">{t('quran.segment', 'Segment')} {currentSelection.segment_number}</span>
+                                        <span className="font-medium">{isDailyAmountPlan ? faceLabel : t('quran.segment', 'Segment')} {isDailyAmountPlan ? (currentSelection.face_number ?? currentSelection.page_number) : currentSelection.segment_number}</span>
                                         {currentSelection.page_number != null && (<span className="text-gray-500 font-normal ml-1">
                                                 · {t('quran.page', 'Page')} {currentSelection.page_number}
                                             </span>)}
@@ -419,7 +476,9 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
                         ? 'bg-emerald-100 text-emerald-800 ring-2 ring-emerald-400 cursor-default'
                         : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
                                             {isCurrentStart && <CheckIcon width={16} height={16} className="shrink-0"/>}
-                                            {isCurrentStart ? t('quran.alreadySetAsStart', '✓ Set as Start') : t('quran.setAsStart', 'Set as Start')}
+                                            {planType === 'daily_amount'
+                                                ? (isCurrentStart ? t('quran.alreadySetAsFace', '✓ Set as Selected Face') : t('quran.setAsFace', 'Set as Selected Face'))
+                                                : (isCurrentStart ? t('quran.alreadySetAsStart', '✓ Set as Start') : t('quran.setAsStart', 'Set as Start'))}
                                         </button>
                                         {planType === 'start_end' && (<button type="button" onClick={handleSetEnd} className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium shadow-sm transition-colors w-full ${isCurrentEnd
                             ? 'bg-blue-100 text-blue-800 ring-2 ring-blue-400 cursor-default'
@@ -431,7 +490,9 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
                                     {currentSelection && (isCurrentStart || isCurrentEnd) && (<p className="text-xs text-gray-600 flex items-start gap-1.5">
                                             <CheckIcon width={14} height={14} className="text-emerald-600 shrink-0 mt-0.5"/>
                                             <span>
-                                                {isCurrentStart && isCurrentEnd
+                                                {isDailyAmountPlan
+                            ? t('quran.thisFaceIsSelected', 'This face is currently selected.')
+                            : isCurrentStart && isCurrentEnd
                             ? t('quran.thisSegmentIsStartAndEnd', 'This segment is set as both Start and End.')
                             : isCurrentStart
                                 ? t('quran.thisSegmentIsStart', 'This segment is currently the start.')
@@ -439,9 +500,15 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
                                             </span>
                                         </p>)}
                                 </>) : (<>
-                                    <p className="text-sm text-gray-500 italic">{t('quran.clickSegmentFirst', 'Click a segment in the page or list')}</p>
+                                    <p className="text-sm text-gray-500 italic">
+                                        {planType === 'daily_amount'
+                                            ? t('quran.clickFaceFirst', 'Click a face in the page or list')
+                                            : t('quran.clickSegmentFirst', 'Click a segment in the page or list')}
+                                    </p>
                                     <button type="button" disabled className="rounded-lg px-3 py-2 text-sm font-medium bg-gray-200 text-gray-500 cursor-not-allowed w-full">
-                                        {t('quran.setAsStart', 'Set as Start')}
+                                        {planType === 'daily_amount'
+                                            ? t('quran.setAsFace', 'Set as Selected Face')
+                                            : t('quran.setAsStart', 'Set as Start')}
                                     </button>
                                     {planType === 'start_end' && (<button type="button" disabled className="rounded-lg px-3 py-2 text-sm font-medium bg-gray-200 text-gray-500 cursor-not-allowed w-full">
                                             {t('quran.setAsEnd', 'Set as End')}

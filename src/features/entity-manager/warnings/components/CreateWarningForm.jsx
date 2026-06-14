@@ -1,32 +1,47 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { useFormWithValidation } from '@/shared/utils';
-import { FormInput, FormSelect, FormTextarea, Button } from '@/shared/components';
-import SelectRFH from '@/shared/components/ui/SelectRFH';
-import { useCreateWarning, useWarningReasons } from '../hooks';
-import { createWarningSchema } from '../schemas';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '@/app/stores';
-import { createStudentsLoader, createTeachersLoader } from '../utils';
+import { Button, FormInput, FormSelect, FormTextarea } from '@/shared/components';
+import SelectRFH from '@/shared/components/ui/SelectRFH';
+import { normalizeDate, useFormWithValidation } from '@/shared/utils';
+import { AlertTriangleIcon, EditIcon, TeacherIcon, UserIcon } from '@/shared/icons';
 import { WARNING_FORM_TYPES } from '../config';
-import { normalizeDate } from '@/shared/utils';
+import { useCreateWarning, useWarningReasons } from '../hooks';
+import { createWarningSchema } from '../schemas';
+import { createStudentsLoader, createTeachersLoader } from '../utils';
+
+const FORM_PANEL_CLASS =
+    'rounded-2xl border border-[#dde8e8] bg-[#fbfcfc] p-4 shadow-[0_10px_30px_rgba(15,23,42,0.04)]';
+
+const TargetTypeButton = ({ active, icon, label, onClick }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className={`inline-flex min-h-[52px] items-center justify-center gap-2 rounded-2xl px-4 text-sm font-semibold transition-all ${
+            active
+                ? 'bg-[#0d6a70] text-white shadow-[0_12px_24px_rgba(13,106,112,0.2)]'
+                : 'bg-white text-slate-500 hover:bg-[#f4f8f8] hover:text-[#0d6a70]'
+        }`}
+    >
+        {icon}
+        {label}
+    </button>
+);
 
 const CreateWarningForm = ({ onSuccess, onCancel }) => {
     const { t, i18n } = useTranslation();
     const createWarningMutation = useCreateWarning();
-
-    const entity = useAuthStore((s) => s.user?.entity);
+    const entity = useAuthStore((state) => state.user?.entity);
 
     const branchId = entity?.branch?.id ?? entity?.branch_id ?? null;
     const mainProgramId = entity?.main_program?.id ?? entity?.main_program_id ?? null;
     const programId = entity?.program?.id ?? entity?.program_id ?? mainProgramId ?? null;
     const entityId = entity?.id ?? null;
     const warningReasonProgramId = mainProgramId ?? programId;
-
-    console.log('STEP 2 - FULL ENTITY:', JSON.stringify(entity, null, 2)); console.log('STEP 1 - mainProgramId:', mainProgramId);
-    console.log('STEP 1 - programId:', programId);
-    console.log('STEP 1 - warningReasonProgramId:', warningReasonProgramId);
+    const today = new Date().toISOString().split('T')[0];
+    const [selectedTargetType, setSelectedTargetType] = useState('student');
 
     const {
         control,
@@ -41,107 +56,53 @@ const CreateWarningForm = ({ onSuccess, onCancel }) => {
             student_id: null,
             teacher_id: null,
             warning_reason_id: null,
-            date: new Date().toISOString().split('T')[0],
+            date: today,
             note: ''
         }
     });
 
-    const warningType = useWatch({ control, name: 'warning_type' });
-    const formValues = useWatch({ control });
-
-    console.log('warningType:', warningType);
+    const watchedWarningType = useWatch({ control, name: 'warning_type' });
+    const warningType = watchedWarningType || selectedTargetType;
 
     useEffect(() => {
-        console.log('Form Values:', formValues);
-    }, [formValues]);
+        if (watchedWarningType && watchedWarningType !== selectedTargetType) {
+            setSelectedTargetType(watchedWarningType);
+        }
+    }, [selectedTargetType, watchedWarningType]);
 
     useEffect(() => {
-        console.log('Student Selected:', formValues?.student_id);
-    }, [formValues?.student_id]);
+        setValue('student_id', null);
+        setValue('teacher_id', null);
+    }, [warningType, setValue]);
 
     useEffect(() => {
-        console.log('Teacher Selected:', formValues?.teacher_id);
-    }, [formValues?.teacher_id]);
+        if (!warningReasonProgramId) {
+            setValue('student_id', null);
+            setValue('teacher_id', null);
+        }
+    }, [setValue, warningReasonProgramId]);
 
-    useEffect(() => {
-        console.log('Reason Selected:', formValues?.warning_reason_id);
-    }, [formValues?.warning_reason_id]);
+    const studentsLoader = useMemo(
+        () => createStudentsLoader(branchId, warningReasonProgramId, entityId),
+        [branchId, entityId, warningReasonProgramId]
+    );
 
-    const studentsLoader = useMemo(() => {
-        console.log('Creating studentsLoader', {
-            branchId,
-            warningReasonProgramId,
-            entityId
-        });
+    const teachersLoader = useMemo(
+        () => createTeachersLoader(branchId, warningReasonProgramId, entityId),
+        [branchId, entityId, warningReasonProgramId]
+    );
 
-        return createStudentsLoader(
-            branchId,
-            warningReasonProgramId,
-            entityId
-        );
-    }, [branchId, warningReasonProgramId, entityId]);
-
-    const teachersLoader = useMemo(() => {
-        console.log('Creating teachersLoader', {
-            branchId,
-            warningReasonProgramId,
-            entityId
-        });
-
-        return createTeachersLoader(
-            branchId,
-            warningReasonProgramId,
-            entityId
-        );
-    }, [branchId, warningReasonProgramId, entityId]);
-
-    const {
-        data: warningReasonsData,
-        isLoading: isLoadingReasons
-    } = useWarningReasons();
-
-    console.log('warningReasonsData:', warningReasonsData);
-    console.log('isLoadingReasons:', isLoadingReasons);
-
-    // const warningReasonOptions = useMemo(() => {
-    //     console.log('Building warningReasonOptions');
-
-    //     const reasons = Array.isArray(warningReasonsData?.data)
-    //         ? warningReasonsData.data
-    //         : Array.isArray(warningReasonsData)
-    //             ? warningReasonsData
-    //             : [];
-
-    //     console.log('Reasons:', reasons);
-
-    //     const currentLang = i18n.language || 'ar';
-
-    //     const options = reasons.map((reason) => ({
-    //         value: reason.id,
-    //         label:
-    //             typeof reason.name === 'string'
-    //                 ? reason.name
-    //                 : currentLang === 'ar' && reason.name?.ar
-    //                     ? reason.name.ar
-    //                     : reason.name?.en || ''
-    //     }));
-
-    //     console.log('warningReasonOptions:', options);
-
-    //     return options;
-    // }, [warningReasonsData, i18n.language]);
+    const { data: warningReasonsData, isLoading: isLoadingReasons } = useWarningReasons();
 
     const warningReasonOptions = useMemo(() => {
-        const reasons =
-            Array.isArray(warningReasonsData?.data?.data)
-                ? warningReasonsData.data.data
-                : Array.isArray(warningReasonsData?.data)
-                    ? warningReasonsData.data
-                    : Array.isArray(warningReasonsData)
-                        ? warningReasonsData
-                        : [];
+        const reasons = Array.isArray(warningReasonsData?.data?.data)
+            ? warningReasonsData.data.data
+            : Array.isArray(warningReasonsData?.data)
+                ? warningReasonsData.data
+                : Array.isArray(warningReasonsData)
+                    ? warningReasonsData
+                    : [];
 
-        console.log("resons", warningReasonsData);
         const currentLang = i18n.language || 'ar';
 
         return reasons.map((reason) => ({
@@ -153,47 +114,22 @@ const CreateWarningForm = ({ onSuccess, onCancel }) => {
                         ? reason.name.ar
                         : reason.name?.en || reason.title || reason.reason || ''
         }));
-    }, [warningReasonsData, i18n.language]);
-    console.log(warningReasonOptions);
+    }, [i18n.language, warningReasonsData]);
 
-    const warningTypeOptions = useMemo(() => {
-        const options = WARNING_FORM_TYPES.map((type) => ({
-            value: type.value,
-            label: t(type.labelKey, type.value)
-        }));
+    const warningTypeOptions = useMemo(
+        () =>
+            WARNING_FORM_TYPES.map((type) => ({
+                value: type.value,
+                label: t(type.labelKey, type.value)
+            })),
+        [t]
+    );
 
-        console.log('warningTypeOptions:', options);
-
-        return options;
-    }, [t]);
-
-    useEffect(() => {
-        console.log('Warning Type Changed:', warningType);
-
-        setValue('student_id', null);
-        setValue('teacher_id', null);
-    }, [warningType, setValue]);
-
-    useEffect(() => {
-        if (!warningReasonProgramId) {
-            console.log('warningReasonProgramId missing, resetting target fields');
-
-            setValue('student_id', null);
-            setValue('teacher_id', null);
-        }
-    }, [warningReasonProgramId, setValue]);
-
-    useEffect(() => {
-        console.log('studentsLoader:', studentsLoader);
-    }, [studentsLoader]);
-
-    useEffect(() => {
-        console.log('teachersLoader:', teachersLoader);
-    }, [teachersLoader]);
+    const selectedWarningType = warningTypeOptions.find(
+        (type) => type.value === warningType
+    );
 
     const buildPayload = (data) => {
-        console.log('buildPayload Input:', data);
-
         const payload = {
             warning_reason_id: data.warning_reason_id,
             warning_type: data.warning_type,
@@ -201,66 +137,40 @@ const CreateWarningForm = ({ onSuccess, onCancel }) => {
             note: data.note?.trim() || undefined
         };
 
-        switch (data.warning_type) {
-            case 'student':
-                if (data.student_id) {
-                    payload.branch_id = branchId;
-                    payload.program_id = programId;
-                    payload.entity_id = entityId;
-                    payload.student_id = data.student_id;
-                }
-                break;
-
-            case 'teacher':
-                if (data.teacher_id) {
-                    payload.teacher_id = data.teacher_id;
-                }
-                break;
-
-            default:
-                console.log('Unknown warning_type:', data.warning_type);
-                break;
+        if (data.warning_type === 'student' && data.student_id) {
+            payload.branch_id = branchId;
+            payload.program_id = programId;
+            payload.entity_id = entityId;
+            payload.student_id = data.student_id;
         }
 
-        console.log('buildPayload Output:', payload);
+        if (data.warning_type === 'teacher' && data.teacher_id) {
+            payload.teacher_id = data.teacher_id;
+        }
 
         return payload;
     };
 
-    const onSubmit = async (data) => {
-        console.log('Submit Clicked');
-        console.log('Submit Data:', data);
-
-        // if (data.warning_type === 'student' && (!branchId || !programId || !entityId)) {
-        //     toast.error(t('warning.missingEntityData'));
-        //     return;
-        // }
-
-        // if (!warningReasonProgramId) {
-        //     toast.error(t('warning.missingEntityData'));
-        //     return;
-        // }
-
+    const onSubmit = (data) => {
         const payload = buildPayload(data);
 
-        console.log('Final Payload Before API:', payload);
-
         createWarningMutation.mutate(payload, {
-            onSuccess: (response) => {
-                console.log('SUCCESS RESPONSE:', response);
-
+            onSuccess: () => {
                 toast.success(t('warning.createSuccess'));
-                reset();
+                reset({
+                    warning_type: data.warning_type,
+                    student_id: null,
+                    teacher_id: null,
+                    warning_reason_id: null,
+                    date: today,
+                    note: ''
+                });
                 onSuccess?.();
             },
-            onError: (error) => {
-                console.log('ERROR OBJECT:', error);
-                console.log('ERROR RESPONSE:', error?.response);
-                console.log('ERROR DATA:', error?.response?.data);
-
+            onError: (requestError) => {
                 const errorMessage =
-                    error?.response?.data?.message ||
-                    error?.message ||
+                    requestError?.response?.data?.message ||
+                    requestError?.message ||
                     t('warning.createError');
 
                 toast.error(errorMessage);
@@ -268,99 +178,150 @@ const CreateWarningForm = ({ onSuccess, onCancel }) => {
         });
     };
 
-    const isStudentContextMissing = !branchId || !programId || !entityId;
-    const isReasonContextMissing = !warningReasonProgramId;
-    const isTargetFieldDisabled = isReasonContextMissing;
+    const targetFieldPlaceholder = warningType === 'student'
+        ? t('warning.searchStudent', 'Search and select student...')
+        : t('warning.searchTeacher', 'Search and select teacher...');
 
-    console.log('isStudentContextMissing:', isStudentContextMissing);
-    console.log('isReasonContextMissing:', isReasonContextMissing);
-    console.log('isTargetFieldDisabled:', isTargetFieldDisabled);
+    const targetFieldConfig = warningType === 'teacher'
+        ? {
+            key: 'warning-target-teacher',
+            name: 'teacher_id',
+            label: t('warning.teacher', 'Teacher'),
+            error: errors.teacher_id?.message,
+            loadOptions: teachersLoader
+        }
+        : {
+            key: 'warning-target-student',
+            name: 'student_id',
+            label: t('warning.student', 'Student'),
+            error: errors.student_id?.message,
+            loadOptions: studentsLoader
+        };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* {isReasonContextMissing && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                    <p className="text-sm text-red-800">
-                        {t('warning.missingEntityDataAccount')}
-                    </p>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div className="rounded-[22px] bg-[#f5f8f8] p-2">
+                <div className="grid gap-2 sm:grid-cols-2">
+                    <TargetTypeButton
+                        active={warningType === 'student'}
+                        icon={<UserIcon width={16} height={16} />}
+                        label={t('warning.type.student', 'Student')}
+                        onClick={() => {
+                            setSelectedTargetType('student');
+                            setValue('warning_type', 'student');
+                        }}
+                    />
+                    <TargetTypeButton
+                        active={warningType === 'teacher'}
+                        icon={<TeacherIcon width={16} height={16} />}
+                        label={t('warning.type.teacher', 'Teacher')}
+                        onClick={() => {
+                            setSelectedTargetType('teacher');
+                            setValue('warning_type', 'teacher');
+                        }}
+                    />
                 </div>
-            )} */}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormSelect
-                    name="warning_type"
-                    label={t('warning.warningType', 'Warning Type')}
-                    control={control}
-                    error={errors.warning_type?.message}
-                    options={warningTypeOptions}
-                />
-
-                <FormSelect
-                    name="warning_reason_id"
-                    label={t('warning.warningReason', 'Warning Reason')}
-                    control={control}
-                    error={errors.warning_reason_id?.message}
-                    options={warningReasonOptions}
-                    isLoading={isLoadingReasons}
-                    disabled={ isLoadingReasons}
-                />
-
-                {warningType === 'student' && (
-                    <SelectRFH
-                        name="student_id"
-                        label={t('warning.student', 'Student')}
-                        control={control}
-                        error={errors.student_id?.message}
-                        isAsync={true}
-                        loadOptions={studentsLoader}
-                        defaultOptions={true}
-                        cacheOptions={true}
-                        // disabled={isTargetFieldDisabled || isStudentContextMissing}
-                        placeholder={t('warning.searchStudent', 'Search and select student...')}
-                    />
-                )}
-
-                {warningType === 'teacher' && (
-                    <SelectRFH
-                        name="teacher_id"
-                        label={t('warning.teacher', 'Teacher')}
-                        control={control}
-                        error={errors.teacher_id?.message}
-                        isAsync={true}
-                        loadOptions={teachersLoader}
-                        defaultOptions={true}
-                        cacheOptions={true}
-                        // disabled={isTargetFieldDisabled}
-                        placeholder={t('warning.searchTeacher', 'Search and select teacher...')}
-                    />
-                )}
-
-                <FormInput
-                    name="date"
-                    label={t('warning.date', 'Date')}
-                    type="date"
-                    control={control}
-                    error={errors.date?.message}
-                />
             </div>
 
-            <FormTextarea
-                name="note"
-                label={t('warning.note', 'Note')}
-                control={control}
-                error={errors.note?.message}
-                rows={4}
-            />
+            <section className={FORM_PANEL_CLASS}>
+                <div className="mb-4 flex items-center gap-3 rounded-2xl bg-[#eef6f5] px-4 py-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#0d6a70] shadow-sm">
+                        <AlertTriangleIcon width={18} height={18} />
+                    </div>
+                    <div>
+                        <p className="text-sm font-bold text-[#0d6a70]">
+                            {t('warning.listTitle', 'Warnings')}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                            {selectedWarningType?.label || t('warning.create', 'Create Warning')}
+                        </p>
+                    </div>
+                </div>
 
-            <div className="flex justify-end gap-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                    <FormSelect
+                        name="warning_reason_id"
+                        label={t('warning.warningReason', 'Warning Reason')}
+                        control={control}
+                        required
+                        error={errors.warning_reason_id?.message}
+                        options={warningReasonOptions}
+                        isLoading={isLoadingReasons}
+                        disabled={isLoadingReasons}
+                        placeholder={t('common.select', 'Select an option')}
+                        className="[&_.react-select__control]:!min-h-[54px] [&_.react-select__control]:!rounded-2xl [&_.react-select__control]:!border-[#d7e5e5] [&_.react-select__control]:!px-1 [&_.react-select__control]:!shadow-sm [&_.react-select__control--is-focused]:!border-[#0d6a70]"
+                    />
+
+                    <SelectRFH
+                        key={targetFieldConfig.key}
+                        name={targetFieldConfig.name}
+                        label={targetFieldConfig.label}
+                        control={control}
+                        required
+                        error={targetFieldConfig.error}
+                        isAsync
+                        loadOptions={targetFieldConfig.loadOptions}
+                        defaultOptions
+                        cacheOptions={false}
+                        classes="[&_.react-select__control]:!min-h-[54px] [&_.react-select__control]:!rounded-2xl [&_.react-select__control]:!border-[#d7e5e5] [&_.react-select__control]:!shadow-sm"
+                        placeholder={targetFieldPlaceholder}
+                    />
+
+                    <FormInput
+                        name="date"
+                        label={t('warning.date', 'Date')}
+                        type="date"
+                        control={control}
+                        required
+                        error={errors.date?.message}
+                        containerClassName="md:col-span-2"
+                        className="rounded-2xl border-[#d7e5e5] px-4 py-4 text-sm shadow-sm focus:border-[#0d6a70]"
+                    />
+                </div>
+            </section>
+
+            <section className={FORM_PANEL_CLASS}>
+                <div className="mb-4 flex items-center gap-3 rounded-2xl bg-[#eef6f5] px-4 py-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#0d6a70] shadow-sm">
+                        <EditIcon width={18} height={18} />
+                    </div>
+                    <div>
+                        <p className="text-sm font-bold text-[#0d6a70]">
+                            {t('warning.note', 'Note')}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                            {t('warning.noteHelper', 'Add any helpful details about this warning.')}
+                        </p>
+                    </div>
+                </div>
+
+                <FormTextarea
+                    name="note"
+                    label={null}
+                    control={control}
+                    error={errors.note?.message}
+                    rows={5}
+                    placeholder={t('warning.notePlaceholder', 'Write the warning note here...')}
+                    className="min-h-[156px] rounded-[24px] border border-[#d7e5e5] bg-[#fcfefe] px-4 py-4 text-sm leading-6 text-slate-700 shadow-[inset_0_1px_2px_rgba(15,23,42,0.03)] outline-none transition-colors placeholder:text-slate-400 focus:border-[#0d6a70] focus:ring-2 focus:ring-[#0d6a70]/10"
+                />
+            </section>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                 <Button
                     type="button"
                     variant="outline"
                     onClick={() => {
-                        console.log('Cancel Clicked');
-                        reset();
+                        reset({
+                            warning_type: warningType,
+                            student_id: null,
+                            teacher_id: null,
+                            warning_reason_id: null,
+                            date: today,
+                            note: ''
+                        });
                         onCancel?.();
                     }}
+                    className="h-12 rounded-2xl border-[#d7e5e5] bg-white px-5 text-sm font-semibold text-slate-500 hover:bg-[#f8fbfb]"
                 >
                     {t('common.cancel', 'Cancel')}
                 </Button>
@@ -369,9 +330,7 @@ const CreateWarningForm = ({ onSuccess, onCancel }) => {
                     type="submit"
                     variant="primary"
                     disabled={createWarningMutation.isPending}
-                    onClick={() => {
-                        console.log('Create Warning Button Clicked');
-                    }}
+                    className="h-12 rounded-2xl px-6 text-sm font-semibold !bg-[#0d6a70] shadow-[0_14px_28px_rgba(13,106,112,0.2)] hover:!bg-[#0a565b] sm:min-w-[220px]"
                 >
                     {createWarningMutation.isPending
                         ? t('common.loading', 'Loading...')

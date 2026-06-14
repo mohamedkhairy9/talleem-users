@@ -27,31 +27,12 @@ export const MEMORIZATION_MENU_ITEMS = [
             }
         ]
     },
-    //submenu warning
     {
         path: ROUTE_PATHS.WARNINGS_MANAGEMENT,
         labelKey: 'menu.warningsManagement',
         icon: 'AlertTriangleIcon',
-        roles: ['admin', 'entity_manager'],
-        subItems: [
-            {
-                path: ROUTE_PATHS.INCOMING_WARNINGS,
-                labelKey: 'menu.incomingWarnings',
-                icon: 'UsersIcon'
-            },
-            {
-                path: ROUTE_PATHS.WARNINGS_ISSUED,
-                labelKey: 'menu.warningsIssued',
-                icon: 'ClipboardCheckIcon'
-            },
-        ]
+        roles: ['admin', 'entity_manager']
     },
-    // {
-    //     path: ROUTE_PATHS.WARNINGS_MANAGEMENT,
-    //     labelKey: 'menu.warningsManagement',
-    //     icon: 'AlertTriangleIcon',
-    //     roles: ['admin', 'entity_manager']
-    // },
     {
         path: ROUTE_PATHS.ENTITY_LICENSES,
         labelKey: 'menu.licenses',

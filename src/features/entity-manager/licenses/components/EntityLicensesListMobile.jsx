@@ -23,8 +23,13 @@ const EntityLicensesListMobile = ({ list, isLoading, hasError, errorMessage, emp
                 {emptyMessage}
             </div>);
     }
+    const getCreatorName = (row) => {
+        const creator = row.creator ?? row.created_by;
+        const creatorName = typeof creator === 'string' ? creator : creator?.name;
+        return creatorName ? getLocalizedText(creatorName) : '-';
+    };
     return (<div className="space-y-4 overflow-y-auto p-2">
-            {list.map((row) => (<div key={row.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            {list.map((row, index) => (<div key={row.id || row.license_number || row.__licenseGroup || index} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                     <div className="mb-2 flex items-start justify-between gap-2">
                         <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${row.is_expired ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
                             {row.is_expired
@@ -46,14 +51,14 @@ const EntityLicensesListMobile = ({ list, isLoading, hasError, errorMessage, emp
                             <span className="text-gray-500">{t('licenses.expirationDate', 'Expiration Date')}</span>
                             <span className="text-end text-gray-900">{getDisplayDate(row.expiration_date)}</span>
                         </div>
-                        {row.notes ? (<div className="flex justify-between gap-2">
+                        {(row.notes || row.note) ? (<div className="flex justify-between gap-2">
                                 <span className="text-gray-500">{t('licenses.notes', 'Notes')}</span>
-                                <span className="text-end text-gray-900">{row.notes}</span>
+                                <span className="text-end text-gray-900">{row.notes || row.note}</span>
                             </div>) : null}
                         <div className="flex justify-between gap-2">
                             <span className="text-gray-500">{t('licenses.creator', 'Created By')}</span>
                             <span className="text-end text-gray-900">
-                                {row.creator ? getLocalizedText(row.creator.name) : '-'}
+                                {getCreatorName(row)}
                             </span>
                         </div>
                     </dl>

@@ -1,92 +1,178 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { EyeIcon, TrashIcon } from '@/shared/icons';
+import { AlertTriangleIcon, CalendarIcon, EyeIcon, SearchIcon, TrashIcon } from '@/shared/icons';
 import { getDisplayDate } from '@/shared/utils';
 import { useDateFormatStore } from '@/app/stores';
-export const WarningsListMobile = ({ list, isLoading, hasError, errorMessage, emptyMessage, getLocalizedText, onView, onDelete, isDeleting = false }) => {
+
+const WarningField = ({ label, value, icon = null, fullWidth = false }) => (
+    <div className={fullWidth ? 'sm:col-span-2' : ''}>
+        <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400">
+            {icon ? <span className="text-slate-300">{icon}</span> : null}
+            <span>{label}</span>
+        </div>
+        <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">
+            {value || '-'}
+        </p>
+    </div>
+);
+
+export const WarningsListMobile = ({
+    list,
+    isLoading,
+    hasError,
+    errorMessage,
+    emptyMessage,
+    getLocalizedText,
+    onView,
+    onDelete,
+    isDeleting = false
+}) => {
     const { t } = useTranslation();
-    useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
+
+    useDateFormatStore((s) => s.dateFormat);
+
     if (isLoading && list.length === 0) {
-        return (<div className="flex items-center justify-center py-12">
-                <div className="flex flex-col items-center gap-2">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-primary-600"/>
-                    <p className="text-sm text-gray-600">{t('common.loading', 'Loading...')}</p>
+        return (
+            <div className="flex items-center justify-center py-16">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#d7e5e5] border-t-[#0d6a70]" />
+                    <p className="text-sm font-medium text-slate-500">
+                        {t('common.loading', 'Loading...')}
+                    </p>
                 </div>
-            </div>);
+            </div>
+        );
     }
+
     if (hasError) {
-        return (<div className="rounded-lg bg-white p-8 text-center text-red-600 shadow-sm">
+        return (
+            <div className="rounded-[22px] border border-red-100 bg-red-50/80 p-8 text-center text-sm font-medium text-red-600">
                 {errorMessage || t('warning.loadError', 'Error loading warnings.')}
-            </div>);
+            </div>
+        );
     }
+
     if (list.length === 0) {
-        return (<div className="rounded-lg bg-white p-8 text-center text-gray-500 shadow-sm">
-                {emptyMessage}
-            </div>);
+        return (
+            <div className="rounded-[22px] border border-dashed border-[#d6e7e7] bg-[#f8fbfb] p-10 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm">
+                    <SearchIcon width={20} height={20} className="text-slate-300" />
+                </div>
+                <p className="mt-4 text-sm font-medium text-slate-500">
+                    {emptyMessage}
+                </p>
+            </div>
+        );
     }
-    return (<div className="space-y-4 overflow-y-auto p-4">
+
+    return (
+        <div className="space-y-4">
             {list.map((row) => {
-            // Get target name based on warning type
-            const getTargetName = () => {
-                if (row.warning_type === 'student' && row.student) {
-                    return getLocalizedText(row.student.name);
-                }
-                if (row.warning_type === 'teacher' && row.teacher) {
-                    return getLocalizedText(row.teacher.name);
-                }
-                if (row.warning_type === 'entity' && row.entity) {
-                    return getLocalizedText(row.entity.name);
-                }
-                return '-';
-            };
-            return (<div key={row.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                        <div className="mb-3 flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                                <h3 className="text-base font-bold text-gray-900">
-                                    {getTargetName()}
-                                </h3>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    {t(`warning.type.${row.warning_type}`, row.warning_type)}
-                                </p>
+                const targetName =
+                    row.warning_type === 'student' && row.student
+                        ? getLocalizedText(row.student.name)
+                        : row.warning_type === 'teacher' && row.teacher
+                            ? getLocalizedText(row.teacher.name)
+                            : row.warning_type === 'entity' && row.entity
+                                ? getLocalizedText(row.entity.name)
+                                : '-';
+
+                const note = row.note || row.notes || '';
+
+                return (
+                    <article
+                        key={row.id}
+                        className="overflow-hidden rounded-[24px] border border-[#e3ecec] bg-white shadow-[0_16px_40px_rgba(15,23,42,0.06)]"
+                    >
+                        <div className="flex flex-col gap-3 bg-[#eef6f5] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#0d6a70] shadow-sm">
+                                    <AlertTriangleIcon width={18} height={18} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-[#0d6a70]">
+                                        {t('warning.listTitle', 'Warnings')}
+                                    </p>
+                                    <p className="text-xs text-slate-400">
+                                        {t('common.id', 'ID')} #{row.id}
+                                    </p>
+                                </div>
                             </div>
-                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${row.status
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'}`}>
-                                {row.status ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
-                            </span>
+
+                            <div className="flex items-center justify-between gap-3 sm:justify-end">
+                                <span
+                                    className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                                        row.status
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-rose-100 text-rose-700'
+                                    }`}
+                                >
+                                    {row.status
+                                        ? t('common.active', 'Active')
+                                        : t('common.inactive', 'Inactive')}
+                                </span>
+
+                                {(onView || onDelete) ? (
+                                    <div className="flex items-center gap-2">
+                                        {onView ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => onView(row)}
+                                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#d7e5e5] bg-white text-slate-500 transition-colors hover:border-[#0d6a70] hover:text-[#0d6a70]"
+                                                aria-label={t('common.view', 'View')}
+                                                title={t('common.view', 'View')}
+                                            >
+                                                <EyeIcon width={16} height={16} />
+                                            </button>
+                                        ) : null}
+
+                                        {onDelete ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => onDelete(row)}
+                                                disabled={isDeleting}
+                                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#f3d4d4] bg-white text-rose-500 transition-colors hover:border-rose-500 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                aria-label={t('common.delete', 'Delete')}
+                                                title={t('common.delete', 'Delete')}
+                                            >
+                                                <TrashIcon width={16} height={16} />
+                                            </button>
+                                        ) : null}
+                                    </div>
+                                ) : null}
+                            </div>
                         </div>
-                        <dl className="space-y-1.5 text-sm">
-                            <div className="flex justify-between gap-2">
-                                <span className="text-gray-500">{t('warning.date', 'Date')}</span>
-                                <span className="text-gray-900 text-end">
-                                    {getDisplayDate(row.date)}
-                                </span>
-                            </div>
-                            <div className="flex justify-between gap-2">
-                                <span className="text-gray-500">
-                                    {t('warning.warningReason', 'Warning Reason')}
-                                </span>
-                                <span className="text-gray-900 text-end">
-                                    {getLocalizedText(row.warning_reason?.name)}
-                                </span>
-                            </div>
-                            {(row.note || row.notes) && (<div className="flex flex-col gap-1 pt-1">
-                                    <span className="text-gray-500">{t('warning.note', 'Note')}</span>
-                                    <span className="text-gray-900 break-words">
-                                        {row.note || row.notes}
-                                    </span>
-                                </div>)}
-                        </dl>
-                        {/* Action Buttons */}
-                        {(onView || onDelete) && (<div className="mt-4 flex items-center justify-end gap-2 border-t border-gray-200 pt-3">
-                                {onView && (<button type="button" onClick={() => onView(row)} className="p-2 rounded-lg text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors" aria-label={t('common.view', 'View')} title={t('common.view', 'View')}>
-                                        <EyeIcon width={18} height={18}/>
-                                    </button>)}
-                                {onDelete && (<button type="button" onClick={() => onDelete(row)} disabled={isDeleting} className="p-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" aria-label={t('common.delete', 'Delete')} title={t('common.delete', 'Delete')}>
-                                        <TrashIcon width={18} height={18}/>
-                                    </button>)}
-                            </div>)}
-                    </div>);
-        })}
-        </div>);
+
+                        <div className="grid gap-4 px-4 py-4 sm:grid-cols-2">
+                            <WarningField
+                                label={t('warning.date', 'Date')}
+                                value={getDisplayDate(row.date)}
+                                icon={<CalendarIcon width={14} height={14} />}
+                            />
+                            <WarningField
+                                label={t('warning.warningType', 'Warning Type')}
+                                value={t(`warning.type.${row.warning_type}`, row.warning_type)}
+                            />
+                            <WarningField
+                                label={t('warning.target', 'Target')}
+                                value={targetName}
+                            />
+                            <WarningField
+                                label={t('warning.warningReason', 'Warning Reason')}
+                                value={getLocalizedText(row.warning_reason?.name)}
+                            />
+
+                            {note ? (
+                                <WarningField
+                                    label={t('warning.note', 'Note')}
+                                    value={note}
+                                    fullWidth
+                                />
+                            ) : null}
+                        </div>
+                    </article>
+                );
+            })}
+        </div>
+    );
 };

@@ -27,20 +27,71 @@ const FALLBACK_ENTITY_TYPE_OPTIONS = [
     { value: 3, code: 3, labelAr: 'مختلط', labelEn: 'Mixed' }
 ];
 
-const getDurationInDays = (startDate, endDate) => {
+const WEEKDAY_INDEX_BY_HOLIDAY_VALUE = {
+    'الأحد': 0,
+    'الاثنين': 1,
+    'الثلاثاء': 2,
+    'الأربعاء': 3,
+    'الخميس': 4,
+    'الجمعة': 5,
+    'السبت': 6
+};
+
+const parseDateInput = (value) => {
+    if (!value || typeof value !== 'string') {
+        return null;
+    }
+
+    const parts = value.split('-').map(Number);
+    if (parts.length !== 3 || parts.some((part) => Number.isNaN(part))) {
+        return null;
+    }
+
+    const [year, month, day] = parts;
+    const date = new Date(year, month - 1, day);
+
+    if (
+        Number.isNaN(date.getTime())
+        || date.getFullYear() !== year
+        || date.getMonth() !== month - 1
+        || date.getDate() !== day
+    ) {
+        return null;
+    }
+
+    return date;
+};
+
+const getDurationInDays = (startDate, endDate, weeklyHolidays = []) => {
     if (!startDate || !endDate) {
         return null;
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = parseDateInput(startDate);
+    const end = parseDateInput(endDate);
 
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+    if (!start || !end || end < start) {
         return null;
     }
 
-    const differenceInMs = end.getTime() - start.getTime();
-    return Math.floor(differenceInMs / (1000 * 60 * 60 * 24)) + 1;
+    const selectedHolidayIndexes = new Set(
+        (Array.isArray(weeklyHolidays) ? weeklyHolidays : [])
+            .map((value) => WEEKDAY_INDEX_BY_HOLIDAY_VALUE[value])
+            .filter((value) => value != null)
+    );
+
+    let totalDays = 0;
+    const current = new Date(start);
+
+    while (current <= end) {
+        if (!selectedHolidayIndexes.has(current.getDay())) {
+            totalDays += 1;
+        }
+
+        current.setDate(current.getDate() + 1);
+    }
+
+    return totalDays;
 };
 
 const getPreferredEntityTypeId = (...sources) => {
@@ -485,6 +536,7 @@ const CreateHalaqaForm = ({ onBack }) => {
     const memorizationProgramEntityTypeId = useWatch({ control, name: 'memorization_program_entity_type_id' });
     const startDate = useWatch({ control, name: 'start_date' });
     const endDate = useWatch({ control, name: 'end_date' });
+    const weeklyHoliday = useWatch({ control, name: 'weekly_holiday' });
     const period = useWatch({ control, name: 'period' });
     const sessionTime = useWatch({ control, name: 'session_time' });
     const activities = useWatch({ control, name: 'activities' });
@@ -555,7 +607,10 @@ const CreateHalaqaForm = ({ onBack }) => {
     const numericEvaluationValue = evaluationSystemOptions[0]?.value ?? HALAQA_EVALUATION_SYSTEM_TYPES[0]?.value ?? 'رقمي';
     const autoIncludedHifzActivities = useMemo(() => REQUIRED_HIFZ_ACTIVITIES, []);
 
-    const durationInDays = useMemo(() => getDurationInDays(startDate, endDate), [startDate, endDate]);
+    const durationInDays = useMemo(
+        () => getDurationInDays(startDate, endDate, weeklyHoliday),
+        [endDate, startDate, weeklyHoliday]
+    );
     const durationLabel = durationInDays == null
         ? ''
         : `${durationInDays} ${copy('يوم', 'days')}`;

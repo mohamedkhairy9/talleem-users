@@ -47,10 +47,12 @@ const MushafSegmentPickerModal = ({ isOpen, onClose, selectedStartSegment, selec
                         <div className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[calc(100dvh-6rem)] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
                             {/* Header */}
                             <div className="flex items-center justify-between border-b border-gray-200 px-4 sm:px-6 py-4 bg-white shrink-0">
-                                <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2">
                                     <BookOpenIcon className="text-gray-600" width={22} height={22}/>
                                     <h3 className="text-lg font-semibold text-gray-900">
-                                        {t('quran.selectSegmentAndViewMushaf', 'Select segment & view Mushaf')}
+                                        {planType === 'daily_amount'
+                                            ? t('quran.selectFaceAndViewMushaf', 'Select face & view Mushaf')
+                                            : t('quran.selectSegmentAndViewMushaf', 'Select segment & view Mushaf')}
                                     </h3>
                                 </div>
                                 <button type="button" onClick={onClose} className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600" aria-label={t('common.close')}>

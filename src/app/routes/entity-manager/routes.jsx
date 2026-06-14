@@ -1,5 +1,5 @@
 import { ROUTE_PATHS } from '@/config';
-import { HalaqasListPage, HalaqaDetailPage, CreateHalaqaPage, EditHalaqaPage, WarningsPage, IncomingWarningsPage, WarningsIssuedPage, LicensesPage, JoinRequestsPage } from '@/features/entity-manager/pages';
+import { HalaqasListPage, HalaqaDetailPage, CreateHalaqaPage, EditHalaqaPage, IncomingWarningsPage, WarningsIssuedPage, LicensesPage, JoinRequestsPage } from '@/features/entity-manager/pages';
 /**
  * Entity Manager Routes Configuration
  * All routes specific to entity managers
@@ -32,7 +32,7 @@ export const entityManagerRoutes = [
     // Warnings Management (also accessible to admin)
     {
         path: ROUTE_PATHS.WARNINGS_MANAGEMENT,
-        element: <WarningsPage />,
+        element: <IncomingWarningsPage />,
         roles: ['admin', 'entity_manager']
     },
     {

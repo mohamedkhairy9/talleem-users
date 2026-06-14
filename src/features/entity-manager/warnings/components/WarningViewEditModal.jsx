@@ -360,10 +360,10 @@ const WarningViewEditModal = ({ isOpen, warningId, warningData: initialWarningDa
                                 <FormSelect name="warning_reason_id" label={t('warning.warningReason', 'Warning Reason')} control={control} error={errors.warning_reason_id?.message} options={warningReasonOptions} isLoading={isLoadingReasons} disabled={isLoadingReasons} />
 
                                 {/* Conditional: Student ID */}
-                                {warningType === 'student' && (<SelectRFH name="student_id" label={t('warning.student', 'Student')} control={control} error={errors.student_id?.message} isAsync={true} loadOptions={studentsLoader} defaultOptions={true} cacheOptions={true} disabled={mode === 'view'} placeholder={t('warning.searchStudent')} />)}
+                                {warningType === 'student' && (<SelectRFH key="warning-edit-target-student" name="student_id" label={t('warning.student', 'Student')} control={control} error={errors.student_id?.message} isAsync={true} loadOptions={studentsLoader} defaultOptions={true} cacheOptions={true} disabled={mode === 'view'} placeholder={t('warning.searchStudent')} />)}
 
                                 {/* Conditional: Teacher ID */}
-                                {warningType === 'teacher' && (<SelectRFH name="teacher_id" label={t('warning.teacher', 'Teacher')} control={control} error={errors.teacher_id?.message} isAsync={true} loadOptions={teachersLoader} defaultOptions={true} cacheOptions={true} disabled={mode === 'view'} placeholder={t('warning.searchTeacher')} />)}
+                                {warningType === 'teacher' && (<SelectRFH key="warning-edit-target-teacher" name="teacher_id" label={t('warning.teacher', 'Teacher')} control={control} error={errors.teacher_id?.message} isAsync={true} loadOptions={teachersLoader} defaultOptions={true} cacheOptions={true} disabled={mode === 'view'} placeholder={t('warning.searchTeacher')} />)}
 
                                 {/* Date */}
                                 <FormInput name="date" label={t('warning.date', 'Date')} type="date" control={control} error={errors.date?.message} />

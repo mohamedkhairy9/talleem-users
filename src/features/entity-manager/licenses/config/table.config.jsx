@@ -4,6 +4,13 @@ import { DateCell } from '@/shared/components';
  */
 export const createEntityLicensesListColumns = (params) => {
     const { t, getLocalizedText } = params;
+
+    const getCreatorName = (row) => {
+        const creator = row.creator ?? row.created_by;
+        const creatorName = typeof creator === 'string' ? creator : creator?.name;
+        return creatorName ? getLocalizedText(creatorName) : '-';
+    };
+
     return [
         {
             header: t('licenses.licenseNumber', 'License Number'),
@@ -33,11 +40,11 @@ export const createEntityLicensesListColumns = (params) => {
         },
         {
             header: t('licenses.notes', 'Notes'),
-            accessor: (row) => row.notes || '-'
+            accessor: (row) => row.notes || row.note || '-'
         },
         {
             header: t('licenses.creator', 'Created By'),
-            accessor: (row) => (row.creator ? getLocalizedText(row.creator.name) : '-')
+            accessor: (row) => getCreatorName(row)
         }
     ];
 };

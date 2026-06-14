@@ -502,6 +502,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     })), [copy, t]);
 
     const hasTasbitActivity = Array.isArray(activities) && activities.includes('tasbit');
+    const isDailyAmountPlan = planType === 'daily_amount';
 
     const getStartVerseKey = (formData) => formData.start_segment_verse_key ?? null;
 
@@ -767,8 +768,8 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
                     <StepperField
                         name="daily_amount"
                         control={control}
-                        label={t('plan.dailyAmount', copy('مقدار التسميع اليومي', 'Daily Recitation Amount'))}
-                        helperText={copy('لوح / يوم', 'segments / day')}
+                        label={t('plan.dailyAmount', copy('مقدار التسميع اليومي بالأوجه', 'Daily Recitation Amount by Face'))}
+                        helperText={copy('وجه / يوم', 'faces / day')}
                         error={getErrorMessage(errors.daily_amount?.message)}
                     />
                 ) : null}
@@ -786,15 +787,17 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             </SectionCard>
 
             <LearningPathSummary
-                title={copy('مسار التعلم', 'Learning Path')}
-                buttonLabel={copy('تحديد البداية والنهاية', 'Select Start and End')}
+                title={isDailyAmountPlan ? copy('الوجه المختار من المصحف', 'Selected Mushaf Face') : copy('مسار التعلم', 'Learning Path')}
+                buttonLabel={isDailyAmountPlan ? copy('تحديد الوجه من المصحف', 'Select Face from Mushaf') : copy('تحديد البداية والنهاية', 'Select Start and End')}
                 onOpen={() => setShowMushafSegmentPickerModal(true)}
                 planType={planType}
                 selectedStartSegment={selectedStartSegment}
                 selectedEndSegment={selectedEndSegment}
                 formatSegmentVerseInfo={formatSegmentVerseInfo}
-                emptyText={copy('لم يتم تحديد المقاطع بعد. افتح المصحف لاختيار البداية والنهاية.', 'No segments selected yet. Open the Mushaf to choose the range.')}
-                startText={copy('نقطة البداية', 'Start Point')}
+                emptyText={isDailyAmountPlan
+                    ? copy('لم يتم تحديد الوجه بعد. افتح المصحف لاختيار الوجه الذي ستبدأ منه الخطة اليومية.', 'No face selected yet. Open the Mushaf to choose the face where the daily plan should start.')
+                    : copy('لم يتم تحديد المقاطع بعد. افتح المصحف لاختيار البداية والنهاية.', 'No segments selected yet. Open the Mushaf to choose the range.')}
+                startText={isDailyAmountPlan ? copy('الوجه المختار', 'Selected Face') : copy('نقطة البداية', 'Start Point')}
                 endText={copy('نقطة النهاية', 'End Point')}
             />
 
