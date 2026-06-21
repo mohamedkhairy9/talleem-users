@@ -9,7 +9,7 @@ import { FormInput, Button } from '@/shared/components';
 import SelectRFH from '@/shared/components/ui/SelectRFH';
 import { AlertTriangleIcon, BookOpenIcon, CalendarIcon, CheckIcon, ChevronRightIcon, CircleIcon, ClipboardCheckIcon, SearchIcon, TeacherIcon, UserIcon, UsersIcon } from '@/shared/icons';
 import { normalizeDate, normalizeSessionTime, useFormWithValidation } from '@/shared/utils';
-import { useCheckAvailability, useCreateHalaqa, useHalaqa, useUpdateHalaqa } from '../hooks/useHalaqas';
+import { useCreateHalaqa, useHalaqa, useUpdateHalaqa } from '../hooks/useHalaqas';
 import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
 import { HALAQA_ACTIVITIES, HALAQA_EVALUATION_SYSTEM_TYPES, HALAQA_PERIODS, HALAQA_TEACHING_METHODS, HALAQA_WEEKLY_HOLIDAYS } from '../config';
 import { createHalaqaSchema } from '../schemas/halaqa.schema';
@@ -19,8 +19,6 @@ const TOTAL_STEPS = 5;
 const SECTION_CARD_CLASS = 'rounded-[24px] border border-slate-200/80 bg-white p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.45)] md:p-5';
 const FIELD_INPUT_CLASS = 'rounded-[16px] border-slate-200 px-4 py-3 text-sm text-slate-800 shadow-sm focus:border-[#0d7a78]';
 const SELECT_FIELD_CLASSES = '[&_.react-select__control]:min-h-[52px] [&_.react-select__control]:rounded-[16px] [&_.react-select__control]:border-slate-200 [&_.react-select__control]:shadow-sm [&_.react-select__control]:px-1 [&_.react-select__control--is-focused]:border-[#0d7a78] [&_.react-select__placeholder]:text-slate-400';
-const REQUIRED_HIFZ_ACTIVITIES = ['tasbit'];
-
 const FALLBACK_ENTITY_TYPE_OPTIONS = [
     { value: 1, code: 1, labelAr: 'ذكور', labelEn: 'Male' },
     { value: 2, code: 2, labelAr: 'إناث', labelEn: 'Female' },
@@ -105,22 +103,20 @@ const getPreferredEntityTypeId = (...sources) => {
     return 0;
 };
 
-const resolveEntityTypeLabel = (option, isArabic) => {
-    const code = Number(option?.code ?? option?.value ?? option?.id);
-
-    if (code === 1) {
-        return isArabic ? 'ذكور' : 'Male';
+const getEntityTypeDisplayName = (value, isArabic) => {
+    if (!value) {
+        return '';
     }
 
-    if (code === 2) {
-        return isArabic ? 'إناث' : 'Female';
+    if (typeof value === 'string') {
+        return value;
     }
 
-    if (code === 3) {
-        return isArabic ? 'مختلط' : 'Mixed';
+    if (typeof value === 'object' && !Array.isArray(value)) {
+        return value[isArabic ? 'ar' : 'en'] ?? value.ar ?? value.en ?? value.label ?? value.name ?? '';
     }
 
-    return option?.label ?? option?.name ?? '';
+    return '';
 };
 
 const StepHeader = ({ currentStep, title, subtitle, onBack, isArabic, stepLabel }) => {
@@ -198,19 +194,17 @@ const StudentSelectionCard = ({ student, subtitle, selected, disabled = false, o
         type="button"
         disabled={disabled}
         onClick={onToggle}
-        className={`flex w-full items-center gap-3 rounded-[22px] border p-4 text-start transition ${
-            disabled
+        className={`flex w-full items-center gap-3 rounded-[22px] border p-4 text-start transition ${disabled
                 ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-80'
                 : selected
                     ? 'border-[#33c6c3] bg-[#f3fffe] shadow-[0_16px_30px_-26px_rgba(13,122,120,0.8)]'
                     : 'border-slate-200 bg-white hover:border-slate-300'
-        }`}
+            }`}
     >
-        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
-            selected
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${selected
                 ? 'border-[#0d7a78] bg-[#0d7a78] text-white'
                 : 'border-slate-300 bg-white text-transparent'
-        }`}>
+            }`}>
             <CheckIcon width={14} height={14} />
         </span>
         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -232,7 +226,7 @@ const StudentSelectionCard = ({ student, subtitle, selected, disabled = false, o
     </button>
 );
 
-const SingleSelectPillsField = ({ name, control, label, options, error, required = false }) => {
+const SingleSelectPillsField = ({ name, control, label, options, error, required = false, disabled = false }) => {
     return (
         <Controller
             name={name}
@@ -243,7 +237,7 @@ const SingleSelectPillsField = ({ name, control, label, options, error, required
                         {label}
                         {required && <span className="ms-1 text-rose-500">*</span>}
                     </label>
-                    <div className="flex flex-wrap gap-2 rounded-[24px] bg-slate-100 p-1.5">
+                    <div className={`flex flex-wrap gap-2 rounded-[24px] p-1.5 ${disabled ? 'bg-slate-50' : 'bg-slate-100'}`}>
                         {options.map((option) => {
                             const isSelected = String(field.value) === String(option.value);
 
@@ -251,8 +245,17 @@ const SingleSelectPillsField = ({ name, control, label, options, error, required
                                 <button
                                     key={option.value}
                                     type="button"
-                                    onClick={() => field.onChange(option.value)}
-                                    className={`flex min-w-[120px] flex-1 items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-semibold transition ${isSelected
+                                    disabled={disabled}
+                                    onClick={() => {
+                                        if (!disabled) {
+                                            field.onChange(option.value);
+                                        }
+                                    }}
+                                    className={`flex min-w-[120px] flex-1 items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-semibold transition ${disabled
+                                        ? isSelected
+                                            ? 'cursor-not-allowed bg-slate-200 text-slate-700'
+                                            : 'cursor-not-allowed bg-transparent text-slate-400'
+                                        : isSelected
                                         ? 'bg-[#0d7a78] text-white shadow-[0_14px_28px_-18px_rgba(13,122,120,0.9)]'
                                         : 'bg-transparent text-slate-600 hover:bg-white'
                                         }`}
@@ -505,7 +508,6 @@ const CreateHalaqaForm = ({ onBack }) => {
     const queryClient = useQueryClient();
     const createHalaqaMutation = useCreateHalaqa();
     const updateHalaqaMutation = useUpdateHalaqa();
-    const checkAvailabilityMutation = useCheckAvailability();
     const entity = useAuthStore((state) => state.user?.entity);
     const isArabic = i18n.language === 'ar';
     const copy = useCallback((arabicText, englishText) => (isArabic ? arabicText : englishText), [isArabic]);
@@ -540,22 +542,53 @@ const CreateHalaqaForm = ({ onBack }) => {
     const period = useWatch({ control, name: 'period' });
     const sessionTime = useWatch({ control, name: 'session_time' });
     const activities = useWatch({ control, name: 'activities' });
+    const availabilityParams = useMemo(() => {
+        if (!startDate || !endDate || !period || !sessionTime) {
+            return null;
+        }
+
+        return {
+            start_date: normalizeDate(startDate),
+            end_date: normalizeDate(endDate),
+            period,
+            session_time: normalizeSessionTime(sessionTime)
+        };
+    }, [endDate, period, sessionTime, startDate]);
+    const canLoadAvailablePeople = Boolean(availabilityParams);
 
     const {
         teachersOptions,
+        teachersList,
         studentsList,
         platformsOptions,
-        memorizationProgramEntityTypeOptions,
         currentEntity,
+        autoIncludeActivities,
+        totalMark,
+        editableEvaluationSystem,
+        maxStudentsPerHalaqa,
+        editableMaxStudents,
         isLoadingTeachers,
+        isLoadingStudents,
         isLoadingPlatforms
-    } = useCreateHalaqaFormQueries({ includeStudents: true });
+    } = useCreateHalaqaFormQueries({
+        includeStudents: true,
+        useAvailability: true,
+        availabilityParams
+    });
 
-    const [availabilityResult, setAvailabilityResult] = useState(null);
+    const availabilityResult = null;
+    const setAvailabilityResult = () => {};
+    const canCheckAvailability = false;
+    const checkAvailabilityMutation = {
+        isPending: false,
+        error: null,
+        mutate: () => {}
+    };
     const [step, setStep] = useState(1);
     const [createdHalaqaId, setCreatedHalaqaId] = useState(null);
     const [createdHalaqaContext, setCreatedHalaqaContext] = useState(null);
     const [createdActivities, setCreatedActivities] = useState([]);
+    const [pendingHalaqaPayload, setPendingHalaqaPayload] = useState(null);
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
     const [studentSearch, setStudentSearch] = useState('');
     const [planWizardStep, setPlanWizardStep] = useState(3);
@@ -568,16 +601,19 @@ const CreateHalaqaForm = ({ onBack }) => {
     ), [currentEntity, entity]);
 
     const entityTypeOptions = useMemo(() => {
-        const sourceOptions = memorizationProgramEntityTypeOptions.length > 0
-            ? memorizationProgramEntityTypeOptions
-            : FALLBACK_ENTITY_TYPE_OPTIONS;
+        const currentEntityType = currentEntity?.memorization_program_entity_type;
 
-        return sourceOptions.map((option) => ({
-            ...option,
-            value: Number(option.value ?? option.id),
-            label: resolveEntityTypeLabel(option, isArabic)
-        }));
-    }, [isArabic, memorizationProgramEntityTypeOptions]);
+        if (!currentEntityType?.id) {
+            return [];
+        }
+
+        return [{
+            id: currentEntityType.id,
+            value: Number(currentEntityType.id),
+            name: currentEntityType.name,
+            label: getEntityTypeDisplayName(currentEntityType.name, isArabic)
+        }];
+    }, [currentEntity, isArabic]);
 
     const periodOptions = useMemo(() => HALAQA_PERIODS.map((item) => ({
         value: item.value,
@@ -605,7 +641,10 @@ const CreateHalaqaForm = ({ onBack }) => {
     })), [t]);
 
     const numericEvaluationValue = evaluationSystemOptions[0]?.value ?? HALAQA_EVALUATION_SYSTEM_TYPES[0]?.value ?? 'رقمي';
-    const autoIncludedHifzActivities = useMemo(() => REQUIRED_HIFZ_ACTIVITIES, []);
+    const autoIncludedHifzActivities = useMemo(
+        () => (Array.isArray(autoIncludeActivities) ? autoIncludeActivities : []),
+        [autoIncludeActivities]
+    );
 
     const durationInDays = useMemo(
         () => getDurationInDays(startDate, endDate, weeklyHoliday),
@@ -640,6 +679,24 @@ const CreateHalaqaForm = ({ onBack }) => {
     }, [evaluationSystemType, numericEvaluationValue, setValue]);
 
     useEffect(() => {
+        if (evaluationSystemType === numericEvaluationValue && totalMark != null) {
+            setValue('custom_total_mark', totalMark, {
+                shouldValidate: true,
+                shouldDirty: false
+            });
+        }
+    }, [evaluationSystemType, numericEvaluationValue, setValue, totalMark]);
+
+    useEffect(() => {
+        if (maxStudentsPerHalaqa != null) {
+            setValue('max_students', maxStudentsPerHalaqa, {
+                shouldValidate: true,
+                shouldDirty: false
+            });
+        }
+    }, [maxStudentsPerHalaqa, setValue]);
+
+    useEffect(() => {
         if (Array.isArray(activities) && activities.length > 0 && autoIncludedHifzActivities.length > 0) {
             const hasHifz = activities.includes('hifz');
             if (!hasHifz) {
@@ -655,18 +712,6 @@ const CreateHalaqaForm = ({ onBack }) => {
             }
         }
     }, [activities, autoIncludedHifzActivities, setValue]);
-
-    useEffect(() => {
-        setAvailabilityResult(null);
-    }, [teacherId, startDate, endDate, period, sessionTime]);
-
-    const canCheckAvailability = useMemo(() => Boolean(
-        teacherId &&
-        startDate &&
-        endDate &&
-        period &&
-        sessionTime
-    ), [teacherId, startDate, endDate, period, sessionTime]);
 
     const handleCheckAvailability = useCallback(() => {
         if (!canCheckAvailability) {
@@ -690,12 +735,12 @@ const CreateHalaqaForm = ({ onBack }) => {
         });
     }, [canCheckAvailability, checkAvailabilityMutation, copy, endDate, period, sessionTime, startDate, t, teacherId]);
 
-    const isAvailable = useMemo(() => availabilityResult ? !availabilityResult.has_conflict : false, [availabilityResult]);
-    const hasConflict = useMemo(() => availabilityResult ? Boolean(availabilityResult.has_conflict) : false, [availabilityResult]);
-    const hasConflictsData = useMemo(() => Boolean(
-        availabilityResult?.conflicts?.teacher ||
-        (Array.isArray(availabilityResult?.conflicts?.students) && availabilityResult.conflicts.students.length > 0)
-    ), [availabilityResult]);
+    const isAvailable = useMemo(
+        () => canLoadAvailablePeople && Number(teacherId) > 0,
+        [canLoadAvailablePeople, teacherId]
+    );
+    const hasConflict = false;
+    const hasConflictsData = false;
 
     const getErrorMessage = useCallback((message) => {
         if (!message) {
@@ -720,6 +765,18 @@ const CreateHalaqaForm = ({ onBack }) => {
 
         field.onChange(nextValues);
     }, [autoIncludedHifzActivities]);
+
+    const buildStudentAssignmentPayload = (halaqaSource) => ({
+        name: halaqaSource.name,
+        teacher_id: halaqaSource.teacher?.id || halaqaSource.teacher_id,
+        period: halaqaSource.period,
+        start_date: normalizeDate(halaqaSource.start_date ?? halaqaSource.date?.from),
+        end_date: normalizeDate(halaqaSource.end_date ?? halaqaSource.date?.to),
+        activities: Array.isArray(halaqaSource.activities) && halaqaSource.activities.length > 0
+            ? halaqaSource.activities
+            : createdActivities,
+        student_ids: selectedStudentIds
+    });
 
     const onSubmit = (formData) => {
         const resolvedEntityTypeId = getPreferredEntityTypeId(
@@ -757,6 +814,19 @@ const CreateHalaqaForm = ({ onBack }) => {
             ...(formData.teaching_method !== 'in_person' && platform_id ? { platform_id } : {})
         };
 
+        setPendingHalaqaPayload(payload);
+        setCreatedHalaqaContext({
+            name: payload.name,
+            teacher_id: payload.teacher_id,
+            period: payload.period,
+            start_date: payload.start_date,
+            end_date: payload.end_date,
+            activities: Array.isArray(payload.activities) ? payload.activities : []
+        });
+        setCreatedActivities(Array.isArray(formData.activities) ? formData.activities : []);
+        setStep(2);
+        return;
+
         createHalaqaMutation.mutate(payload, {
             onSuccess: (response) => {
                 toast.success(t('halaqa.createSuccess', copy('تم إنشاء الحلقة بنجاح', 'Halaqa created successfully')));
@@ -767,14 +837,15 @@ const CreateHalaqaForm = ({ onBack }) => {
 
                 if (createdId != null) {
                     setCreatedHalaqaId(createdId);
-                    setCreatedHalaqaContext({
+                    const createdContext = {
                         name: payload.name,
                         teacher_id: payload.teacher_id,
                         period: payload.period,
                         start_date: payload.start_date,
                         end_date: payload.end_date,
                         activities: Array.isArray(payload.activities) ? payload.activities : []
-                    });
+                    };
+                    setCreatedHalaqaContext(createdContext);
                     setCreatedActivities(Array.isArray(formData.activities) ? formData.activities : []);
                     setStep(2);
                     return;
@@ -837,6 +908,22 @@ const CreateHalaqaForm = ({ onBack }) => {
     ), [copy, createdHalaqaId, getLocalizedName, studentsList]);
 
     useEffect(() => {
+        if (!canLoadAvailablePeople) {
+            setValue('teacher_id', 0, { shouldValidate: true, shouldDirty: true });
+            setSelectedStudentIds([]);
+            return;
+        }
+
+        const availableTeacherIds = new Set((teachersList ?? []).map((teacher) => Number(teacher?.id)).filter(Boolean));
+        if (teacherId && !availableTeacherIds.has(Number(teacherId))) {
+            setValue('teacher_id', 0, { shouldValidate: true, shouldDirty: true });
+        }
+
+        const availableStudentIds = new Set((studentsList ?? []).map((student) => Number(student?.id)).filter(Boolean));
+        setSelectedStudentIds((previous) => previous.filter((studentId) => availableStudentIds.has(Number(studentId))));
+    }, [canLoadAvailablePeople, setValue, teacherId, teachersList, studentsList]);
+
+    useEffect(() => {
         if (createdHalaqaStudents.length > 0) {
             setSelectedStudentIds(createdHalaqaStudents.map((student) => Number(student.id)).filter(Boolean));
         }
@@ -863,13 +950,13 @@ const CreateHalaqaForm = ({ onBack }) => {
     }, [normalizedStudentOptions, studentSearch]);
 
     const availableStudents = useMemo(
-        () => filteredStudentOptions.filter((student) => !student.unavailable),
+        () => filteredStudentOptions,
         [filteredStudentOptions]
     );
 
     const unavailableStudents = useMemo(
-        () => filteredStudentOptions.filter((student) => student.unavailable),
-        [filteredStudentOptions]
+        () => [],
+        []
     );
 
     const selectedStudentsCount = selectedStudentIds.length;
@@ -899,6 +986,50 @@ const CreateHalaqaForm = ({ onBack }) => {
     };
 
     const handleAssignStudents = () => {
+        if (createdHalaqaId == null) {
+            if (!pendingHalaqaPayload || !createdHalaqaContext) {
+                toast.error(copy('تعذر تجهيز بيانات الحلقة. حاول مرة أخرى.', 'Unable to prepare halaqa data. Please try again.'));
+                return;
+            }
+
+            if (selectedStudentIds.length === 0) {
+                toast.error(copy('اختر طالباً واحداً على الأقل', 'Select at least one student'));
+                return;
+            }
+
+            createHalaqaMutation.mutate(pendingHalaqaPayload, {
+                onSuccess: (response) => {
+                    toast.success(t('halaqa.createSuccess', copy('تم إنشاء الحلقة بنجاح', 'Halaqa created successfully')));
+                    queryClient.invalidateQueries({ queryKey: ['halaqas'] });
+
+                    const responseData = response?.data?.data ?? response?.data ?? response;
+                    const createdId = responseData?.id != null ? Number(responseData.id) : null;
+
+                    if (createdId == null) {
+                        navigate(`/${lang || 'ar'}/halaqas`);
+                        return;
+                    }
+
+                    setCreatedHalaqaId(createdId);
+                    updateHalaqaMutation.mutate({ id: createdId, data: buildStudentAssignmentPayload(createdHalaqaContext) }, {
+                        onSuccess: () => {
+                            queryClient.invalidateQueries({ queryKey: ['halaqa', createdId] });
+                            toast.success(copy('تمت إضافة الطلاب إلى الحلقة', 'Students were added to the halaqa'));
+                            setPlanWizardStep(3);
+                            setStep(3);
+                        },
+                        onError: (assignError) => {
+                            toast.error(assignError?.message || copy('تعذر إضافة الطلاب إلى الحلقة. حاول مرة أخرى.', 'Unable to add students to the halaqa. Please try again.'));
+                        }
+                    });
+                },
+                onError: (error) => {
+                    toast.error(error?.message || t('halaqa.createError', copy('حدث خطأ أثناء إنشاء الحلقة. حاول مرة أخرى.', 'Error creating halaqa. Please try again.')));
+                }
+            });
+            return;
+        }
+
         const halaqaUpdateSource = createdHalaqa ?? createdHalaqaContext;
 
         if (!halaqaUpdateSource) {
@@ -911,19 +1042,7 @@ const CreateHalaqaForm = ({ onBack }) => {
             return;
         }
 
-        const payload = {
-            name: halaqaUpdateSource.name,
-            teacher_id: halaqaUpdateSource.teacher?.id || halaqaUpdateSource.teacher_id,
-            period: halaqaUpdateSource.period,
-            start_date: normalizeDate(halaqaUpdateSource.start_date ?? halaqaUpdateSource.date?.from),
-            end_date: normalizeDate(halaqaUpdateSource.end_date ?? halaqaUpdateSource.date?.to),
-            activities: Array.isArray(halaqaUpdateSource.activities) && halaqaUpdateSource.activities.length > 0
-                ? halaqaUpdateSource.activities
-                : createdActivities,
-            student_ids: selectedStudentIds
-        };
-
-        updateHalaqaMutation.mutate({ id: createdHalaqaId, data: payload }, {
+        updateHalaqaMutation.mutate({ id: createdHalaqaId, data: buildStudentAssignmentPayload(halaqaUpdateSource) }, {
             onSuccess: () => {
                 queryClient.invalidateQueries({ queryKey: ['halaqa', createdHalaqaId] });
                 toast.success(copy('تمت إضافة الطلاب إلى الحلقة', 'Students were added to the halaqa'));
@@ -936,20 +1055,25 @@ const CreateHalaqaForm = ({ onBack }) => {
         });
     };
 
-    if (step === 2 && createdHalaqaId != null) {
+    if (step === 2) {
         return (
             <div className="overflow-hidden rounded-[32px] border border-slate-200/70 bg-white shadow-[0_32px_90px_-48px_rgba(15,23,42,0.45)]">
                 <StepHeader
                     currentStep={2}
                     stepLabel={copy('الخطوة 2 من 5', 'Step 2 of 5')}
-                    title={copy('إضافة الطلاب إلى الحلقة', 'Add Students to the Halaqa')}
+                    title={copy('اختر الطلاب', 'Choose Students')}
                     subtitle={copy('اختر الطلاب الذين تريد إضافتهم إلى الحلقة قبل الانتقال إلى بناء الخطة.', 'Choose the students you want to add to the halaqa before moving to plan building.')}
-                    onBack={typeof onBack === 'function' ? onBack : handleGoToHalaqa}
+                    onBack={createdHalaqaId == null ? () => setStep(1) : (typeof onBack === 'function' ? onBack : handleGoToHalaqa)}
                     isArabic={isArabic}
                 />
                 <div className="space-y-6 bg-[#f8fafc] px-4 py-6 md:px-8 md:py-8">
-                    <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800">
-                        {t('halaqa.createSuccess', copy('تم إنشاء الحلقة بنجاح', 'Halaqa created successfully'))}
+                    <div className={`rounded-[24px] p-4 text-sm font-medium ${createdHalaqaId != null
+                        ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+                        : 'border border-slate-200 bg-white text-slate-700'
+                        }`}>
+                        {createdHalaqaId != null
+                            ? t('halaqa.createSuccess', copy('تم إنشاء الحلقة بنجاح', 'Halaqa created successfully'))
+                            : copy('اختر الطلاب ثم أكمل لإنشاء الحلقة والانتقال إلى بناء الخطة.', 'Choose students, then continue to create the halaqa and move to plan building.')}
                     </div>
 
                     <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.5)] md:p-6">
@@ -1097,6 +1221,7 @@ const CreateHalaqaForm = ({ onBack }) => {
                             required
                             type="number"
                             error={getErrorMessage(errors.max_students?.message)}
+                            disabled={!editableMaxStudents}
                             className={FIELD_INPUT_CLASS}
                         />
                     </SectionCard>
@@ -1122,6 +1247,7 @@ const CreateHalaqaForm = ({ onBack }) => {
                             required
                             options={evaluationSystemOptions}
                             error={getErrorMessage(errors.evaluation_system_type?.message)}
+                            disabled={!editableEvaluationSystem}
                         />
 
                         {evaluationSystemType === numericEvaluationValue ? (
@@ -1239,13 +1365,16 @@ const CreateHalaqaForm = ({ onBack }) => {
                             required
                             options={teachersOptions}
                             loading={isLoadingTeachers}
+                            disabled={!canLoadAvailablePeople}
                             error={getErrorMessage(errors.teacher_id?.message)}
-                            placeholder={t('halaqa.selectTeacher', copy('اختر المعلم', 'Select a teacher'))}
+                            placeholder={canLoadAvailablePeople
+                                ? t('halaqa.selectTeacher', copy('اختر معلماً', 'Select a teacher'))
+                                : t('halaqa.completeScheduleFirst', copy('أكمل التواريخ والفترة ووقت الجلسة أولاً', 'Complete dates, period, and session time first'))}
                             classes={SELECT_FIELD_CLASSES}
                         />
                     </SectionCard>
 
-                    <AvailabilityPanel
+                    {/* <AvailabilityPanel
                         title={t('halaqa.checkAvailability', copy('التحقق من الإتاحة', 'Check Availability'))}
                         description={t('halaqa.checkAvailabilityDescription', copy('تحقق من توفر المعلم قبل إنشاء الحلقة.', 'Verify the teacher availability before creating the halaqa.'))}
                         buttonLabel={t('halaqa.checkAvailability', copy('التحقق من الإتاحة', 'Check Availability'))}
@@ -1266,7 +1395,72 @@ const CreateHalaqaForm = ({ onBack }) => {
                         checkingAvailabilityText={t('halaqa.checkingAvailability', copy('جارٍ التحقق من الإتاحة...', 'Checking availability...'))}
                         availableText={t('halaqa.available', copy('متاح', 'Available'))}
                         notAvailableText={t('halaqa.notAvailable', copy('غير متاح', 'Not Available'))}
-                    />
+                    /> */}
+
+                    {false ? (
+                        <SectionCard icon={UsersIcon} title={copy('اختر الطلاب', 'Choose Students')}>
+                        {canLoadAvailablePeople ? (
+                            <>
+                                <SearchField
+                                    value={studentSearch}
+                                    onChange={(event) => setStudentSearch(event.target.value)}
+                                    placeholder={copy('ابحث عن اسم الطالب...', 'Search student name...')}
+                                />
+
+                                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+                                    <span className="font-semibold text-slate-600">
+                                        {copy(`تم اختيار ${selectedStudentsCount} طالب`, `${selectedStudentsCount} students selected`)}
+                                    </span>
+                                </div>
+
+                                {isLoadingStudents ? (
+                                    <div className="mt-5 rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                        {t('common.loading', 'Loading...')}
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="mt-5 space-y-3">
+                                            {availableStudents.map((student) => (
+                                                <StudentSelectionCard
+                                                    key={student.id}
+                                                    student={student}
+                                                    selected={selectedStudentIds.includes(student.id)}
+                                                    subtitle={copy('متاح في هذا الوقت', 'Available right now')}
+                                                    onToggle={() => handleStudentToggle(student.id)}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        {unavailableStudents.length > 0 ? (
+                                            <div className="mt-6 border-t border-slate-200 pt-5">
+                                                <p className="mb-3 text-sm font-semibold text-slate-500">
+                                                    {copy('غير متاحين حالياً', 'Currently unavailable')}
+                                                </p>
+                                                <div className="space-y-3">
+                                                    {unavailableStudents.map((student) => (
+                                                        <StudentSelectionCard
+                                                            key={student.id}
+                                                            student={student}
+                                                            disabled
+                                                            selected={false}
+                                                            subtitle={student.linkedHalaqaName
+                                                                ? copy(`مسجل في ${student.linkedHalaqaName}`, `Assigned to ${student.linkedHalaqaName}`)
+                                                                : copy('مسجل في حلقة أخرى', 'Assigned to another halaqa')}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                {copy('أكمل التواريخ والفترة ووقت الجلسة لتحميل الطلاب المتاحين.', 'Complete dates, period, and session time to load available students.')}
+                            </div>
+                        )}
+                        </SectionCard>
+                    ) : null}
 
                 </div>
 
@@ -1279,13 +1473,13 @@ const CreateHalaqaForm = ({ onBack }) => {
                 <Button
                     type="submit"
                     variant="primary"
-                    loading={createHalaqaMutation.isPending}
-                    disabled={createHalaqaMutation.isPending || !isAvailable}
+                    loading={createHalaqaMutation.isPending || updateHalaqaMutation.isPending}
+                    disabled={createHalaqaMutation.isPending || updateHalaqaMutation.isPending || !isAvailable}
                     className="w-full justify-between rounded-[20px] bg-[#0d7a78] px-6 py-4 text-base font-semibold hover:bg-[#0b6664]"
                 >
                     <span>{createHalaqaMutation.isPending
                         ? t('common.loading', copy('جارٍ الحفظ...', 'Saving...'))
-                        : copy('إضافة الطلاب إلى الحلقة', 'Add Students to the Halaqa')}</span>
+                        : t('halaqa.create', copy('إنشاء حلقة', 'Create Halaqa'))}</span>
                     <ChevronRightIcon width={18} height={18} className={isArabic ? 'rotate-180' : ''} />
                 </Button>
             </form>

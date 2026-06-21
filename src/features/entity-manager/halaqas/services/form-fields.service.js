@@ -5,11 +5,23 @@ import { axiosInstance } from '@/shared/api/axiosInstance';
  */
 export const formFieldsService = {
     /**
+     * Get teachers available for the requested halaqa schedule.
+     */
+    getAvailableTeachers: (data) => {
+        return axiosInstance.post('/halaqas/available-teachers', data);
+    },
+    /**
      * Get teachers list (paginated)
      * entity_id: filter by entity (from logged-in user's entity)
      */
     getTeachers: (params = {}) => {
         return axiosInstance.get('/teachers', { params });
+    },
+    /**
+     * Get students available for the requested halaqa schedule.
+     */
+    getAvailableStudents: (data) => {
+        return axiosInstance.post('/halaqas/available-students', data);
     },
     /**
      * Get students list (paginated)
@@ -19,10 +31,10 @@ export const formFieldsService = {
         return axiosInstance.get('/students', { params });
     },
     /**
-     * Get entities list (paginated / filtered)
+     * Get the entities available to the current authenticated user.
      */
-    getEntities: (params = {}) => {
-        return axiosInstance.get('/entities', { params });
+    getMyEntities: (params = {}) => {
+        return axiosInstance.get('/my-entities', { params });
     },
     /**
      * Get platforms list (paginated) - generic platforms endpoint
@@ -36,10 +48,4 @@ export const formFieldsService = {
     getRemotelyAttendancePlatforms: (params = {}) => {
         return axiosInstance.get('/remotely-attendance-platforms', { params });
     },
-    /**
-     * Get memorization program entity types list (paginated)
-     */
-    getMemorizationProgramEntityTypes: (params = {}) => {
-        return axiosInstance.get('/memorization-program-entity-types', { params });
-    }
 };

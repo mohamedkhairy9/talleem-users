@@ -1,28 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { joinRequestsService } from '../services/join-requests.service';
 const QUERY_KEY = ['join-requests'];
-export function useJoinRequests(params = {}, options, requestOptions = {}) {
+export function useJoinRequests(params = {}, options) {
     const query = useQuery({
-        queryKey: [...QUERY_KEY, params, requestOptions.mode || 'pending'],
-        queryFn: () => joinRequestsService.getJoinRequests(params, requestOptions),
-        enabled: options?.enabled !== false,
-        staleTime: 2 * 60 * 1000
-    });
-    const responseBody = query.data;
-    const list = Array.isArray(responseBody?.data) ? responseBody.data : [];
-    const meta = responseBody?.meta;
-    return {
-        ...query,
-        list,
-        meta,
-        refresh: query.refetch
-    };
-}
-
-export function useAllJoinRequests(params = {}, options, requestOptions = {}) {
-    const query = useQuery({
-        queryKey: [...QUERY_KEY, 'all-pages', params, requestOptions.mode || 'pending'],
-        queryFn: () => joinRequestsService.getAllJoinRequests(params, requestOptions),
+        queryKey: [...QUERY_KEY, params],
+        queryFn: () => joinRequestsService.getJoinRequests(params),
         enabled: options?.enabled !== false,
         staleTime: 2 * 60 * 1000
     });

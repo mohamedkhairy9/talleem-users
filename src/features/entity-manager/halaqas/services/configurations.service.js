@@ -5,6 +5,19 @@ export async function getConfigurations(program, key) {
     const item = (maybeWrapped && typeof maybeWrapped === 'object' ? maybeWrapped : response);
     return item;
 }
+
+function getConfigurationRawValue(item) {
+    return item?.value ?? item?.options ?? undefined;
+}
+
+function parseBooleanFlagValue(value) {
+    return String(value ?? '').trim() === '1';
+}
+
+function parseNumericValue(value) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+}
 const VALID_ACTIVITIES = ['tasbit', 'hifz', 'murajaa'];
 /**
  * Parse auto_include_activities value (e.g. "tasbit, murajaa") into an array of HalaqaActivity.
@@ -27,6 +40,26 @@ export function parseAutoIncludeActivitiesValue(value) {
  */
 export async function getAutoIncludeActivitiesForTahfiz() {
     const item = await getConfigurations('tahfiz', 'auto_include_activities');
-    const raw = item?.value ?? (item?.options ?? undefined);
+    const raw = getConfigurationRawValue(item);
     return parseAutoIncludeActivitiesValue(raw);
+}
+
+export async function getTotalMarkForTahfiz() {
+    const item = await getConfigurations('tahfiz', 'total_mark');
+    return parseNumericValue(getConfigurationRawValue(item));
+}
+
+export async function getEditableEvaluationSystemForTahfiz() {
+    const item = await getConfigurations('tahfiz', 'editable_evaluation_system');
+    return parseBooleanFlagValue(getConfigurationRawValue(item));
+}
+
+export async function getMaxStudentsPerHalaqaForTahfiz() {
+    const item = await getConfigurations('tahfiz', 'max_students_per_halaqa');
+    return parseNumericValue(getConfigurationRawValue(item));
+}
+
+export async function getEditableMaxStudentsForTahfiz() {
+    const item = await getConfigurations('tahfiz', 'editable_max_students');
+    return parseBooleanFlagValue(getConfigurationRawValue(item));
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Table, Pagination, Button } from '@/shared/components';
 import { SearchIcon, SettingsIcon, XIcon } from '@/shared/icons';
-import { useAllJoinRequests } from '../hooks/useJoinRequests';
+import { useJoinRequests } from '../hooks/useJoinRequests';
 import { useJoinRequestsListState } from '../hooks/useJoinRequestsListState';
 import { createJoinRequestsColumns, getLocalizedText } from '../config/join-requests.config';
 import ViewJoinRequestModal from './ViewJoinRequestModal';
@@ -11,29 +11,10 @@ const JoinRequestsList = () => {
     const currentLang = i18n.language || 'ar';
     const listState = useJoinRequestsListState();
     const { params, page, perPage, search, setPage, setSearch, resetFilters } = listState;
-    const fetchParams = useMemo(() => ({
-        ...(params.search ? { search: params.search } : {})
-    }), [params.search]);
-    const { list, isLoading, error, refresh } = useAllJoinRequests(fetchParams, undefined, {
-        mode: 'all'
-    });
-    const pendingLookupParams = useMemo(() => ({
-        ...(params.search ? { search: params.search } : {})
-    }), [params.search]);
-    const { list: pendingList } = useAllJoinRequests(pendingLookupParams, undefined, {
-        mode: 'pending'
-    });
-    const actionableRequestIds = useMemo(
-        () => new Set((pendingList || []).map((item) => item.id)),
-        [pendingList]
-    );
-    const total = list.length;
-    const totalPages = Math.max(1, Math.ceil(total / perPage));
-    const currentPage = Math.min(page, totalPages);
-    const paginatedList = useMemo(() => {
-        const startIndex = (currentPage - 1) * perPage;
-        return list.slice(startIndex, startIndex + perPage);
-    }, [list, currentPage, perPage]);
+    const { list, meta, isLoading, error, refresh } = useJoinRequests(params);
+    const total = meta?.total ?? 0;
+    const totalPages = meta?.last_page ?? 1;
+    const currentPage = meta?.current_page ?? page;
     const hasActiveFilters = !!search.trim();
     const [localSearch, setLocalSearch] = useState(search);
     useEffect(() => {
@@ -102,7 +83,7 @@ const JoinRequestsList = () => {
                     </Button>
                 </div>
                 <div className="flex-1 min-h-0 overflow-auto">
-                    <Table columns={columns} data={paginatedList} loading={isLoading} emptyMessage={t('joinRequests.noData')} actionButtons={{
+                    <Table columns={columns} data={list} loading={isLoading} emptyMessage={t('joinRequests.noData')} actionButtons={{
             showView: true,
             showEdit: false,
             showDelete: false,
@@ -117,7 +98,6 @@ const JoinRequestsList = () => {
             <ViewJoinRequestModal
                 isOpen={isModalOpen}
                 request={selectedRequest}
-                isReadOnly={!!selectedRequest && !actionableRequestIds.has(selectedRequest.id)}
                 onClose={handleCloseModal}
             />
         </div>);
