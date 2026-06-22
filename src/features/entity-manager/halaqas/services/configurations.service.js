@@ -18,6 +18,18 @@ function parseNumericValue(value) {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
 }
+
+function parseStringArrayValue(value) {
+    if (!value) {
+        return [];
+    }
+
+    const asString = Array.isArray(value) ? value.join(',') : String(value);
+    return asString
+        .split(/[,،]/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
 const VALID_ACTIVITIES = ['tasbit', 'hifz', 'murajaa'];
 /**
  * Parse auto_include_activities value (e.g. "tasbit, murajaa") into an array of HalaqaActivity.
@@ -61,5 +73,15 @@ export async function getMaxStudentsPerHalaqaForTahfiz() {
 
 export async function getEditableMaxStudentsForTahfiz() {
     const item = await getConfigurations('tahfiz', 'editable_max_students');
+    return parseBooleanFlagValue(getConfigurationRawValue(item));
+}
+
+export async function getWeeklyHolidayForTahfiz() {
+    const item = await getConfigurations('tahfiz', 'weekly_holiday');
+    return parseStringArrayValue(getConfigurationRawValue(item));
+}
+
+export async function getEditableWeeklyHolidayForTahfiz() {
+    const item = await getConfigurations('tahfiz', 'editable_weekly_holiday');
     return parseBooleanFlagValue(getConfigurationRawValue(item));
 }

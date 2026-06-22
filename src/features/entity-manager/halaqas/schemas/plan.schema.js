@@ -5,6 +5,7 @@ import * as yup from 'yup';
  */
 export const createPlanSchema = yup.object({
     activity: yup.string().oneOf(['hifz', 'tasbit', 'murajaa'], 'plan.validation.activityInvalid').required('plan.validation.activityRequired'),
+    auto_tasbit_enabled: yup.boolean().notRequired(),
     student_ids: yup.array()
         .of(yup.number().positive('plan.validation.studentInvalid'))
         .min(1, 'plan.validation.studentRequired')

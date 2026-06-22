@@ -82,6 +82,14 @@ export const useCreatePlan = () => {
     });
 };
 /**
+ * Join a student to an existing halaqa after start
+ */
+export const useJoinHalaqaStudent = () => {
+    return useMutation({
+        mutationFn: ({ halaqaId, data }) => halaqasService.joinStudent(halaqaId, data)
+    });
+};
+/**
  * Check availability mutation hook
  * Must be triggered manually via mutate()
  */

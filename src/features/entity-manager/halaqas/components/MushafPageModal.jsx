@@ -35,9 +35,9 @@ const MushafPageModal = ({ isOpen, onClose, pageNumber, selectedAyahs = new Set(
     // Single-page view: track selected page (e.g. when user changes dropdown)
     const [singlePage, setSinglePage] = useState(1);
     useEffect(() => {
-        if (isOpen && !isPlanView && pageNumber != null)
+        if (isOpen && !isPlanView && pageNumber != null && singlePage !== pageNumber)
             setSinglePage(pageNumber);
-    }, [isOpen, isPlanView, pageNumber]);
+    }, [isOpen, isPlanView, pageNumber, singlePage]);
     const currentPage = isPlanView && planPages.length > 0
         ? planPages[currentPageIndex]
         : singlePage;
@@ -77,6 +77,8 @@ const MushafPageModal = ({ isOpen, onClose, pageNumber, selectedAyahs = new Set(
         if (singleViewPagesList.includes(currentPage))
             return;
         const first = singleViewPagesList[0];
+        if (first === currentPage)
+            return;
         if (onPageChange)
             onPageChange(first);
         else

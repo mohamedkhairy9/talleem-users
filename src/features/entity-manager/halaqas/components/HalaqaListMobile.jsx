@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { EyeIcon, EditIcon, TrashIcon } from '@/shared/icons';
+import { EyeIcon, EditIcon, PlusIcon, TrashIcon } from '@/shared/icons';
 import { getDisplayDate } from '@/shared/utils';
 import { useDateFormatStore } from '@/app/stores';
 
@@ -22,7 +22,7 @@ const getHalaqaSessionTimeValue = (row) =>
     row.sessionTime ??
     (row.session_from && row.session_to ? `${row.session_from}-${row.session_to}` : null) ??
     null;
-export const HalaqaListMobile = ({ list, isLoading, hasError, errorMessage, emptyMessage, getLocalizedText, formatActivities, onView, onEdit, onDelete, isDeleting }) => {
+export const HalaqaListMobile = ({ list, isLoading, hasError, errorMessage, emptyMessage, getLocalizedText, formatActivities, onView, onEdit, onDelete, onJoinStudentAfterStart, isDeleting }) => {
     const { t } = useTranslation();
     useDateFormatStore((s) => s.dateFormat); // re-render when date format changes
     if (isLoading && list.length === 0) {
@@ -121,7 +121,7 @@ export const HalaqaListMobile = ({ list, isLoading, hasError, errorMessage, empt
                         </span>
                     </div>) : null}
                 </dl>
-                <div className="mt-4 flex gap-2">
+                <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <button type="button" onClick={() => onView(rowId)} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary-50 py-2.5 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-100">
                         <EyeIcon width={18} height={18} />
                         {t('common.view', 'View')}
@@ -130,8 +130,17 @@ export const HalaqaListMobile = ({ list, isLoading, hasError, errorMessage, empt
                         <EditIcon width={18} height={18} />
                         {t('common.edit', 'Edit')}
                     </button>
-                    <button type="button" onClick={() => onDelete(rowId)} disabled={isDeleting} className="flex items-center justify-center rounded-lg p-2.5 text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50" aria-label={t('common.delete', 'Delete')}>
+                    <button
+                        type="button"
+                        onClick={() => onJoinStudentAfterStart?.(row)}
+                        className="flex items-center justify-center gap-1.5 rounded-lg bg-emerald-50 py-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 sm:col-span-2"
+                    >
+                        <PlusIcon width={18} height={18} />
+                        {t('halaqa.joinStudentAfterStart', 'التحاق الطلاب بعد البداية')}
+                    </button>
+                    <button type="button" onClick={() => onDelete(rowId)} disabled={isDeleting} className="flex items-center justify-center gap-1.5 rounded-lg bg-red-50 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50 sm:col-span-2" aria-label={t('common.delete', 'Delete')}>
                         <TrashIcon width={18} height={18} />
+                        {t('common.delete', 'Delete')}
                     </button>
                 </div>
             </div>);

@@ -15,7 +15,7 @@ const SummaryStat = ({ label, value, accent = false }) => (
  * Displays plan preview data (from API with save_or_not: 0): start/end verse with surah name, ayah, juz;
  * days info; overflow/empty-day warnings; Confirm & Save, Back to edit, View in Mushaf actions.
  */
-const PlanPreviewCard = ({ planPreviewData, surahData, currentLang, isSaving, onConfirmSave, onBackToEdit, onViewInMushaf, planPreviewRef, wizardMode = false }) => {
+const PlanPreviewCard = ({ planPreviewData, surahData, currentLang, isSaving, onConfirmSave, onBackToEdit, onViewInMushaf, planPreviewRef, wizardMode = false, activityLabel = '' }) => {
     const { t, i18n } = useTranslation();
     const isArabic = (currentLang || i18n.language) === 'ar';
     const copy = (arabicText, englishText) => (isArabic ? arabicText : englishText);
@@ -58,10 +58,15 @@ const PlanPreviewCard = ({ planPreviewData, surahData, currentLang, isSaving, on
                         <CheckIcon width={12} height={12} />
                         <span>{t('plan.previewTitle', copy('ملخص الخطة', 'Plan Summary'))}</span>
                     </div>
+                    {activityLabel ? (
+                        <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/85">
+                            {activityLabel}
+                        </div>
+                    ) : null}
                     <h3 className="text-xl font-semibold">
                         {wizardMode
                             ? copy('مراجعة واعتماد الخطة', 'Review and Approve the Plan')
-                            : copy('ملخص خطة الحفظ', 'Recitation Plan Summary')}
+                            : copy('ملخص الخطة', 'Plan Summary')}
                     </h3>
                     <p className="max-w-2xl text-sm text-white/75">
                         {copy('راجع الملخص التالي قبل اعتماد الخطة النهائية للطلاب.', 'Review the following summary before confirming the final plan for the students.')}

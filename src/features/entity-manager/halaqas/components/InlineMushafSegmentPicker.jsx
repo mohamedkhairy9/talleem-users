@@ -74,12 +74,12 @@ function isSameSegment(a, b) {
  * Inline mushaf viewer for segment selection. Shows one page at a time with arrows.
  * Fetches segments per page from API (cached). User clicks on the page to select a segment.
  */
-const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, onSelectStartSegment, onSelectEndSegment, planType, hideInlineMushaf = false, onPageChange, selectionVerseKeyFromOutside, onCurrentSelectionChange, onNavigablePagesChange, viewerPageSync }) => {
+const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, onSelectStartSegment, onSelectEndSegment, planType, direction = 'incremental', hideInlineMushaf = false, onPageChange, selectionVerseKeyFromOutside, onCurrentSelectionChange, onNavigablePagesChange, viewerPageSync }) => {
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'ar';
     const isDailyAmountPlan = planType === 'daily_amount';
     const faceLabel = currentLang === 'ar' ? 'وجه' : 'Face';
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(direction === 'decremental' ? 604 : 1);
     const [selectedJuz, setSelectedJuz] = useState('all');
     const [selectedSurah, setSelectedSurah] = useState('all');
     const [mushafPages, setMushafPages] = useState([]);
@@ -140,6 +140,24 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
             return Array.from({ length: 604 }, (_, i) => i + 1);
         return getPageNumbersForJuzAndSurah(selectedJuz, selectedSurah, mushafPages, juzPages);
     }, [selectedJuz, selectedSurah, mushafPages, juzPages]);
+
+    useEffect(() => {
+        if (selectedStartSegment || selectedEndSegment || currentSelection) {
+            return;
+        }
+
+        if (!pageNumbers.length) {
+            return;
+        }
+
+        const targetPage = direction === 'decremental'
+            ? pageNumbers[pageNumbers.length - 1]
+            : pageNumbers[0];
+
+        if (currentPage !== targetPage) {
+            setCurrentPage(targetPage);
+        }
+    }, [currentPage, currentSelection, direction, pageNumbers, selectedEndSegment, selectedStartSegment]);
     const currentPageFaceSelection = useMemo(() => {
         const pageEntry = mushafPages.find((page) => page.page === currentPage);
         return createPageFaceSelection(pageEntry);
@@ -153,8 +171,10 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
     }, [pageNumbers, currentPage]);
     // Notify parent when selected page changes (e.g. to sync mushaf viewer in modal)
     useEffect(() => {
-        onPageChange?.(currentPage);
-    }, [currentPage, onPageChange]);
+        if (viewerPageSync !== currentPage) {
+            onPageChange?.(currentPage);
+        }
+    }, [currentPage, onPageChange, viewerPageSync]);
     useEffect(() => {
         onNavigablePagesChange?.(pageNumbers);
     }, [pageNumbers, onNavigablePagesChange]);
@@ -164,21 +184,27 @@ const InlineMushafSegmentPicker = ({ selectedStartSegment, selectedEndSegment, o
             return;
         if (pageNumbers.length > 0 && !pageNumbers.includes(viewerPageSync))
             return;
-        setCurrentPage(viewerPageSync);
-    }, [viewerPageSync, pageNumbers]);
+        if (currentPage !== viewerPageSync) {
+            setCurrentPage(viewerPageSync);
+        }
+    }, [currentPage, viewerPageSync, pageNumbers]);
     // When parent sets verse key (e.g. from mushaf word click), find segment and set as current selection
     useEffect(() => {
         if (!selectionVerseKeyFromOutside?.trim())
             return;
         if (isDailyAmountPlan) {
-            setCurrentSelection(currentPageFaceSelection);
+            if (!isSameSegment(currentSelection, currentPageFaceSelection)) {
+                setCurrentSelection(currentPageFaceSelection);
+            }
             return;
         }
         if (!currentPageSegments.length)
             return;
         const segment = findSegmentForVerseKey(selectionVerseKeyFromOutside, currentPageSegments);
-        setCurrentSelection(segment ?? null);
-    }, [currentPageFaceSelection, currentPageSegments, isDailyAmountPlan, selectionVerseKeyFromOutside]);
+        if (!isSameSegment(currentSelection, segment)) {
+            setCurrentSelection(segment ?? null);
+        }
+    }, [currentPageFaceSelection, currentPageSegments, currentSelection, isDailyAmountPlan, selectionVerseKeyFromOutside]);
     // Notify parent when current selection changes (so parent can highlight in mushaf)
     useEffect(() => {
         onCurrentSelectionChange?.(currentSelection);

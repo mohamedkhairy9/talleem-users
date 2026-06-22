@@ -5,7 +5,9 @@ import {
     getAutoIncludeActivitiesForTahfiz,
     getEditableEvaluationSystemForTahfiz,
     getEditableMaxStudentsForTahfiz,
+    getEditableWeeklyHolidayForTahfiz,
     getMaxStudentsPerHalaqaForTahfiz,
+    getWeeklyHolidayForTahfiz,
     getTotalMarkForTahfiz
 } from '../services/configurations.service';
 import { generateOptions } from '../utils/formOptionsUtils';
@@ -20,6 +22,8 @@ export const HALAQA_FORM_QUERY_KEYS = {
     editableEvaluationSystem: ['halaqa-form', 'configurations', 'tahfiz', 'editable_evaluation_system'],
     maxStudentsPerHalaqa: ['halaqa-form', 'configurations', 'tahfiz', 'max_students_per_halaqa'],
     editableMaxStudents: ['halaqa-form', 'configurations', 'tahfiz', 'editable_max_students'],
+    weeklyHoliday: ['halaqa-form', 'configurations', 'tahfiz', 'weekly_holiday'],
+    editableWeeklyHoliday: ['halaqa-form', 'configurations', 'tahfiz', 'editable_weekly_holiday'],
 };
 const FORM_OPTIONS_PER_PAGE = 1000;
 const STALE_TIME_MS = 2 * 60 * 1000;
@@ -113,6 +117,16 @@ export function useCreateHalaqaFormQueries({
         queryFn: getEditableMaxStudentsForTahfiz,
         staleTime: STALE_TIME_MS,
     });
+    const weeklyHolidayQuery = useQuery({
+        queryKey: HALAQA_FORM_QUERY_KEYS.weeklyHoliday,
+        queryFn: getWeeklyHolidayForTahfiz,
+        staleTime: STALE_TIME_MS,
+    });
+    const editableWeeklyHolidayQuery = useQuery({
+        queryKey: HALAQA_FORM_QUERY_KEYS.editableWeeklyHoliday,
+        queryFn: getEditableWeeklyHolidayForTahfiz,
+        staleTime: STALE_TIME_MS,
+    });
     const teachersOptions = generateOptions(teachersQuery.data?.data);
     const teachersList = Array.isArray(teachersQuery.data?.data) ? teachersQuery.data.data : [];
     const studentsList = includeStudents && Array.isArray(studentsQuery.data?.data)
@@ -132,6 +146,8 @@ export function useCreateHalaqaFormQueries({
     const editableEvaluationSystem = editableEvaluationSystemQuery.data ?? false;
     const maxStudentsPerHalaqa = maxStudentsPerHalaqaQuery.data ?? null;
     const editableMaxStudents = editableMaxStudentsQuery.data ?? false;
+    const weeklyHoliday = weeklyHolidayQuery.data ?? [];
+    const editableWeeklyHoliday = editableWeeklyHolidayQuery.data ?? false;
     return {
         teachersOptions,
         teachersList,
@@ -144,6 +160,8 @@ export function useCreateHalaqaFormQueries({
         editableEvaluationSystem,
         maxStudentsPerHalaqa,
         editableMaxStudents,
+        weeklyHoliday,
+        editableWeeklyHoliday,
         isLoadingCurrentEntity: currentEntityQuery.isLoading,
         isLoadingTeachers: teachersQuery.isLoading,
         isLoadingStudents: includeStudents ? studentsQuery.isLoading : false,
@@ -152,7 +170,9 @@ export function useCreateHalaqaFormQueries({
             totalMarkQuery.isLoading ||
             editableEvaluationSystemQuery.isLoading ||
             maxStudentsPerHalaqaQuery.isLoading ||
-            editableMaxStudentsQuery.isLoading,
+            editableMaxStudentsQuery.isLoading ||
+            weeklyHolidayQuery.isLoading ||
+            editableWeeklyHolidayQuery.isLoading,
         isLoading,
     };
 }

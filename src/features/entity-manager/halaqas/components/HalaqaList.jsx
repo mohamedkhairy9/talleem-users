@@ -7,11 +7,13 @@ import ReactSelectComponent from '@/shared/components/ui/ReactSelect';
 import { useHalaqas, useDeleteHalaqa } from '../hooks/useHalaqas';
 import { useHalaqasListState } from '../hooks/useHalaqasListState';
 import { HalaqaListMobile } from './HalaqaListMobile';
+import JoinHalaqaStudentModal from './JoinHalaqaStudentModal';
 import { HALAQA_PERIODS, HALAQA_TEACHING_METHODS, createHalaqaListColumns } from '../config';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 import { useConfirmationModal } from '@/shared/hooks/useConfirmationModal';
 import { useDateFormatStore } from '@/app/stores';
+import { PlusIcon } from '@/shared/icons';
 
 const getHalaqaRowId = (row) =>
     row?.id ??
@@ -42,6 +44,7 @@ const HalaqaList = () => {
     const currentPage = meta?.current_page ?? page;
     const hasActiveFilters = !!(search.trim() || period || teachingMethod);
     const [localSearch, setLocalSearch] = useState(search);
+    const [selectedJoinHalaqa, setSelectedJoinHalaqa] = useState(null);
     useEffect(() => {
         setLocalSearch(search);
     }, [search]);
@@ -131,6 +134,21 @@ const HalaqaList = () => {
             }
         });
     };
+
+    const handleJoinStudentAfterStart = (row) => {
+        const id = getHalaqaRowId(row);
+
+        if (!id) {
+            toast.error(t('halaqa.notFound', 'Halaqa not found'));
+            return;
+        }
+
+        setSelectedJoinHalaqa({
+            id,
+            name: row?.name
+        });
+    };
+
     const columns = createHalaqaListColumns({
         t,
         getLocalizedText,
@@ -195,7 +213,7 @@ const HalaqaList = () => {
             {/* Mobile: cards - min-h-[280px] keeps area visible on small screens */}
             <div className="flex flex-1 flex-col overflow-hidden md:hidden min-h-[280px] bg-white rounded-lg">
                 <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-                    <HalaqaListMobile list={list} isLoading={isLoading} hasError={!!error} errorMessage={error ? t('halaqa.loadError', 'Error loading halaqas.') : undefined} emptyMessage={t('halaqa.noHalaqas', 'No halaqas found')} getLocalizedText={getLocalizedText} formatActivities={formatActivities} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} isDeleting={deleteMutation.isPending}/>
+                    <HalaqaListMobile list={list} isLoading={isLoading} hasError={!!error} errorMessage={error ? t('halaqa.loadError', 'Error loading halaqas.') : undefined} emptyMessage={t('halaqa.noHalaqas', 'No halaqas found')} getLocalizedText={getLocalizedText} formatActivities={formatActivities} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} onJoinStudentAfterStart={handleJoinStudentAfterStart} isDeleting={deleteMutation.isPending}/>
                 </div>
                 {totalPages > 1 && (<div className="flex-shrink-0 pt-3">
                         <Pagination currentPage={currentPage} totalPages={totalPages} perPage={meta?.per_page ?? perPage} total={total} onPageChange={setPage}/>
@@ -209,6 +227,15 @@ const HalaqaList = () => {
             showView: true,
             showEdit: true,
             showDelete: true,
+            customActions: [
+                {
+                    key: 'join-student-after-start',
+                    // label: t('halaqa.joinStudentAfterStart', 'التحاق الطلاب بعد البداية'),
+                    title: t('halaqa.joinStudentAfterStart', 'التحاق الطلاب بعد البداية'),
+                    icon: PlusIcon,
+                    onClick: handleJoinStudentAfterStart
+                }
+            ],
             onView: (row) => handleView(getHalaqaRowId(row)),
             onEdit: (row) => handleEdit(getHalaqaRowId(row)),
             onDelete: (row) => handleDelete(getHalaqaRowId(row)),
@@ -220,6 +247,13 @@ const HalaqaList = () => {
                         <Pagination currentPage={currentPage} totalPages={totalPages} perPage={meta?.per_page ?? perPage} total={total} onPageChange={setPage}/>
                     </div>)}
             </div>
+
+            <JoinHalaqaStudentModal
+                isOpen={Boolean(selectedJoinHalaqa?.id)}
+                halaqaId={selectedJoinHalaqa?.id}
+                halaqaName={getLocalizedText(selectedJoinHalaqa?.name)}
+                onClose={() => setSelectedJoinHalaqa(null)}
+            />
         </div>);
 };
 export default HalaqaList;

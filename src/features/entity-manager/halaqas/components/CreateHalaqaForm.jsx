@@ -119,6 +119,10 @@ const getEntityTypeDisplayName = (value, isArabic) => {
     return '';
 };
 
+const arePrimitiveArraysEqual = (left = [], right = []) => (
+    left.length === right.length && left.every((value, index) => value === right[index])
+);
+
 const StepHeader = ({ currentStep, title, subtitle, onBack, isArabic, stepLabel }) => {
     return (
         <div className="relative overflow-hidden bg-[linear-gradient(135deg,#004247_0%,#0a6666_55%,#12797b_100%)] px-5 pb-6 pt-5 text-white md:px-8 md:pb-8 md:pt-7">
@@ -273,7 +277,7 @@ const SingleSelectPillsField = ({ name, control, label, options, error, required
     );
 };
 
-const MultiChipField = ({ name, control, label, options, error, required = false, helperText, onToggleOption }) => {
+const MultiChipField = ({ name, control, label, options, error, required = false, helperText, onToggleOption, disabled = false }) => {
     return (
         <Controller
             name={name}
@@ -282,6 +286,10 @@ const MultiChipField = ({ name, control, label, options, error, required = false
                 const selectedValues = Array.isArray(field.value) ? field.value : [];
 
                 const handleToggle = (nextValue) => {
+                    if (disabled) {
+                        return;
+                    }
+
                     const alreadySelected = selectedValues.includes(nextValue);
                     const nextValues = alreadySelected
                         ? selectedValues.filter((value) => value !== nextValue)
@@ -309,8 +317,13 @@ const MultiChipField = ({ name, control, label, options, error, required = false
                                     <button
                                         key={option.value}
                                         type="button"
+                                        disabled={disabled}
                                         onClick={() => handleToggle(option.value)}
-                                        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${isSelected
+                                        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${disabled
+                                            ? isSelected
+                                                ? 'cursor-not-allowed border-slate-300 bg-slate-200 text-slate-700'
+                                                : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
+                                            : isSelected
                                             ? 'border-[#0d7a78] bg-[#10b981] text-white shadow-[0_12px_24px_-18px_rgba(16,185,129,0.9)]'
                                             : 'border-slate-200 bg-white text-slate-600 hover:border-[#0d7a78] hover:text-[#0d7a78]'
                                             }`}
@@ -567,6 +580,8 @@ const CreateHalaqaForm = ({ onBack }) => {
         editableEvaluationSystem,
         maxStudentsPerHalaqa,
         editableMaxStudents,
+        weeklyHoliday: configuredWeeklyHoliday,
+        editableWeeklyHoliday,
         isLoadingTeachers,
         isLoadingStudents,
         isLoadingPlatforms
@@ -697,6 +712,18 @@ const CreateHalaqaForm = ({ onBack }) => {
     }, [maxStudentsPerHalaqa, setValue]);
 
     useEffect(() => {
+        if (Array.isArray(configuredWeeklyHoliday) && configuredWeeklyHoliday.length > 0) {
+            const allowedValues = new Set(weeklyHolidayOptions.map((option) => option.value));
+            const normalizedWeeklyHoliday = configuredWeeklyHoliday.filter((value) => allowedValues.has(value));
+
+            setValue('weekly_holiday', normalizedWeeklyHoliday, {
+                shouldValidate: true,
+                shouldDirty: false
+            });
+        }
+    }, [configuredWeeklyHoliday, setValue, weeklyHolidayOptions]);
+
+    useEffect(() => {
         if (Array.isArray(activities) && activities.length > 0 && autoIncludedHifzActivities.length > 0) {
             const hasHifz = activities.includes('hifz');
             if (!hasHifz) {
@@ -825,9 +852,8 @@ const CreateHalaqaForm = ({ onBack }) => {
         });
         setCreatedActivities(Array.isArray(formData.activities) ? formData.activities : []);
         setStep(2);
-        return;
 
-        createHalaqaMutation.mutate(payload, {
+        /* createHalaqaMutation.mutate(payload, {
             onSuccess: (response) => {
                 toast.success(t('halaqa.createSuccess', copy('تم إنشاء الحلقة بنجاح', 'Halaqa created successfully')));
                 queryClient.invalidateQueries({ queryKey: ['halaqas'] });
@@ -856,7 +882,7 @@ const CreateHalaqaForm = ({ onBack }) => {
             onError: (error) => {
                 toast.error(error?.message || t('halaqa.createError', copy('حدث خطأ أثناء إنشاء الحلقة. حاول مرة أخرى.', 'Error creating halaqa. Please try again.')));
             }
-        });
+        }); */
     };
 
     const { data: createdHalaqaData } = useHalaqa(createdHalaqaId ?? '');
@@ -909,8 +935,10 @@ const CreateHalaqaForm = ({ onBack }) => {
 
     useEffect(() => {
         if (!canLoadAvailablePeople) {
-            setValue('teacher_id', 0, { shouldValidate: true, shouldDirty: true });
-            setSelectedStudentIds([]);
+            if (Number(teacherId) !== 0) {
+                setValue('teacher_id', 0, { shouldValidate: true, shouldDirty: true });
+            }
+            setSelectedStudentIds((previous) => (previous.length > 0 ? [] : previous));
             return;
         }
 
@@ -920,12 +948,18 @@ const CreateHalaqaForm = ({ onBack }) => {
         }
 
         const availableStudentIds = new Set((studentsList ?? []).map((student) => Number(student?.id)).filter(Boolean));
-        setSelectedStudentIds((previous) => previous.filter((studentId) => availableStudentIds.has(Number(studentId))));
+        setSelectedStudentIds((previous) => {
+            const nextValues = previous.filter((studentId) => availableStudentIds.has(Number(studentId)));
+            return arePrimitiveArraysEqual(previous, nextValues) ? previous : nextValues;
+        });
     }, [canLoadAvailablePeople, setValue, teacherId, teachersList, studentsList]);
 
     useEffect(() => {
         if (createdHalaqaStudents.length > 0) {
-            setSelectedStudentIds(createdHalaqaStudents.map((student) => Number(student.id)).filter(Boolean));
+            const nextValues = createdHalaqaStudents.map((student) => Number(student.id)).filter(Boolean);
+            setSelectedStudentIds((previous) => (
+                arePrimitiveArraysEqual(previous, nextValues) ? previous : nextValues
+            ));
         }
     }, [createdHalaqaStudents]);
 
@@ -1354,6 +1388,7 @@ const CreateHalaqaForm = ({ onBack }) => {
                             label={t('halaqa.weeklyHoliday', copy('العطلة الأسبوعية', 'Weekly Holidays'))}
                             options={weeklyHolidayOptions}
                             error={getErrorMessage(errors.weekly_holiday?.message)}
+                            disabled={!editableWeeklyHoliday}
                         />
                     </SectionCard>
 

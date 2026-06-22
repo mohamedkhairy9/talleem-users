@@ -8,7 +8,7 @@ import { verseKeysBetween } from '@/shared/utils/helpers/surahHelper';
  * Modal that combines segment selection (InlineMushafSegmentPicker) and mushaf viewer.
  * Used from the plan form to pick segments and view the mushaf in one place.
  */
-const MushafSegmentPickerModal = ({ isOpen, onClose, selectedStartSegment, selectedEndSegment, onSelectStartSegment, onSelectEndSegment, planType, getSurahName }) => {
+const MushafSegmentPickerModal = ({ isOpen, onClose, selectedStartSegment, selectedEndSegment, onSelectStartSegment, onSelectEndSegment, planType, direction = 'incremental', getSurahName }) => {
     const { t } = useTranslation();
     const [viewerPage, setViewerPage] = useState(1);
     const [navigablePages, setNavigablePages] = useState(() => Array.from({ length: 604 }, (_, i) => i + 1));
@@ -20,12 +20,13 @@ const MushafSegmentPickerModal = ({ isOpen, onClose, selectedStartSegment, selec
     // Sync viewer page when modal opens (segment picker will call onPageChange with its current page)
     useEffect(() => {
         if (isOpen) {
-            setViewerPage(1);
+            const initialPage = direction === 'decremental' ? 604 : 1;
+            setViewerPage((prev) => (prev === initialPage ? prev : initialPage));
             setNavigablePages(Array.from({ length: 604 }, (_, i) => i + 1));
             setSelectionVerseKeyFromMushaf(null);
             setCurrentSelectionFromPicker(null);
         }
-    }, [isOpen]);
+    }, [direction, isOpen]);
     // Verse keys to highlight in mushaf: start segment, end segment, and current selection (from list or word click)
     const selectedAyahsForViewer = useMemo(() => {
         const set = new Set();
@@ -62,7 +63,7 @@ const MushafSegmentPickerModal = ({ isOpen, onClose, selectedStartSegment, selec
 
                             {/* Body: single scroll over full content so segment picker + mushaf are both visible */}
                             <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
-                                <InlineMushafSegmentPicker selectedStartSegment={selectedStartSegment} selectedEndSegment={selectedEndSegment} onSelectStartSegment={onSelectStartSegment} onSelectEndSegment={onSelectEndSegment} planType={planType} getSurahName={getSurahName} hideInlineMushaf onPageChange={setViewerPage} onNavigablePagesChange={handleNavigablePagesChange} viewerPageSync={viewerPage} selectionVerseKeyFromOutside={selectionVerseKeyFromMushaf ?? undefined} onCurrentSelectionChange={setCurrentSelectionFromPicker}/>
+                                <InlineMushafSegmentPicker selectedStartSegment={selectedStartSegment} selectedEndSegment={selectedEndSegment} onSelectStartSegment={onSelectStartSegment} onSelectEndSegment={onSelectEndSegment} planType={planType} direction={direction} getSurahName={getSurahName} hideInlineMushaf onPageChange={setViewerPage} onNavigablePagesChange={handleNavigablePagesChange} viewerPageSync={viewerPage} selectionVerseKeyFromOutside={selectionVerseKeyFromMushaf ?? undefined} onCurrentSelectionChange={setCurrentSelectionFromPicker}/>
                                 <div className="border-t border-gray-200 pt-4">
                                     <MushafPageModal isOpen={isOpen} onClose={onClose} pageNumber={viewerPage} navigablePageNumbers={navigablePages} onPageChange={setViewerPage} selectedAyahs={selectedAyahsForViewer} onVerseKeyClick={(verseKey) => setSelectionVerseKeyFromMushaf(verseKey)} embedded/>
                                 </div>

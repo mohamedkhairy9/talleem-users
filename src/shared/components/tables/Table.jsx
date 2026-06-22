@@ -12,11 +12,33 @@ const Table = ({ columns = [], data = [], loading = false, emptyMessage = 'No da
     const renderActionButtons = (row) => {
         if (!actionButtons)
             return null;
-        const { showView, showEdit, showDelete, onView, onEdit, onDelete, isDeleting } = actionButtons;
-        const hasAnyAction = showView || showEdit || showDelete;
+        const { showView, showEdit, showDelete, onView, onEdit, onDelete, isDeleting, customActions = [] } = actionButtons;
+        const hasAnyAction = showView || showEdit || showDelete || customActions.length > 0;
         if (!hasAnyAction)
             return null;
         return (<div className="flex items-center gap-1">
+                {customActions.map((action) => {
+                    const isDisabled = typeof action.disabled === 'function' ? action.disabled(row) : Boolean(action.disabled);
+                    const label = typeof action.label === 'function' ? action.label(row) : action.label;
+                    const title = typeof action.title === 'function' ? action.title(row) : (action.title ?? label);
+                    const className = action.className ?? 'inline-flex items-center gap-1 rounded-lg bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100 disabled:opacity-50 disabled:cursor-not-allowed';
+                    const Icon = action.icon;
+
+                    return (
+                        <button
+                            key={action.key}
+                            type="button"
+                            onClick={() => action.onClick(row)}
+                            disabled={isDisabled}
+                            className={className}
+                            aria-label={title}
+                            title={title}
+                        >
+                            {Icon ? <Icon width={16} height={16} /> : null}
+                            {label ? <span>{label}</span> : null}
+                        </button>
+                    );
+                })}
                 {showView && onView && (<button type="button" onClick={() => onView(row)} className="p-2 rounded-lg text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors" aria-label={t('common.view', 'View')} title={t('common.view', 'View')}>
                         <EyeIcon width={18} height={18}/>
                     </button>)}
@@ -29,7 +51,7 @@ const Table = ({ columns = [], data = [], loading = false, emptyMessage = 'No da
             </div>);
     };
     // Combine columns with action column if configured
-    const actionColumn = actionButtons && (actionButtons.showView || actionButtons.showEdit || actionButtons.showDelete)
+    const actionColumn = actionButtons && (actionButtons.showView || actionButtons.showEdit || actionButtons.showDelete || actionButtons.customActions?.length > 0)
         ? {
             header: t('common.actions', 'Actions'),
             cell: (row) => renderActionButtons(row)

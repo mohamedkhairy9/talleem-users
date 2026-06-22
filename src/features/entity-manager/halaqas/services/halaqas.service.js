@@ -63,6 +63,13 @@ export const halaqasService = {
         return axiosInstance.post(`/halaqas/${halaqaId}/plans`, data);
     },
     /**
+     * Join a student to a halaqa after the halaqa has already started
+     * POST /halaqas/:id/students/join
+     */
+    joinStudent: (halaqaId, data) => {
+        return axiosInstance.post(`/halaqas/${halaqaId}/students/join`, data);
+    },
+    /**
      * Check availability for halaqa creation
      * POST /halaqas/check-availability
      * Note: Axios interceptor returns response.data directly, so this returns CheckAvailabilityResponse
