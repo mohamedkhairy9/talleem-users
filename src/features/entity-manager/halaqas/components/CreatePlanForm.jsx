@@ -34,7 +34,12 @@ const addDaysToDateString = (dateStr, days) => {
     }
 
     date.setDate(date.getDate() + days);
-    return date.toISOString().split('T')[0];
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
 };
 
 const getSegmentBoundaryVerseKey = (segment, direction, edge = 'start') => {
@@ -270,8 +275,9 @@ const AutoTasbitNotice = ({ title, description, control }) => (
     </div>
 );
 
-const LearningPathSummary = ({ title, buttonLabel, onOpen, planType, selectedStartSegment, selectedEndSegment, formatSegmentVerseInfo, emptyText, startText, endText }) => {
+const LearningPathSummary = ({ title, buttonLabel, onOpen, planType, selectedStartSegment, selectedEndSegment, formatSegmentVerseInfo, emptyText, startText, endText, showEndSelection = false }) => {
     const hasSelection = Boolean(selectedStartSegment || selectedEndSegment);
+    const shouldShowEndSelection = planType === 'start_end' || showEndSelection || Boolean(selectedEndSegment);
 
     return (
         <SectionCard
@@ -289,12 +295,12 @@ const LearningPathSummary = ({ title, buttonLabel, onOpen, planType, selectedSta
         >
             {hasSelection ? (
                 <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-                    <div className={`grid gap-4 ${planType === 'start_end' ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
+                    <div className={`grid gap-4 ${shouldShowEndSelection ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
                         <div className="rounded-[20px] border border-slate-200 bg-white p-4">
                             <p className="mb-2 text-xs font-medium text-slate-500">{startText}</p>
                             <p className="text-sm font-semibold text-slate-900">{selectedStartSegment ? formatSegmentVerseInfo(selectedStartSegment) : emptyText}</p>
                         </div>
-                        {planType === 'start_end' ? (
+                        {shouldShowEndSelection ? (
                             <div className="rounded-[20px] border border-slate-200 bg-white p-4">
                                 <p className="mb-2 text-xs font-medium text-slate-500">{endText}</p>
                                 <p className="text-sm font-semibold text-slate-900">{selectedEndSegment ? formatSegmentVerseInfo(selectedEndSegment) : emptyText}</p>
@@ -478,27 +484,14 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     }, [currentDirection, currentStartSegmentVerseKey, selectedStartSegment, setValue]);
 
     useEffect(() => {
-        const nextEndVerseKey = planType === 'start_end' && selectedEndSegment
+        const nextEndVerseKey = selectedEndSegment
             ? getSegmentBoundaryVerseKey(selectedEndSegment, currentDirection, 'end')
             : undefined;
 
         if (currentEndSegmentVerseKey !== nextEndVerseKey) {
             setValue('end_segment_verse_key', nextEndVerseKey);
         }
-    }, [currentDirection, currentEndSegmentVerseKey, planType, selectedEndSegment, setValue]);
-
-    useEffect(() => {
-        if (planType === 'daily_amount') {
-            if (currentEndSegmentVerseKey !== undefined) {
-                setValue('end_segment_verse_key', undefined);
-            }
-            setValue('end_juz_number', undefined);
-            setValue('end_surah_id', undefined);
-            if (selectedEndSegment !== null) {
-                setSelectedEndSegment(null);
-            }
-        }
-    }, [currentEndSegmentVerseKey, planType, selectedEndSegment, setValue]);
+    }, [currentDirection, currentEndSegmentVerseKey, selectedEndSegment, setValue]);
 
     const { studentsOptions: allStudentsOptions, isLoadingStudents } = useCreateHalaqaFormQueries();
 
@@ -639,7 +632,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             ...(startDate ? { start_date: startDate } : {}),
             ...(endDate ? { end_date: endDate } : {}),
             ...(formData.plan_type === 'daily_amount' && formData.daily_amount ? { daily_amount: formData.daily_amount } : {}),
-            ...(formData.plan_type === 'start_end' && formData.end_segment_verse_key ? { end_verse_key: formData.end_segment_verse_key } : {})
+            ...(formData.end_segment_verse_key ? { end_verse_key: formData.end_segment_verse_key } : {})
         };
     };
 
@@ -1082,18 +1075,19 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             </SectionCard>
 
             <LearningPathSummary
-                title={isDailyAmountPlan ? copy('المقطع المختار من المصحف', 'Selected Mushaf Segment') : copy('مسار التعلم', 'Learning Path')}
-                buttonLabel={isDailyAmountPlan ? copy('تحديد المقطع من المصحف', 'Select Segment from Mushaf') : copy('تحديد البداية والنهاية', 'Select Start and End')}
+                title={copy('مسار التعلم', 'Learning Path')}
+                buttonLabel={copy('تحديد البداية والنهاية', 'Select Start and End')}
                 onOpen={() => setShowMushafSegmentPickerModal(true)}
                 planType={planType}
                 selectedStartSegment={selectedStartSegment}
                 selectedEndSegment={selectedEndSegment}
                 formatSegmentVerseInfo={formatSegmentVerseInfo}
                 emptyText={isDailyAmountPlan
-                    ? copy('لم يتم تحديد المقطع بعد. افتح المصحف لاختيار المقطع الذي ستبدأ منه الخطة اليومية.', 'No segment selected yet. Open the Mushaf to choose the segment where the daily plan should start.')
+                    ? copy('لم يتم تحديد البداية والنهاية بعد. افتح المصحف لاختيار بداية المقدار اليومي ونهايته.', 'No start and end selected yet. Open the Mushaf to choose the daily amount range.')
                     : copy('لم يتم تحديد المقاطع بعد. افتح المصحف لاختيار البداية والنهاية.', 'No segments selected yet. Open the Mushaf to choose the range.')}
-                startText={isDailyAmountPlan ? copy('المقطع المختار', 'Selected Segment') : copy('نقطة البداية', 'Start Point')}
+                startText={copy('نقطة البداية', 'Start Point')}
                 endText={copy('نقطة النهاية', 'End Point')}
+                showEndSelection={isDailyAmountPlan}
             />
 
             {!wizardMode ? (

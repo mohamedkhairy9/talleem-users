@@ -52,7 +52,7 @@ const MushafSegmentPickerModal = ({ isOpen, onClose, selectedStartSegment, selec
                                     <BookOpenIcon className="text-gray-600" width={22} height={22}/>
                                     <h3 className="text-lg font-semibold text-gray-900">
                                         {planType === 'daily_amount'
-                                            ? t('quran.selectFaceAndViewMushaf', 'Select face & view Mushaf')
+                                            ? t('quran.selectSegmentAndViewMushaf', 'Select segment & view Mushaf')
                                             : t('quran.selectSegmentAndViewMushaf', 'Select segment & view Mushaf')}
                                     </h3>
                                 </div>

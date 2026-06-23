@@ -47,9 +47,9 @@ export const createPlanSchema = yup.object({
         then: (schema) => schema.required('plan.validation.startSurahRequired').positive('plan.validation.startSurahPositive'),
         otherwise: (schema) => schema.notRequired()
     }),
-    // End fields - required when plan_type is 'start_end'
+    // End fields - required for segment-based plans
     end_segment_verse_key: yup.string().when(['unit', 'plan_type'], {
-        is: (unit, planType) => unit === 'segments' && planType === 'start_end',
+        is: (unit, planType) => unit === 'segments' && ['daily_amount', 'start_end'].includes(planType),
         then: (schema) => schema.required('plan.validation.endSegmentRequired').matches(/^\d+:\d+$/, 'plan.validation.verseKeyFormat'),
         otherwise: (schema) => schema.notRequired()
     }),

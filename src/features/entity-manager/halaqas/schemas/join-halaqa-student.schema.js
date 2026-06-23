@@ -53,7 +53,7 @@ export const joinHalaqaStudentSchema = yup.object({
     end_segment_verse_key: yup
         .string()
         .when('plan_type', {
-            is: 'start_end',
+            is: (planType) => ['daily_amount', 'start_end'].includes(planType),
             then: (schema) => schema
                 .required('plan.validation.endSegmentRequired')
                 .matches(/^\d+:\d+$/, 'plan.validation.verseKeyFormat'),

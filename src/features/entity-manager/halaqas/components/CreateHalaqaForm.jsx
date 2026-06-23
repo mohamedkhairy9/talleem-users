@@ -199,15 +199,15 @@ const StudentSelectionCard = ({ student, subtitle, selected, disabled = false, o
         disabled={disabled}
         onClick={onToggle}
         className={`flex w-full items-center gap-3 rounded-[22px] border p-4 text-start transition ${disabled
-                ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-80'
-                : selected
-                    ? 'border-[#33c6c3] bg-[#f3fffe] shadow-[0_16px_30px_-26px_rgba(13,122,120,0.8)]'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
+            ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-80'
+            : selected
+                ? 'border-[#33c6c3] bg-[#f3fffe] shadow-[0_16px_30px_-26px_rgba(13,122,120,0.8)]'
+                : 'border-slate-200 bg-white hover:border-slate-300'
             }`}
     >
         <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${selected
-                ? 'border-[#0d7a78] bg-[#0d7a78] text-white'
-                : 'border-slate-300 bg-white text-transparent'
+            ? 'border-[#0d7a78] bg-[#0d7a78] text-white'
+            : 'border-slate-300 bg-white text-transparent'
             }`}>
             <CheckIcon width={14} height={14} />
         </span>
@@ -260,8 +260,8 @@ const SingleSelectPillsField = ({ name, control, label, options, error, required
                                             ? 'cursor-not-allowed bg-slate-200 text-slate-700'
                                             : 'cursor-not-allowed bg-transparent text-slate-400'
                                         : isSelected
-                                        ? 'bg-[#0d7a78] text-white shadow-[0_14px_28px_-18px_rgba(13,122,120,0.9)]'
-                                        : 'bg-transparent text-slate-600 hover:bg-white'
+                                            ? 'bg-[#0d7a78] text-white shadow-[0_14px_28px_-18px_rgba(13,122,120,0.9)]'
+                                            : 'bg-transparent text-slate-600 hover:bg-white'
                                         }`}
                                 >
                                     {isSelected && <CheckIcon width={16} height={16} />}
@@ -324,8 +324,8 @@ const MultiChipField = ({ name, control, label, options, error, required = false
                                                 ? 'cursor-not-allowed border-slate-300 bg-slate-200 text-slate-700'
                                                 : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
                                             : isSelected
-                                            ? 'border-[#0d7a78] bg-[#10b981] text-white shadow-[0_12px_24px_-18px_rgba(16,185,129,0.9)]'
-                                            : 'border-slate-200 bg-white text-slate-600 hover:border-[#0d7a78] hover:text-[#0d7a78]'
+                                                ? 'border-[#0d7a78] bg-[#10b981] text-white shadow-[0_12px_24px_-18px_rgba(16,185,129,0.9)]'
+                                                : 'border-slate-200 bg-white text-slate-600 hover:border-[#0d7a78] hover:text-[#0d7a78]'
                                             }`}
                                     >
                                         {isSelected && <CheckIcon width={14} height={14} />}
@@ -592,12 +592,12 @@ const CreateHalaqaForm = ({ onBack }) => {
     });
 
     const availabilityResult = null;
-    const setAvailabilityResult = () => {};
+    const setAvailabilityResult = () => { };
     const canCheckAvailability = false;
     const checkAvailabilityMutation = {
         isPending: false,
         error: null,
-        mutate: () => {}
+        mutate: () => { }
     };
     const [step, setStep] = useState(1);
     const [createdHalaqaId, setCreatedHalaqaId] = useState(null);
@@ -1434,66 +1434,66 @@ const CreateHalaqaForm = ({ onBack }) => {
 
                     {false ? (
                         <SectionCard icon={UsersIcon} title={copy('اختر الطلاب', 'Choose Students')}>
-                        {canLoadAvailablePeople ? (
-                            <>
-                                <SearchField
-                                    value={studentSearch}
-                                    onChange={(event) => setStudentSearch(event.target.value)}
-                                    placeholder={copy('ابحث عن اسم الطالب...', 'Search student name...')}
-                                />
+                            {canLoadAvailablePeople ? (
+                                <>
+                                    <SearchField
+                                        value={studentSearch}
+                                        onChange={(event) => setStudentSearch(event.target.value)}
+                                        placeholder={copy('ابحث عن اسم الطالب...', 'Search student name...')}
+                                    />
 
-                                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-                                    <span className="font-semibold text-slate-600">
-                                        {copy(`تم اختيار ${selectedStudentsCount} طالب`, `${selectedStudentsCount} students selected`)}
-                                    </span>
-                                </div>
-
-                                {isLoadingStudents ? (
-                                    <div className="mt-5 rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-                                        {t('common.loading', 'Loading...')}
+                                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+                                        <span className="font-semibold text-slate-600">
+                                            {copy(`تم اختيار ${selectedStudentsCount} طالب`, `${selectedStudentsCount} students selected`)}
+                                        </span>
                                     </div>
-                                ) : (
-                                    <>
-                                        <div className="mt-5 space-y-3">
-                                            {availableStudents.map((student) => (
-                                                <StudentSelectionCard
-                                                    key={student.id}
-                                                    student={student}
-                                                    selected={selectedStudentIds.includes(student.id)}
-                                                    subtitle={copy('متاح في هذا الوقت', 'Available right now')}
-                                                    onToggle={() => handleStudentToggle(student.id)}
-                                                />
-                                            ))}
-                                        </div>
 
-                                        {unavailableStudents.length > 0 ? (
-                                            <div className="mt-6 border-t border-slate-200 pt-5">
-                                                <p className="mb-3 text-sm font-semibold text-slate-500">
-                                                    {copy('غير متاحين حالياً', 'Currently unavailable')}
-                                                </p>
-                                                <div className="space-y-3">
-                                                    {unavailableStudents.map((student) => (
-                                                        <StudentSelectionCard
-                                                            key={student.id}
-                                                            student={student}
-                                                            disabled
-                                                            selected={false}
-                                                            subtitle={student.linkedHalaqaName
-                                                                ? copy(`مسجل في ${student.linkedHalaqaName}`, `Assigned to ${student.linkedHalaqaName}`)
-                                                                : copy('مسجل في حلقة أخرى', 'Assigned to another halaqa')}
-                                                        />
-                                                    ))}
-                                                </div>
+                                    {isLoadingStudents ? (
+                                        <div className="mt-5 rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                            {t('common.loading', 'Loading...')}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="mt-5 space-y-3">
+                                                {availableStudents.map((student) => (
+                                                    <StudentSelectionCard
+                                                        key={student.id}
+                                                        student={student}
+                                                        selected={selectedStudentIds.includes(student.id)}
+                                                        subtitle={copy('متاح في هذا الوقت', 'Available right now')}
+                                                        onToggle={() => handleStudentToggle(student.id)}
+                                                    />
+                                                ))}
                                             </div>
-                                        ) : null}
-                                    </>
-                                )}
-                            </>
-                        ) : (
-                            <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-                                {copy('أكمل التواريخ والفترة ووقت الجلسة لتحميل الطلاب المتاحين.', 'Complete dates, period, and session time to load available students.')}
-                            </div>
-                        )}
+
+                                            {unavailableStudents.length > 0 ? (
+                                                <div className="mt-6 border-t border-slate-200 pt-5">
+                                                    <p className="mb-3 text-sm font-semibold text-slate-500">
+                                                        {copy('غير متاحين حالياً', 'Currently unavailable')}
+                                                    </p>
+                                                    <div className="space-y-3">
+                                                        {unavailableStudents.map((student) => (
+                                                            <StudentSelectionCard
+                                                                key={student.id}
+                                                                student={student}
+                                                                disabled
+                                                                selected={false}
+                                                                subtitle={student.linkedHalaqaName
+                                                                    ? copy(`مسجل في ${student.linkedHalaqaName}`, `Assigned to ${student.linkedHalaqaName}`)
+                                                                    : copy('مسجل في حلقة أخرى', 'Assigned to another halaqa')}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ) : null}
+                                        </>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                    {copy('أكمل التواريخ والفترة ووقت الجلسة لتحميل الطلاب المتاحين.', 'Complete dates, period, and session time to load available students.')}
+                                </div>
+                            )}
                         </SectionCard>
                     ) : null}
 

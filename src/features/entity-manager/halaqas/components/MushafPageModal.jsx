@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XIcon, ChevronRightIcon } from '@/shared/icons';
 import MushafPage from './MushafPage';
@@ -34,13 +34,25 @@ const MushafPageModal = ({ isOpen, onClose, pageNumber, selectedAyahs = new Set(
     const isPlanView = !!startVerseKey && !!endVerseKey;
     // Single-page view: track selected page (e.g. when user changes dropdown)
     const [singlePage, setSinglePage] = useState(1);
-    useEffect(() => {
-        if (isOpen && !isPlanView && pageNumber != null && singlePage !== pageNumber)
-            setSinglePage(pageNumber);
-    }, [isOpen, isPlanView, pageNumber, singlePage]);
+    const isSinglePageControlled = !isPlanView && pageNumber != null && typeof onPageChange === 'function';
+    const singlePageValue = isSinglePageControlled ? Number(pageNumber) : singlePage;
+    const setSingleViewPage = useCallback((nextPage) => {
+        const previousPage = singlePageValue;
+        const resolvedNextPage = typeof nextPage === 'function'
+            ? nextPage(previousPage)
+            : nextPage;
+        const normalizedNextPage = Number(resolvedNextPage);
+        if (!Number.isFinite(normalizedNextPage) || normalizedNextPage === previousPage) {
+            return;
+        }
+        if (!isSinglePageControlled) {
+            setSinglePage(normalizedNextPage);
+        }
+        onPageChange?.(normalizedNextPage);
+    }, [isSinglePageControlled, onPageChange, singlePageValue]);
     const currentPage = isPlanView && planPages.length > 0
         ? planPages[currentPageIndex]
-        : singlePage;
+        : singlePageValue;
     const singleViewPagesList = useMemo(() => {
         if (isPlanView)
             return [];
@@ -56,19 +68,13 @@ const MushafPageModal = ({ isOpen, onClose, pageNumber, selectedAyahs = new Set(
         if (!canSingleGoPrev)
             return;
         const p = singleViewPagesList[singleViewPageIndex - 1];
-        if (onPageChange)
-            onPageChange(p);
-        else
-            setSinglePage(p);
+        setSingleViewPage(p);
     };
     const goSingleNext = () => {
         if (!canSingleGoNext)
             return;
         const p = singleViewPagesList[singleViewPageIndex + 1];
-        if (onPageChange)
-            onPageChange(p);
-        else
-            setSinglePage(p);
+        setSingleViewPage(p);
     };
     // Keep current page inside navigable set when filter changes (e.g. Juz/Surah)
     useEffect(() => {
@@ -79,11 +85,8 @@ const MushafPageModal = ({ isOpen, onClose, pageNumber, selectedAyahs = new Set(
         const first = singleViewPagesList[0];
         if (first === currentPage)
             return;
-        if (onPageChange)
-            onPageChange(first);
-        else
-            setSinglePage(first);
-    }, [isPlanView, singleViewPagesList, currentPage, onPageChange]);
+        setSingleViewPage(first);
+    }, [currentPage, isPlanView, setSingleViewPage, singleViewPagesList]);
     // Plan view: highlight only verses that belong to segments from the API (not all verses in range)
     const planSelectedAyahs = useMemo(() => planSegmentVerseKeys, [planSegmentVerseKeys]);
     // When in select-verse mode, also highlight the locally selected verse
