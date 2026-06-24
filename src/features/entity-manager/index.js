@@ -21,3 +21,6 @@ export { default as CreateWarningForm } from './warnings/components/CreateWarnin
 export * from './join-requests';
 export { default as JoinRequestsList } from './join-requests/components/JoinRequestsList';
 export { default as ViewJoinRequestModal } from './join-requests/components/ViewJoinRequestModal';
+// Scheduled Exams exports
+export * from './scheduled-exams/hooks/useScheduledExams';
+export { default as CreateScheduledExamForm } from './scheduled-exams/components/CreateScheduledExamForm';

@@ -20,6 +20,7 @@ export const ROUTE_PATHS = {
     WARNINGS_ISSUED: 'warnings-management/issued',
     ENTITY_LICENSES: 'entity/licenses',
     JOIN_REQUESTS: 'join-requests',
+    SCHEDULED_EXAMS_CREATE: 'scheduled-exams/create',
     // Teacher menu items (TEACHER_CALENDAR is default home for teacher)
     TEACHER_CALENDAR: 'teacher/calendar',
     TEACHER_HALAQAS: 'halaqaty',

@@ -237,6 +237,7 @@
     "warningsIssued": "Warnings Issued",
     "createWarning": "Create Warning",
     "joinRequests": "Join Requests",
+    "scheduledExams": "Scheduled Exams",
     "licenses": "My Licenses",
     "calendar": "Calendar",
     "evaluations": "Evaluations",
@@ -787,6 +788,71 @@
       "class_count": "Class Count",
       "management_rooms_count": "Management Rooms",
       "lecture_halls_count": "Lecture Halls"
+    }
+  },
+  "scheduledExams": {
+    "title": "Create Scheduled Exam",
+    "subtitle": "Plan a supervised exam session for selected students and optionally assign teachers.",
+    "create": "Create Scheduled Exam",
+    "createSuccess": "Scheduled exam created successfully.",
+    "segmentId": "Exam Segment ID",
+    "segmentIdHelper": "Use the numeric segment ID for now until the exam segments lookup API is connected.",
+    "examDate": "Exam Date",
+    "timeFrom": "Start Time",
+    "timeTo": "End Time",
+    "responsible": "Responsible Side",
+    "method": "Method",
+    "location": "Location",
+    "platform": "Platform",
+    "remoteLink": "Platform Link",
+    "locationPlaceholder": "Enter the exam location",
+    "meetingLinkPlaceholder": "Enter the remote meeting link",
+    "teachers": "Assigned Teachers",
+    "teachersHelper": "Teachers are currently enabled only when the responsible side is the entity.",
+    "students": "Students",
+    "student": "Student",
+    "juzNumbers": "Juz Numbers",
+    "addStudent": "Add Student",
+    "removeStudent": "Remove Student",
+    "studentsCount": "{{count}} selected student",
+    "studentsCount_other": "{{count}} selected students",
+    "notes": {
+      "segmentApiPending": "Assumption for now: exam segment selection is entered as a numeric ID until its lookup API is provided."
+    },
+    "responsibleOptions": {
+      "entity": "Entity",
+      "branch": "Branch",
+      "generalManagement": "General Management"
+    },
+    "methodOptions": {
+      "inPerson": "In Person",
+      "remote": "Remote"
+    },
+    "sections": {
+      "schedule": "Schedule Details",
+      "responsibility": "Responsibility & Delivery",
+      "teachers": "Teacher Assignment",
+      "students": "Student Coverage"
+    },
+    "validation": {
+      "segmentRequired": "Exam segment ID is required",
+      "segmentPositive": "Exam segment ID must be greater than 0",
+      "dateRequired": "Exam date is required",
+      "timeFromRequired": "Start time is required",
+      "timeToRequired": "End time is required",
+      "timeToAfterFrom": "End time must be later than start time",
+      "responsibleRequired": "Responsible side is required",
+      "responsibleInvalid": "Responsible side is invalid",
+      "methodRequired": "Method is required",
+      "methodInvalid": "Method is invalid",
+      "platformRequired": "Platform is required",
+      "remoteLinkRequired": "Platform link is required",
+      "remoteLocationUrl": "Remote location must be a valid URL",
+      "studentRequired": "Student is required",
+      "studentsMin": "Add at least one student",
+      "studentUnique": "Each student can only be selected once",
+      "juzRequired": "Select at least one juz number",
+      "juzInvalid": "Juz numbers must be between 1 and 30"
     }
   },
   "student": {

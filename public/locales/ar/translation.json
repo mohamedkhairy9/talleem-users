@@ -236,6 +236,7 @@
         "incomingWarnings": "الإنذارات الواردة",
         "warningsIssued": "الإنذارات الصادرة",
         "joinRequests": "طلبات الانضمام",
+        "scheduledExams": "الاختبارات المجدولة",
         "licenses": "رخصي",
         "calendar": "التقويم",
         "evaluations": "التقييمات",
@@ -752,6 +753,71 @@
             "class_count": "عدد الفصول",
             "management_rooms_count": "غرف الإدارة",
             "lecture_halls_count": "قاعات المحاضرات"
+        }
+    },
+    "scheduledExams": {
+        "title": "إنشاء اختبار مجدول",
+        "subtitle": "جدولة جلسة اختبار للطلاب مع إمكانية إسناد معلمين عند الحاجة.",
+        "create": "إنشاء اختبار مجدول",
+        "createSuccess": "تم إنشاء الاختبار المجدول بنجاح.",
+        "segmentId": "معرف مقطع الاختبار",
+        "segmentIdHelper": "استخدم المعرف الرقمي للمقطع حالياً إلى حين ربط واجهة اختيار المقاطع.",
+        "examDate": "تاريخ الاختبار",
+        "timeFrom": "وقت البداية",
+        "timeTo": "وقت النهاية",
+        "responsible": "الجهة المسؤولة",
+        "method": "طريقة التنفيذ",
+        "location": "الموقع",
+        "platform": "المنصة",
+        "remoteLink": "رابط المنصة",
+        "locationPlaceholder": "أدخل موقع الاختبار",
+        "meetingLinkPlaceholder": "أدخل رابط الاجتماع عن بعد",
+        "teachers": "المعلمون المسندون",
+        "teachersHelper": "إسناد المعلمين متاح حالياً فقط عندما تكون الجهة المسؤولة هي الجهة نفسها.",
+        "students": "الطلاب",
+        "student": "الطالب",
+        "juzNumbers": "أرقام الأجزاء",
+        "addStudent": "إضافة طالب",
+        "removeStudent": "حذف الطالب",
+        "studentsCount": "{{count}} طالب محدد",
+        "studentsCount_other": "{{count}} طلاب محددون",
+        "notes": {
+            "segmentApiPending": "افتراض مؤقت: يتم إدخال مقطع الاختبار كمعرف رقمي إلى حين توفير واجهة الخيارات الخاصة به."
+        },
+        "responsibleOptions": {
+            "entity": "الجهة",
+            "branch": "الفرع",
+            "generalManagement": "الإدارة العامة"
+        },
+        "methodOptions": {
+            "inPerson": "حضوري",
+            "remote": "عن بعد"
+        },
+        "sections": {
+            "schedule": "تفاصيل الموعد",
+            "responsibility": "الجهة وطريقة التنفيذ",
+            "teachers": "إسناد المعلمين",
+            "students": "تغطية الطلاب"
+        },
+        "validation": {
+            "segmentRequired": "معرف مقطع الاختبار مطلوب",
+            "segmentPositive": "يجب أن يكون معرف مقطع الاختبار أكبر من صفر",
+            "dateRequired": "تاريخ الاختبار مطلوب",
+            "timeFromRequired": "وقت البداية مطلوب",
+            "timeToRequired": "وقت النهاية مطلوب",
+            "timeToAfterFrom": "يجب أن يكون وقت النهاية بعد وقت البداية",
+            "responsibleRequired": "الجهة المسؤولة مطلوبة",
+            "responsibleInvalid": "الجهة المسؤولة غير صحيحة",
+            "methodRequired": "طريقة التنفيذ مطلوبة",
+            "methodInvalid": "طريقة التنفيذ غير صحيحة",
+            "platformRequired": "المنصة مطلوبة",
+            "remoteLinkRequired": "رابط المنصة مطلوب",
+            "remoteLocationUrl": "يجب أن يكون رابط الاختبار عن بعد صالحاً",
+            "studentRequired": "الطالب مطلوب",
+            "studentsMin": "أضف طالباً واحداً على الأقل",
+            "studentUnique": "لا يمكن اختيار الطالب نفسه أكثر من مرة",
+            "juzRequired": "اختر جزءاً واحداً على الأقل",
+            "juzInvalid": "يجب أن تكون أرقام الأجزاء بين 1 و30"
         }
     },
     "student": {

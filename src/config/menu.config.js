@@ -44,6 +44,12 @@ export const MEMORIZATION_MENU_ITEMS = [
         labelKey: 'menu.joinRequests',
         icon: 'UsersIcon',
         roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.SCHEDULED_EXAMS_CREATE,
+        labelKey: 'menu.scheduledExams',
+        icon: 'CalendarIcon',
+        roles: ['entity_manager']
     }
 ];
 /**
