@@ -10,6 +10,12 @@ import { ROUTE_PATHS } from './routes.config';
  */
 export const MEMORIZATION_MENU_ITEMS = [
     {
+        path: ROUTE_PATHS.ENTITY_MANAGER_DIARY,
+        labelKey: 'menu.diary',
+        icon: 'CalendarIcon',
+        roles: ['entity_manager']
+    },
+    {
         path: ROUTE_PATHS.HALAQAS,
         labelKey: 'menu.halaqas',
         icon: 'CircleIcon',

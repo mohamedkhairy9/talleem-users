@@ -34,9 +34,7 @@ axiosInstance.interceptors.request.use((config) => {
     const currentDateFormat = useDateFormatStore.getState().dateFormat;
     const { actingRole, actingEntityId } = useAuthStore.getState();
     if (config.headers) {
-        if (!config.headers['X-Date-Format']) {
-            config.headers['X-Date-Format'] = currentDateFormat;
-        }
+        config.headers['X-Date-Format'] = currentDateFormat;
         if (actingRole) {
             config.headers['X-Act-As-Role'] = actingRole;
         }

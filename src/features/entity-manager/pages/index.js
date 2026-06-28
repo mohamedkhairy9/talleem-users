@@ -12,6 +12,7 @@ export { default as IncomingWarningsPage } from './IncomingWarningsPage';
 export { default as WarningsIssuedPage } from './WarningsIssuedPage';
 export { default as LicensesPage } from './LicensesPage';
 export { default as JoinRequestsPage } from './JoinRequestsPage';
+export { default as EntityManagerDiaryPage } from './EntityManagerDiaryPage';
 export { default as ScheduledExamsPage } from './ScheduledExamsPage';
 export { default as CreateScheduledExamPage } from './CreateScheduledExamPage';
 export { default as ScheduledExamDetailPage } from './ScheduledExamDetailPage';

@@ -20,6 +20,7 @@ export const ROUTE_PATHS = {
     WARNINGS_ISSUED: 'warnings-management/issued',
     ENTITY_LICENSES: 'entity/licenses',
     JOIN_REQUESTS: 'join-requests',
+    ENTITY_MANAGER_DIARY: 'entity-manager/calendar',
     SCHEDULED_EXAMS: 'scheduled-exams',
     SCHEDULED_EXAMS_CREATE: 'scheduled-exams/create',
     SCHEDULED_EXAMS_DETAIL: 'scheduled-exams/:id',

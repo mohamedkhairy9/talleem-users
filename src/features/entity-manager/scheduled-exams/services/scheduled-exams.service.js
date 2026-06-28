@@ -20,12 +20,7 @@ export const scheduledExamsService = {
     getScheduledExams: (params = {}) => {
         const queryParams = buildQueryParams(params);
         return axiosInstance.get('/scheduled-exams', {
-            params: queryParams,
-            ...(queryParams.exam_date && {
-                headers: {
-                    'X-Date-Format': 'gregorian'
-                }
-            })
+            params: queryParams
         });
     },
     getScheduledExam: (examId) => axiosInstance.get(`/scheduled-exams/${examId}`),
