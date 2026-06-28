@@ -46,10 +46,22 @@ export const MEMORIZATION_MENU_ITEMS = [
         roles: ['entity_manager']
     },
     {
-        path: ROUTE_PATHS.SCHEDULED_EXAMS_CREATE,
+        path: ROUTE_PATHS.SCHEDULED_EXAMS,
         labelKey: 'menu.scheduledExams',
         icon: 'CalendarIcon',
-        roles: ['entity_manager']
+        roles: ['entity_manager'],
+        subItems: [
+            {
+                path: ROUTE_PATHS.SCHEDULED_EXAMS,
+                labelKey: 'menu.scheduledExams',
+                icon: 'CalendarIcon'
+            },
+            {
+                path: ROUTE_PATHS.SCHEDULED_EXAMS_CREATE,
+                labelKey: 'scheduledExams.create',
+                icon: 'PlusIcon'
+            }
+        ]
     }
 ];
 /**

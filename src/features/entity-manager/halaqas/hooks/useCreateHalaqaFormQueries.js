@@ -11,6 +11,46 @@ import {
     getTotalMarkForTahfiz
 } from '../services/configurations.service';
 import { generateOptions } from '../utils/formOptionsUtils';
+
+const getFirstArray = (...candidates) => candidates.find(Array.isArray) ?? [];
+
+const extractAvailabilityList = (response, resourceKey) => {
+    const directKey = response?.[resourceKey];
+    const nestedKey = response?.data?.[resourceKey];
+
+    return getFirstArray(
+        response?.data?.data,
+        response?.data,
+        directKey,
+        nestedKey,
+        response?.items,
+        response?.results
+    );
+};
+
+const hasConflicts = (item) => {
+    const directConflicts = Array.isArray(item?.conflicts) ? item.conflicts.length > 0 : Boolean(item?.conflicts);
+    const halaqaConflicts = Array.isArray(item?.halaqa_conflicts) ? item.halaqa_conflicts.length > 0 : Boolean(item?.halaqa_conflicts);
+    const scheduleConflicts = Array.isArray(item?.schedule_conflicts) ? item.schedule_conflicts.length > 0 : Boolean(item?.schedule_conflicts);
+
+    return directConflicts || halaqaConflicts || scheduleConflicts;
+};
+
+const isAvailabilityItemAvailable = (item) => {
+    if (!item || typeof item !== 'object') {
+        return false;
+    }
+
+    if (item.is_available === false || item.available === false) {
+        return false;
+    }
+
+    if (hasConflicts(item)) {
+        return false;
+    }
+
+    return true;
+};
 /** Query keys for create halaqa form lists (include entity_id so cache is per entity) */
 export const HALAQA_FORM_QUERY_KEYS = {
     teachers: ['halaqa-form', 'teachers'],
@@ -127,11 +167,23 @@ export function useCreateHalaqaFormQueries({
         queryFn: getEditableWeeklyHolidayForTahfiz,
         staleTime: STALE_TIME_MS,
     });
-    const teachersOptions = generateOptions(teachersQuery.data?.data);
-    const teachersList = Array.isArray(teachersQuery.data?.data) ? teachersQuery.data.data : [];
-    const studentsList = includeStudents && Array.isArray(studentsQuery.data?.data)
-        ? studentsQuery.data.data
+    const rawTeachersList = useAvailability
+        ? extractAvailabilityList(teachersQuery.data, 'available_teachers')
+        : getFirstArray(teachersQuery.data?.data, teachersQuery.data);
+    const rawStudentsList = includeStudents
+        ? (useAvailability
+            ? extractAvailabilityList(studentsQuery.data, 'available_students')
+            : getFirstArray(studentsQuery.data?.data, studentsQuery.data))
         : [];
+    const teachersList = useAvailability
+        ? rawTeachersList.filter(isAvailabilityItemAvailable)
+        : rawTeachersList;
+    const studentsList = includeStudents
+        ? (useAvailability
+            ? rawStudentsList.filter(isAvailabilityItemAvailable)
+            : rawStudentsList)
+        : [];
+    const teachersOptions = generateOptions(teachersList);
     const studentsOptions = includeStudents
         ? generateOptions(studentsList)
         : [];

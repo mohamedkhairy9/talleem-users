@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { Table, Pagination, Button } from '@/shared/components';
 import { SearchIcon, SettingsIcon, XIcon } from '@/shared/icons';
 import { useJoinRequests } from '../hooks/useJoinRequests';
@@ -9,6 +10,9 @@ import ViewJoinRequestModal from './ViewJoinRequestModal';
 const JoinRequestsList = () => {
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'ar';
+    const location = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const requestIdFromUrl = searchParams.get('requestId');
     const listState = useJoinRequestsListState();
     const { params, page, perPage, search, setPage, setSearch, resetFilters } = listState;
     const { list, meta, isLoading, error, refresh } = useJoinRequests(params);
@@ -26,6 +30,7 @@ const JoinRequestsList = () => {
     }, [localSearch, setSearch]);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const notificationTargetData = location.state?.notificationTargetData ?? null;
     const getLocalizedTextForRow = useCallback((obj) => getLocalizedText(obj, currentLang), [currentLang]);
     const columns = useMemo(() => createJoinRequestsColumns({
         t: (key, fallback) => t(key, fallback ?? key),
@@ -39,7 +44,30 @@ const JoinRequestsList = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedRequest(null);
+
+        if (requestIdFromUrl) {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete('requestId');
+            setSearchParams(nextParams, { replace: true });
+        }
     };
+    useEffect(() => {
+        if (!requestIdFromUrl || isLoading || isModalOpen) {
+            return;
+        }
+
+        const matchedRequest = list.find((row) => String(row?.id) === String(requestIdFromUrl));
+        if (matchedRequest) {
+            setSelectedRequest(matchedRequest);
+            setIsModalOpen(true);
+            return;
+        }
+
+        if (notificationTargetData && String(notificationTargetData?.id) === String(requestIdFromUrl)) {
+            setSelectedRequest(notificationTargetData);
+            setIsModalOpen(true);
+        }
+    }, [requestIdFromUrl, isLoading, isModalOpen, list, notificationTargetData]);
     if (error) {
         return (<div className="text-center py-12 text-red-600">
                 {error?.message || t('common.error')}
@@ -98,6 +126,7 @@ const JoinRequestsList = () => {
             <ViewJoinRequestModal
                 isOpen={isModalOpen}
                 request={selectedRequest}
+                isReadOnly={Boolean(selectedRequest?.processed_by_you)}
                 onClose={handleCloseModal}
             />
         </div>);

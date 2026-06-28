@@ -10,7 +10,7 @@ const CreateScheduledExamPage = () => {
     const { lang } = useParams();
 
     const handleBack = () => {
-        navigate(`/${lang || 'ar'}/halaqas`);
+        navigate(`/${lang || 'ar'}/scheduled-exams`);
     };
 
     return (

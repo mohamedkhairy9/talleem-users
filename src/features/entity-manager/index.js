@@ -24,3 +24,4 @@ export { default as ViewJoinRequestModal } from './join-requests/components/View
 // Scheduled Exams exports
 export * from './scheduled-exams/hooks/useScheduledExams';
 export { default as CreateScheduledExamForm } from './scheduled-exams/components/CreateScheduledExamForm';
+export { default as ScheduledExamsList } from './scheduled-exams/components/ScheduledExamsList';

@@ -86,6 +86,10 @@ export const createScheduledExamSchema = yup.object({
         .string()
         .oneOf(METHOD_VALUES, 'scheduledExams.validation.methodInvalid')
         .required('scheduledExams.validation.methodRequired'),
+    location: yup
+        .string()
+        .trim()
+        .notRequired(),
     remote_platform_id: yup
         .number()
         .transform(transformNumber)
@@ -137,6 +141,7 @@ export const DEFAULT_SCHEDULED_EXAM_VALUES = {
     time_to: '',
     responsible: 'entity',
     method: 'in_person',
+    location: '',
     remote_platform_id: null,
     remote_link: '',
     teacher_ids: [],

@@ -21,8 +21,8 @@ const SECTION_KEYS = {
 };
 function DataField({ label, value }) {
     return (<div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</span>
-            <span className="text-sm text-gray-900 break-words min-h-[1.25rem]">{value ?? '-'}</span>
+            <span className="text-xs font-medium text-gray-500">{label}</span>
+            <div className="text-sm text-gray-900 break-words min-h-[1.25rem]">{value ?? '-'}</div>
         </div>);
 }
 function AccordionSection({ title, defaultOpen, children, variant = 'default' }) {
@@ -43,33 +43,85 @@ function AccordionSection({ title, defaultOpen, children, variant = 'default' })
 function formatKey(key) {
     return key.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
-function renderValue(value, lang) {
-    if (value === null || value === undefined)
+function isLocalizedLeafObject(value) {
+    return Boolean(
+        value &&
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        ('en' in value || 'ar' in value) &&
+        typeof value.en !== 'object' &&
+        typeof value.ar !== 'object'
+    );
+}
+function renderValue(value, lang, t, depth = 0) {
+    if (value === null || value === undefined) {
         return '-';
-    if (typeof value === 'string' && value === '[object Object]')
-        return '-';
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        const o = value;
-        if (('en' in o || 'ar' in o) && typeof o.en !== 'object' && typeof o.ar !== 'object') {
-            return getLocalizedText(o, lang);
-        }
-        if (o.name && typeof o.name === 'object' && o.name.en !== undefined) {
-            return getLocalizedText(o.name, lang);
-        }
-        return `(${Object.keys(o).length} fields)`;
+    }
+    if (typeof value === 'string') {
+        return value === '[object Object]' ? '-' : value;
+    }
+    if (typeof value === 'number' || typeof value === 'bigint') {
+        return String(value);
+    }
+    if (typeof value === 'boolean') {
+        return lang === 'ar' ? (value ? 'نعم' : 'لا') : (value ? 'Yes' : 'No');
     }
     if (Array.isArray(value)) {
-        if (value.length === 0)
+        if (value.length === 0) {
             return '-';
-        return `(${value.length} items)`;
+        }
+        const allPrimitive = value.every((item) => item == null || ['string', 'number', 'boolean'].includes(typeof item));
+        if (allPrimitive) {
+            return value.map((item) => renderValue(item, lang, t, depth + 1)).join('، ');
+        }
+        return (
+            <div className="space-y-2">
+                {value.map((item, index) => (
+                    <div key={`${index}-${typeof item}`} className="border-s border-slate-200 ps-3">
+                        <div className="mb-1 text-xs font-medium text-slate-500">
+                            {lang === 'ar' ? `عنصر ${index + 1}` : `Item ${index + 1}`}
+                        </div>
+                        <div className="text-sm text-slate-900">{renderValue(item, lang, t, depth + 1)}</div>
+                    </div>
+                ))}
+            </div>
+        );
     }
-    if (typeof value === 'boolean')
-        return value ? 'Yes' : 'No';
+    if (typeof value === 'object') {
+        if (isLocalizedLeafObject(value)) {
+            return getLocalizedText(value, lang);
+        }
+        if (value.name && isLocalizedLeafObject(value.name)) {
+            return getLocalizedText(value.name, lang);
+        }
+        const entries = Object.entries(value).filter(([, nestedValue]) => nestedValue !== undefined);
+        if (entries.length === 0) {
+            return '-';
+        }
+        return (
+            <div className="space-y-2">
+                {entries.map(([nestedKey, nestedValue]) => (
+                    <div key={nestedKey} className="border-s border-slate-200 ps-3">
+                        <div className="mb-1 text-xs font-medium text-slate-500">
+                            {t(`joinRequests.field.${nestedKey}`, formatKey(nestedKey))}
+                        </div>
+                        <div className="text-sm text-slate-900 break-words">
+                            {renderValue(nestedValue, lang, t, depth + 1)}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
     return String(value);
 }
 const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) => {
     const { t, i18n } = useTranslation();
     const lang = i18n.language || 'ar';
+    const isArabic = lang === 'ar';
+    const copy = (arabicText, englishText) => (isArabic ? arabicText : englishText);
+    const isProcessedByYou = Boolean(request?.processed_by_you);
+    const shouldDisableActions = isReadOnly || isProcessedByYou;
     const processStepMutation = useProcessJoinRequestStep();
     const { control, handleSubmit, formState: { errors }, reset } = useFormWithValidation({
         schema: processStepSchema,
@@ -80,6 +132,10 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
         label: t(opt.labelKey)
     }));
     const onSubmit = (data) => {
+        if (shouldDisableActions) {
+            toast.info(copy('لقد قمت باتخاذ إجراء على هذا الطلب بالفعل، لذلك لا يمكن تنفيذ إجراء جديد عليه.', 'You already processed this request, so no further action is available.'));
+            return;
+        }
         if (!request?.id)
             return;
         processStepMutation.mutate({ id: request.id, data: { status: data.status, notes: data.notes || null, files: data.files } }, {
@@ -141,7 +197,7 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
         return (<div className="space-y-4">
                 {sections.map(({ id, titleKey, entries }) => (<AccordionSection key={id} title={t(titleKey)} defaultOpen={id === 'entity_info'}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                            {entries.map(([key, value]) => (<DataField key={key} label={t(`joinRequests.field.${key}`, formatKey(key))} value={renderValue(value, lang)}/>))}
+                            {entries.map(([key, value]) => (<DataField key={key} label={t(`joinRequests.field.${key}`, formatKey(key))} value={renderValue(value, lang, t)}/>))}
                         </div>
                     </AccordionSection>))}
             </div>);
@@ -174,9 +230,11 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
                                     {renderSubmittedSections()}
                                 </>)}
 
-                            {isReadOnly ? (<AccordionSection title={t('joinRequests.takeAction')} defaultOpen variant="primary">
+                            {shouldDisableActions ? (<AccordionSection title={t('joinRequests.takeAction')} defaultOpen variant="primary">
                                     <p className="text-sm text-primary-900">
-                                        {t('joinRequests.readOnlyLog', 'This request has already moved past your approval queue and is now shown here as a read-only log record.')}
+                                        {isProcessedByYou
+                                            ? copy('لقد قمت باتخاذ إجراء على هذا الطلب بالفعل، لذلك لا يمكن تنفيذ إجراء جديد عليه.', 'You already processed this request, so no further action is available.')
+                                            : t('joinRequests.readOnlyLog', 'This request has already moved past your approval queue and is now shown here as a read-only log record.')}
                                     </p>
                                 </AccordionSection>) : (<AccordionSection title={t('joinRequests.takeAction')} defaultOpen variant="primary">
                                     <p className="text-xs text-primary-700 mb-4">{t('joinRequests.processStepHint')}</p>
@@ -192,7 +250,7 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
                             <Button type="button" variant="outline" onClick={handleClose}>
                                 {t('common.cancel')}
                             </Button>
-                            {!isReadOnly && (<Button type="submit" variant="primary" loading={processStepMutation.isPending}>
+                            {!shouldDisableActions && (<Button type="submit" variant="primary" loading={processStepMutation.isPending}>
                                     {processStepMutation.isPending ? t('common.save') : t('joinRequests.process')}
                                 </Button>)}
                         </div>

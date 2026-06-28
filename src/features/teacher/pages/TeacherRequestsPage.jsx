@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader, Button } from '@/shared/components';
 import { PlusIcon } from '@/shared/icons';
 import CreateRequestModal from '@/features/teacher/requests/components/CreateRequestModal';
@@ -11,8 +12,29 @@ import TeacherRequestsList from '@/features/teacher/requests/components/TeacherR
  */
 const TeacherRequestsPage = () => {
     const { t } = useTranslation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [detailRequestId, setDetailRequestId] = useState(null);
+    const requestIdFromUrl = searchParams.get('requestId');
+
+    useEffect(() => {
+        if (!requestIdFromUrl) {
+            return;
+        }
+
+        setDetailRequestId(requestIdFromUrl);
+    }, [requestIdFromUrl]);
+
+    const handleCloseDetailModal = () => {
+        setDetailRequestId(null);
+
+        if (requestIdFromUrl) {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete('requestId');
+            setSearchParams(nextParams, { replace: true });
+        }
+    };
+
     return (<div className="flex min-h-full flex-col space-y-6">
             <PageHeader title={t('teacherRequests.title', 'My Requests')} subtitle={t('teacherRequests.subtitle', 'View and submit teacher requests')}/>
 
@@ -34,7 +56,7 @@ const TeacherRequestsPage = () => {
 
             <CreateRequestModal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} onSuccess={() => setCreateModalOpen(false)}/>
 
-            <RequestDetailModal isOpen={detailRequestId != null} requestId={detailRequestId} onClose={() => setDetailRequestId(null)}/>
+            <RequestDetailModal isOpen={detailRequestId != null} requestId={detailRequestId} onClose={handleCloseDetailModal}/>
         </div>);
 };
 export default TeacherRequestsPage;

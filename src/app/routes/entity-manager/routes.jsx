@@ -1,5 +1,5 @@
 import { ROUTE_PATHS } from '@/config';
-import { HalaqasListPage, HalaqaDetailPage, CreateHalaqaPage, EditHalaqaPage, IncomingWarningsPage, WarningsIssuedPage, LicensesPage, JoinRequestsPage, CreateScheduledExamPage } from '@/features/entity-manager/pages';
+import { HalaqasListPage, HalaqaDetailPage, CreateHalaqaPage, EditHalaqaPage, IncomingWarningsPage, WarningsIssuedPage, LicensesPage, JoinRequestsPage, ScheduledExamsPage, CreateScheduledExamPage, ScheduledExamDetailPage, EditScheduledExamPage } from '@/features/entity-manager/pages';
 /**
  * Entity Manager Routes Configuration
  * All routes specific to entity managers
@@ -57,7 +57,22 @@ export const entityManagerRoutes = [
         element: <JoinRequestsPage />,
         roles: ['entity_manager']
     },
-    // Scheduled Exams (entity manager: create exam sessions)
+    // Scheduled Exams (entity manager: list and create exam sessions)
+    {
+        path: ROUTE_PATHS.SCHEDULED_EXAMS,
+        element: <ScheduledExamsPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.SCHEDULED_EXAMS_DETAIL,
+        element: <ScheduledExamDetailPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.SCHEDULED_EXAMS_EDIT,
+        element: <EditScheduledExamPage />,
+        roles: ['entity_manager']
+    },
     {
         path: ROUTE_PATHS.SCHEDULED_EXAMS_CREATE,
         element: <CreateScheduledExamPage />,

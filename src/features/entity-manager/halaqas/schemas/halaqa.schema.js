@@ -31,7 +31,7 @@ export const createHalaqaSchema = yup.object({
     evaluation_system_type: yup.string()
         .oneOf(HALAQA_EVALUATION_SYSTEM_TYPE_VALUES)
         .required('halaqa.validation.evaluationSystemTypeRequired'),
-    custom_total_mark: yup.number().when('evaluation_system_type', {
+    total_mark: yup.number().when('evaluation_system_type', {
         is: NUMERIC_EVALUATION_SYSTEM_TYPE,
         then: (schema) => schema
             .typeError('halaqa.validation.customTotalMarkNumber')

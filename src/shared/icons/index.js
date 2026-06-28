@@ -12,6 +12,7 @@ export { default as BriefcaseIcon } from './BriefcaseIcon';
 export { default as HomeIcon } from './HomeIcon';
 export { default as BookIcon } from './BookIcon';
 export { default as CalendarIcon } from './CalendarIcon';
+export { default as BellIcon } from './BellIcon';
 export { default as StarIcon } from './StarIcon';
 export { default as AwardIcon } from './AwardIcon';
 export { default as AlertTriangleIcon } from './AlertTriangleIcon';

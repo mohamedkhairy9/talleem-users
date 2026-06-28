@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Controller, useFieldArray, useWatch } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, FormInput, SelectRFH } from '@/shared/components';
 import { CalendarIcon, CheckIcon, ChevronRightIcon, PlusIcon, TeacherIcon, TrashIcon, UsersIcon } from '@/shared/icons';
-import { getErrorMessage, normalizeDate, useFormWithValidation } from '@/shared/utils';
-import { useCreateScheduledExam, useScheduledExamFormOptions } from '../hooks/useScheduledExams';
+import { formatTimePart, getErrorMessage, normalizeDate, useFormWithValidation } from '@/shared/utils';
+import { useCreateScheduledExam, useScheduledExamFormOptions, useUpdateScheduledExam } from '../hooks/useScheduledExams';
 import {
     createScheduledExamSchema,
     DEFAULT_SCHEDULED_EXAM_VALUES
@@ -19,17 +19,52 @@ const RESPONSIBLE_OPTIONS = ['entity', 'branch', 'general_management'];
 const METHOD_OPTIONS = ['in_person', 'remote'];
 const JUZ_OPTIONS = Array.from({ length: 30 }, (_, index) => index + 1);
 
-const SectionCard = ({ icon: Icon, title, children }) => (
-    <section className={SECTION_CARD_CLASS}>
-        <div className="mb-5 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#e7f5f3] text-primary-600">
-                <Icon width={18} height={18} />
+function mapExamToFormValues(exam) {
+    if (!exam) {
+        return DEFAULT_SCHEDULED_EXAM_VALUES;
+    }
+
+    return {
+        exam_segment_id: exam.exam_segment?.id ?? exam.exam_segment_id ?? '',
+        exam_date: normalizeDate(exam.exam_date ?? ''),
+        time_from: formatTimePart(exam.time_from),
+        time_to: formatTimePart(exam.time_to),
+        responsible: exam.responsible ?? 'entity',
+        method: exam.method ?? 'in_person',
+        location: exam.method === 'in_person' ? (exam.location ?? '') : '',
+        remote_platform_id: exam.platform?.id ?? exam.remote_platform?.id ?? null,
+        remote_link: exam.method === 'remote' ? (exam.location ?? '') : '',
+        teacher_ids: Array.isArray(exam.teachers)
+            ? exam.teachers.map((teacher) => teacher?.id).filter(Boolean)
+            : Array.isArray(exam.teacher_ids)
+                ? exam.teacher_ids.filter(Boolean)
+                : [],
+        students: Array.isArray(exam.students) && exam.students.length > 0
+            ? exam.students.map((student) => ({
+                student_id: student?.student_id ?? student?.id ?? null,
+                juz_numbers: Array.isArray(student?.juz_numbers)
+                    ? student.juz_numbers.map(Number).filter((value) => Number.isInteger(value))
+                    : []
+            }))
+            : DEFAULT_SCHEDULED_EXAM_VALUES.students
+    };
+}
+
+const SectionCard = ({ icon, title, children }) => {
+    const IconComponent = icon;
+
+    return (
+        <section className={SECTION_CARD_CLASS}>
+            <div className="mb-5 flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#e7f5f3] text-primary-600">
+                    <IconComponent width={18} height={18} />
+                </div>
             </div>
-        </div>
-        <div className="space-y-5">{children}</div>
-    </section>
-);
+            <div className="space-y-5">{children}</div>
+        </section>
+    );
+};
 
 const ChoicePillsField = ({ control, name, label, options, error, required = false }) => (
     <Controller
@@ -68,7 +103,7 @@ const ChoicePillsField = ({ control, name, label, options, error, required = fal
     />
 );
 
-const JuzNumbersField = ({ control, name, label, error }) => (
+const JuzNumbersField = ({ control, name, label, error, helperText }) => (
     <Controller
         name={name}
         control={control}
@@ -110,6 +145,7 @@ const JuzNumbersField = ({ control, name, label, error }) => (
                             );
                         })}
                     </div>
+                    {helperText ? <p className="mt-2 text-xs text-slate-500">{helperText}</p> : null}
                     <p className="mt-1 min-h-4 text-xs text-red-600">{error ?? ''}</p>
                 </div>
             );
@@ -117,15 +153,22 @@ const JuzNumbersField = ({ control, name, label, error }) => (
     />
 );
 
-const CreateScheduledExamForm = () => {
-    const { t } = useTranslation();
+const CreateScheduledExamForm = ({ mode = 'create', examId = null, initialExam = null }) => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { lang } = useParams();
+    const isArabic = (i18n.language || lang || 'ar') === 'ar';
+    const copy = (arabicText, englishText) => (isArabic ? arabicText : englishText);
+    const isEditMode = mode === 'edit';
     const createScheduledExamMutation = useCreateScheduledExam();
+    const updateScheduledExamMutation = useUpdateScheduledExam();
     const {
+        requiredExamSegmentsList,
+        requiredExamSegmentsOptions,
         teachersOptions,
         studentsOptions,
         platformsOptions,
+        isLoadingRequiredExamSegments,
         isLoadingTeachers,
         isLoadingStudents,
         isLoadingPlatforms
@@ -136,7 +179,9 @@ const CreateScheduledExamForm = () => {
         handleSubmit,
         formState: { errors },
         reset,
-        setValue
+        setValue,
+        setError,
+        clearErrors
     } = useFormWithValidation({
         schema: createScheduledExamSchema,
         defaultValues: DEFAULT_SCHEDULED_EXAM_VALUES
@@ -153,7 +198,19 @@ const CreateScheduledExamForm = () => {
 
     const method = useWatch({ control, name: 'method' });
     const responsible = useWatch({ control, name: 'responsible' });
-    const watchedStudents = useWatch({ control, name: 'students' }) || [];
+    const examSegmentId = useWatch({ control, name: 'exam_segment_id' });
+    const watchedStudentsValue = useWatch({ control, name: 'students' });
+    const watchedStudents = useMemo(() => watchedStudentsValue || [], [watchedStudentsValue]);
+
+    const selectedRequiredExamSegment = requiredExamSegmentsList.find(
+        (segment) => Number(segment?.id) === Number(examSegmentId)
+    ) ?? null;
+    const requiredPartsCount = Number(selectedRequiredExamSegment?.parts_count);
+    const hasRequiredPartsCount = Number.isInteger(requiredPartsCount) && requiredPartsCount > 0;
+    const juzCountValidationMessage = copy(
+        `يجب اختيار ${requiredPartsCount} جزء بالضبط لهذا الطالب حسب المقطع المختار.`,
+        `You must select exactly ${requiredPartsCount} parts for this student based on the selected exam segment.`
+    );
 
     useEffect(() => {
         if (responsible !== 'entity') {
@@ -168,11 +225,73 @@ const CreateScheduledExamForm = () => {
         }
     }, [method, setValue]);
 
+    useEffect(() => {
+        if (!initialExam) {
+            return;
+        }
+
+        reset(mapExamToFormValues(initialExam));
+    }, [initialExam, reset]);
+
+    useEffect(() => {
+        studentFields.forEach((field, index) => {
+            const selectedJuzNumbers = Array.isArray(watchedStudents[index]?.juz_numbers)
+                ? watchedStudents[index].juz_numbers
+                : [];
+            const errorPath = `students.${index}.juz_numbers`;
+
+            if (!hasRequiredPartsCount) {
+                clearErrors(errorPath);
+                return;
+            }
+
+            if (selectedJuzNumbers.length === 0) {
+                clearErrors(errorPath);
+                return;
+            }
+
+            if (selectedJuzNumbers.length !== requiredPartsCount) {
+                setError(errorPath, {
+                    type: 'manual',
+                    message: juzCountValidationMessage
+                });
+                return;
+            }
+
+            clearErrors(errorPath);
+        });
+    }, [clearErrors, hasRequiredPartsCount, juzCountValidationMessage, requiredPartsCount, setError, studentFields, watchedStudents]);
+
     const handleBack = () => {
-        navigate(`/${lang || 'ar'}/halaqas`);
+        if (isEditMode && examId) {
+            navigate(`/${lang || 'ar'}/scheduled-exams/${examId}`);
+            return;
+        }
+
+        navigate(`/${lang || 'ar'}/scheduled-exams`);
     };
 
     const onSubmit = (formData) => {
+        if (hasRequiredPartsCount) {
+            const invalidStudentIndexes = (formData.students || [])
+                .map((student, index) => ({
+                    index,
+                    juzCount: Array.isArray(student?.juz_numbers) ? student.juz_numbers.length : 0
+                }))
+                .filter((student) => student.juzCount !== requiredPartsCount);
+
+            if (invalidStudentIndexes.length > 0) {
+                invalidStudentIndexes.forEach((student) => {
+                    setError(`students.${student.index}.juz_numbers`, {
+                        type: 'manual',
+                        message: juzCountValidationMessage
+                    });
+                });
+                toast.error(juzCountValidationMessage);
+                return;
+            }
+        }
+
         const payload = {
             exam_segment_id: Number(formData.exam_segment_id),
             exam_date: normalizeDate(formData.exam_date),
@@ -191,6 +310,19 @@ const CreateScheduledExamForm = () => {
                 juz_numbers: (student.juz_numbers || []).map(Number).sort((left, right) => left - right)
             }))
         };
+
+        if (isEditMode && examId) {
+            updateScheduledExamMutation.mutate({ examId, data: payload }, {
+                onSuccess: () => {
+                    toast.success(t('scheduledExams.updateSuccess', 'Scheduled exam updated successfully.'));
+                    navigate(`/${lang || 'ar'}/scheduled-exams/${examId}`);
+                },
+                onError: (error) => {
+                    toast.error(getErrorMessage(error));
+                }
+            });
+            return;
+        }
 
         createScheduledExamMutation.mutate(payload, {
             onSuccess: () => {
@@ -213,26 +345,25 @@ const CreateScheduledExamForm = () => {
         label: t(`scheduledExams.methodOptions.${value === 'in_person' ? 'inPerson' : 'remote'}`)
     }));
 
+    const isSubmitting = createScheduledExamMutation.isPending || updateScheduledExamMutation.isPending;
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                <p className="font-semibold">{t('scheduledExams.segmentIdHelper', 'Use the numeric segment ID for now until the exam segments lookup API is connected.')}</p>
-                <p className="mt-1 text-amber-800">{t('scheduledExams.notes.segmentApiPending', 'Assumption for now: exam segment selection is entered as a numeric ID until its lookup API is provided.')}</p>
-            </div>
-
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
                 <div className="space-y-6">
                     <SectionCard icon={CalendarIcon} title={t('scheduledExams.sections.schedule', 'Schedule Details')}>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="md:col-span-2">
-                                <FormInput
+                                <SelectRFH
                                     name="exam_segment_id"
                                     control={control}
                                     label={t('scheduledExams.segmentId', 'Exam Segment ID')}
                                     required
-                                    type="number"
+                                    options={requiredExamSegmentsOptions}
+                                    loading={isLoadingRequiredExamSegments}
+                                    placeholder="common.select"
                                     error={errors.exam_segment_id?.message ? t(errors.exam_segment_id.message) : undefined}
-                                    className={FIELD_INPUT_CLASS}
+                                    classes={SELECT_FIELD_CLASSES}
                                 />
                             </div>
                             <FormInput
@@ -382,6 +513,12 @@ const CreateScheduledExamForm = () => {
                                                 control={control}
                                                 name={`students.${index}.juz_numbers`}
                                                 label={t('scheduledExams.juzNumbers', 'Juz Numbers')}
+                                                helperText={hasRequiredPartsCount
+                                                    ? copy(
+                                                        `اختر ${requiredPartsCount} جزء بالضبط لهذا الطالب.`,
+                                                        `Select exactly ${requiredPartsCount} parts for this student.`
+                                                    )
+                                                    : undefined}
                                                 error={errors.students?.[index]?.juz_numbers?.message ? t(errors.students[index].juz_numbers.message) : undefined}
                                             />
                                         </div>
@@ -416,10 +553,12 @@ const CreateScheduledExamForm = () => {
                             <Button
                                 type="submit"
                                 variant="primary"
-                                loading={createScheduledExamMutation.isPending}
+                                loading={isSubmitting}
                                 className="w-full justify-between rounded-2xl px-5 py-3 text-base"
                             >
-                                <span>{t('scheduledExams.create', 'Create Scheduled Exam')}</span>
+                                <span>{isEditMode
+                                    ? t('scheduledExams.update', 'Update Scheduled Exam')
+                                    : t('scheduledExams.create', 'Create Scheduled Exam')}</span>
                                 <ChevronRightIcon width={18} height={18} className={lang === 'ar' ? 'rotate-180' : ''} />
                             </Button>
 
@@ -427,7 +566,7 @@ const CreateScheduledExamForm = () => {
                                 type="button"
                                 variant="outline"
                                 onClick={handleBack}
-                                disabled={createScheduledExamMutation.isPending}
+                                disabled={isSubmitting}
                                 className="w-full rounded-2xl px-5 py-3 text-base"
                             >
                                 {t('common.back', 'Back')}

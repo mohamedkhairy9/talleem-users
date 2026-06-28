@@ -42,6 +42,24 @@ const addDaysToDateString = (dateStr, days) => {
     return `${year}-${month}-${day}`;
 };
 
+const getInclusiveDaysBetween = (startDate, endDate) => {
+    const normalizedStart = normalizeDate(startDate);
+    const normalizedEnd = normalizeDate(endDate);
+
+    if (!normalizedStart || !normalizedEnd) {
+        return undefined;
+    }
+
+    const start = new Date(`${normalizedStart}T00:00:00`);
+    const end = new Date(`${normalizedEnd}T00:00:00`);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+        return undefined;
+    }
+
+    return Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+};
+
 const getSegmentBoundaryVerseKey = (segment, direction, edge = 'start') => {
     if (!segment) {
         return undefined;
@@ -56,6 +74,81 @@ const getSegmentBoundaryVerseKey = (segment, direction, edge = 'start') => {
     return direction === 'decremental'
         ? segment.first_verse_key
         : segment.last_verse_key;
+};
+
+const getPlanStudentIds = (plan) => {
+    if (!plan || typeof plan !== 'object') {
+        return [];
+    }
+
+    if (Array.isArray(plan.students) && plan.students.length > 0) {
+        return plan.students.map((student) => Number(student?.id)).filter(Boolean);
+    }
+
+    if (Array.isArray(plan.student_ids) && plan.student_ids.length > 0) {
+        return plan.student_ids.map((studentId) => Number(studentId)).filter(Boolean);
+    }
+
+    if (plan.student?.id) {
+        return [Number(plan.student.id)].filter(Boolean);
+    }
+
+    if (plan.student_id) {
+        return [Number(plan.student_id)].filter(Boolean);
+    }
+
+    return [];
+};
+
+const collectStudentPlanActivities = (students = [], plans = []) => {
+    const activitiesByStudentId = new Map();
+
+    const registerActivity = (studentId, activity) => {
+        const normalizedStudentId = Number(studentId);
+        if (!normalizedStudentId || !activity) {
+            return;
+        }
+
+        if (!activitiesByStudentId.has(normalizedStudentId)) {
+            activitiesByStudentId.set(normalizedStudentId, new Set());
+        }
+
+        activitiesByStudentId.get(normalizedStudentId).add(activity);
+    };
+
+    (Array.isArray(students) ? students : []).forEach((student) => {
+        const studentId = Number(student?.id);
+        if (!studentId || !Array.isArray(student?.plans)) {
+            return;
+        }
+
+        student.plans.forEach((plan) => {
+            registerActivity(studentId, plan?.activity);
+        });
+    });
+
+    (Array.isArray(plans) ? plans : []).forEach((plan) => {
+        const activity = plan?.activity;
+        getPlanStudentIds(plan).forEach((studentId) => {
+            registerActivity(studentId, activity);
+        });
+    });
+
+    return activitiesByStudentId;
+};
+
+const getBlockedActivitiesForPlan = ({ activity, autoTasbitEnabled, hasTasbitActivity }) => {
+    const blockedActivities = new Set();
+
+    if (activity) {
+        blockedActivities.add(activity);
+    }
+
+    if (activity === 'hifz' && hasTasbitActivity && autoTasbitEnabled) {
+        blockedActivities.add('tasbit');
+    }
+
+    return blockedActivities;
 };
 
 const SectionCard = ({ title, hint, action, children }) => {
@@ -494,11 +587,15 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     }, [currentDirection, currentEndSegmentVerseKey, selectedEndSegment, setValue]);
 
     const { studentsOptions: allStudentsOptions, isLoadingStudents } = useCreateHalaqaFormQueries();
+    const hasTasbitActivity = Array.isArray(activities) && activities.includes('tasbit');
+    const isLinkedHifzTasbitFlow = Array.isArray(activities) && activities.includes('hifz') && activities.includes('tasbit');
 
-    const studentsOptions = useMemo(() => {
+    const baseStudentsOptions = useMemo(() => {
         if (students && students.length > 0) {
             return students.map((student) => ({
                 value: student.id,
+                id: Number(student.id),
+                avatar: student.avatar,
                 label: typeof student.name === 'object' && student.name
                     ? (currentLang === 'ar' && student.name.ar ? student.name.ar : student.name.en) || t('plan.studentId', { id: student.id })
                     : t('plan.studentId', { id: student.id })
@@ -508,6 +605,33 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         return allStudentsOptions;
     }, [allStudentsOptions, currentLang, students, t]);
 
+    const existingPlanActivitiesByStudentId = useMemo(
+        () => collectStudentPlanActivities(students, halaqaData?.plans),
+        [halaqaData?.plans, students]
+    );
+
+    const blockedActivitiesForSelection = useMemo(
+        () => getBlockedActivitiesForPlan({
+            activity: currentActivity,
+            autoTasbitEnabled,
+            hasTasbitActivity
+        }),
+        [autoTasbitEnabled, currentActivity, hasTasbitActivity]
+    );
+
+    const studentsOptions = useMemo(() => (
+        baseStudentsOptions.filter((student) => {
+            const studentId = Number(student.value ?? student.id);
+            const existingActivities = existingPlanActivitiesByStudentId.get(studentId);
+
+            if (!existingActivities || existingActivities.size === 0) {
+                return true;
+            }
+
+            return !Array.from(blockedActivitiesForSelection).some((activity) => existingActivities.has(activity));
+        })
+    ), [baseStudentsOptions, blockedActivitiesForSelection, existingPlanActivitiesByStudentId]);
+
     const wizardStudents = useMemo(() => (
         studentsOptions.map((student) => ({
             ...student,
@@ -515,6 +639,22 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             avatar: student.avatar
         }))
     ), [studentsOptions]);
+
+    useEffect(() => {
+        const allowedStudentIds = new Set(
+            studentsOptions.map((student) => Number(student.value ?? student.id)).filter(Boolean)
+        );
+
+        const nextSelectedStudentIds = (Array.isArray(selectedStudentIds) ? selectedStudentIds : [])
+            .filter((studentId) => allowedStudentIds.has(Number(studentId)));
+
+        if (nextSelectedStudentIds.length !== (Array.isArray(selectedStudentIds) ? selectedStudentIds.length : 0)) {
+            setValue('student_ids', nextSelectedStudentIds, {
+                shouldValidate: true,
+                shouldDirty: true
+            });
+        }
+    }, [selectedStudentIds, setValue, studentsOptions]);
 
     const filteredWizardStudents = useMemo(() => {
         const searchValue = studentSearch.trim().toLowerCase();
@@ -524,9 +664,6 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
 
         return wizardStudents.filter((student) => String(student.label ?? '').toLowerCase().includes(searchValue));
     }, [studentSearch, wizardStudents]);
-
-    const hasTasbitActivity = Array.isArray(activities) && activities.includes('tasbit');
-    const isLinkedHifzTasbitFlow = Array.isArray(activities) && activities.includes('hifz') && activities.includes('tasbit');
 
     const activityOptions = useMemo(() => {
         const allActivities = HALAQA_ACTIVITIES.map((activity) => ({
@@ -605,13 +742,13 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         currentEndSegmentVerseKey
     ]);
 
-    const getStartVerseKey = (formData) => formData.start_segment_verse_key ?? null;
+    const getStartVerseKey = useCallback((formData) => formData.start_segment_verse_key ?? null, []);
 
     const shouldAutoCreateTasbitPlan = useCallback((activity, enabled) => (
         activity === 'hifz' && hasTasbitActivity && Boolean(enabled)
     ), [hasTasbitActivity]);
 
-    const buildPayload = (formData, saveOrNot, activityOverride = formData.activity, dateOverrides = {}) => {
+    const buildPayload = useCallback((formData, saveOrNot, activityOverride = formData.activity, dateOverrides = {}) => {
         const startVerseKey = getStartVerseKey(formData);
 
         if (!startVerseKey || !formData.student_ids?.length) {
@@ -634,7 +771,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             ...(formData.plan_type === 'daily_amount' && formData.daily_amount ? { daily_amount: formData.daily_amount } : {}),
             ...(formData.end_segment_verse_key ? { end_verse_key: formData.end_segment_verse_key } : {})
         };
-    };
+    }, [getStartVerseKey]);
 
     const buildPlanRequests = useCallback((formData, saveOrNot) => {
         const primaryPayload = buildPayload(formData, saveOrNot, formData.activity, {
@@ -666,12 +803,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         }
 
         return requests.filter((request) => Boolean(request.data));
-    }, [halaqaPlanDates.endDate, halaqaPlanDates.startDate, shouldAutoCreateTasbitPlan]);
-
-    const normalizePlanResponse = useCallback((response) => {
-        const normalizedResponse = response?.data ?? response;
-        return normalizedResponse?.data ?? normalizedResponse;
-    }, []);
+    }, [buildPayload, halaqaPlanDates.endDate, halaqaPlanDates.startDate, shouldAutoCreateTasbitPlan]);
 
     const getPlanRequestsSignature = useCallback((requests) => JSON.stringify(
         requests.map((request) => ({
@@ -684,7 +816,31 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         t(`halaqa.activity.${activity}`, activity)
     ), [t]);
 
-    const runPreviewRequest = useCallback(async (formData, {
+    const buildLocalPreviewItems = useCallback((formData) => {
+        const requests = buildPlanRequests(formData, 0);
+        const availableStudyDays = Number(halaqaData?.duration_in_days) > 0
+            ? Number(halaqaData.duration_in_days)
+            : getInclusiveDaysBetween(halaqaPlanDates.startDate, halaqaPlanDates.endDate);
+
+        return requests.map((request) => {
+            const isDailyAmountRequest = request.data?.plan_type === 'daily_amount';
+
+            return {
+                activity: request.activity,
+                data: {
+                    ...request.data,
+                    preview_only: true,
+                    available_study_days: availableStudyDays,
+                    requested_daily_amount: request.data?.daily_amount,
+                    warning: isDailyAmountRequest
+                        ? copy('هذه معاينة محلية فقط. سيتم احتساب نهاية الخطة والتحقق النهائي عند اعتماد الخطة.', 'This is a local preview only. The plan end and final validation will be calculated when you approve the plan.')
+                        : copy('هذه معاينة محلية فقط. سيتم التحقق النهائي عند اعتماد الخطة.', 'This is a local preview only. Final validation will happen when you approve the plan.')
+                }
+            };
+        });
+    }, [buildPlanRequests, copy, halaqaData?.duration_in_days, halaqaPlanDates.endDate, halaqaPlanDates.startDate]);
+
+    const _runPreviewRequest = useCallback(async (formData, {
         showSuccessToast = false,
         showErrorToast = false,
         moveWizardToPreview = false
@@ -703,56 +859,29 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             return false;
         }
 
-        const requestId = latestPreviewRequestIdRef.current + 1;
         const signature = getPlanRequestsSignature(requests);
-        latestPreviewRequestIdRef.current = requestId;
         latestPreviewSignatureRef.current = signature;
 
-        createPlanMutation.reset();
         setPlanRequestError(null);
-        setIsSubmittingPlanRequests(true);
+        setPlanPreviewItems(buildLocalPreviewItems(formData));
+        setHasRequestedPreview(true);
 
-        try {
-            const previewItems = [];
+        if (wizardMode && moveWizardToPreview) {
+            setWizardStep(3);
+        }
 
-            for (const request of requests) {
-                const response = await createPlanMutation.mutateAsync({ halaqaId, data: request.data });
-                const responseData = normalizePlanResponse(response);
 
-                if (responseData) {
-                    previewItems.push({
-                        activity: request.activity,
-                        data: responseData
-                    });
-                }
-            }
-
-            if (latestPreviewRequestIdRef.current !== requestId) {
-                return false;
-            }
-
-            setPlanPreviewItems(previewItems);
-            setHasRequestedPreview(true);
-            latestPreviewSignatureRef.current = signature;
-
-            if (wizardMode && moveWizardToPreview) {
-                setWizardStep(3);
-            }
-
-            if (showSuccessToast) {
+        if (showSuccessToast) {
                 toast.info(t('plan.previewLoaded', copy('تم تجهيز معاينة الخطة. راجع الملخص ثم أكّد الحفظ.', 'Plan preview is ready. Review the summary and confirm save.')));
             }
 
             return true;
-        } catch (error) {
-            if (latestPreviewRequestIdRef.current !== requestId) {
-                return false;
+    }, [buildLocalPreviewItems, buildPlanRequests, copy, getPlanRequestsSignature, t, wizardMode]);
+    /*
+    
             }
 
-            setPlanRequestError(error);
-            latestPreviewSignatureRef.current = null;
-
-            if (showErrorToast) {
+            
                 toast.error(error?.message || t('plan.createError', copy('حدث خطأ أثناء إنشاء الخطة. حاول مرة أخرى.', 'Error creating plan. Please try again.')));
             }
 
@@ -764,6 +893,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         }
     }, [buildPlanRequests, copy, createPlanMutation, getPlanRequestsSignature, halaqaId, normalizePlanResponse, t, wizardMode]);
 
+    */
     const resetForm = () => {
         reset({
             activity: defaultActivity,
@@ -799,8 +929,130 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         return t(message, message);
     }, [t]);
 
+    const getConflictingStudentLabels = useCallback((formData) => {
+        const blockedActivities = getBlockedActivitiesForPlan({
+            activity: formData?.activity,
+            autoTasbitEnabled: Boolean(formData?.auto_tasbit_enabled),
+            hasTasbitActivity
+        });
+
+        if (!blockedActivities.size || !Array.isArray(formData?.student_ids) || formData.student_ids.length === 0) {
+            return [];
+        }
+
+        const studentLabelById = new Map(
+            baseStudentsOptions.map((student) => [Number(student.value ?? student.id), student.label])
+        );
+
+        return formData.student_ids
+            .map((studentId) => Number(studentId))
+            .filter((studentId) => {
+                const existingActivities = existingPlanActivitiesByStudentId.get(studentId);
+                return existingActivities && Array.from(blockedActivities).some((activity) => existingActivities.has(activity));
+            })
+            .map((studentId) => studentLabelById.get(studentId) || t('plan.studentId', { id: studentId }));
+    }, [baseStudentsOptions, existingPlanActivitiesByStudentId, hasTasbitActivity, t]);
+
+    const normalizePreviewPlanResponse = useCallback((response) => {
+        const normalizedResponse = response?.data ?? response;
+        return normalizedResponse?.data ?? normalizedResponse;
+    }, []);
+
+    const requestComputedPreview = useCallback(async (formData, {
+        showSuccessToast = false,
+        showErrorToast = false,
+        moveWizardToPreview = false
+    } = {}) => {
+        const conflictingStudentLabels = getConflictingStudentLabels(formData);
+        if (conflictingStudentLabels.length > 0) {
+            const activityLabel = t(`halaqa.activity.${formData?.activity}`, formData?.activity || '');
+            const message = copy(
+                `لا يمكن إنشاء خطة ${activityLabel} مكررة للطلاب: ${conflictingStudentLabels.join('، ')}`,
+                `Cannot create a duplicate ${activityLabel} plan for: ${conflictingStudentLabels.join(', ')}`
+            );
+            setPlanRequestError({ message });
+            if (showErrorToast) {
+                toast.error(message);
+            }
+            return false;
+        }
+
+        const requests = buildPlanRequests(formData, 0);
+
+        if (!requests.length) {
+            setPlanPreviewItems([]);
+            setPlanRequestError(null);
+            latestPreviewSignatureRef.current = null;
+
+            if (showErrorToast) {
+                toast.error(t('plan.invalidForm', copy('يرجى استكمال جميع الحقول المطلوبة.', 'Please fill all required fields.')));
+            }
+
+            return false;
+        }
+
+        const requestId = latestPreviewRequestIdRef.current + 1;
+        const signature = getPlanRequestsSignature(requests);
+        latestPreviewRequestIdRef.current = requestId;
+        latestPreviewSignatureRef.current = signature;
+
+        createPlanMutation.reset();
+        setPlanRequestError(null);
+        setIsSubmittingPlanRequests(true);
+
+        try {
+            const previewItems = [];
+
+            for (const request of requests) {
+                const response = await createPlanMutation.mutateAsync({ halaqaId, data: request.data });
+                const responseData = normalizePreviewPlanResponse(response);
+
+                if (responseData) {
+                    previewItems.push({
+                        activity: request.activity,
+                        data: responseData
+                    });
+                }
+            }
+
+            if (latestPreviewRequestIdRef.current !== requestId) {
+                return false;
+            }
+
+            setPlanPreviewItems(previewItems);
+            setHasRequestedPreview(true);
+
+            if (wizardMode && moveWizardToPreview) {
+                setWizardStep(3);
+            }
+
+            if (showSuccessToast) {
+                toast.info(t('plan.previewLoaded', copy('تم تجهيز معاينة الخطة. راجع الملخص ثم أكّد الحفظ.', 'Plan preview is ready. Review the summary and confirm save.')));
+            }
+
+            return true;
+        } catch (error) {
+            if (latestPreviewRequestIdRef.current !== requestId) {
+                return false;
+            }
+
+            setPlanRequestError(error);
+            latestPreviewSignatureRef.current = null;
+
+            if (showErrorToast) {
+                toast.error(error?.message || t('plan.createError', copy('حدث خطأ أثناء إنشاء الخطة. حاول مرة أخرى.', 'Error creating plan. Please try again.')));
+            }
+
+            return false;
+        } finally {
+            if (latestPreviewRequestIdRef.current === requestId) {
+                setIsSubmittingPlanRequests(false);
+            }
+        }
+    }, [buildPlanRequests, copy, createPlanMutation, getConflictingStudentLabels, getPlanRequestsSignature, halaqaId, normalizePreviewPlanResponse, t, wizardMode]);
+
     const onSubmit = async (formData) => {
-        await runPreviewRequest(formData, {
+        await requestComputedPreview(formData, {
             showSuccessToast: true,
             showErrorToast: true,
             moveWizardToPreview: true
@@ -808,7 +1060,20 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     };
 
     const handleConfirmSave = async () => {
-        const requests = buildPlanRequests(watch(), 1);
+        const currentFormData = watch();
+        const conflictingStudentLabels = getConflictingStudentLabels(currentFormData);
+        if (conflictingStudentLabels.length > 0) {
+            const activityLabel = t(`halaqa.activity.${currentFormData?.activity}`, currentFormData?.activity || '');
+            const message = copy(
+                `لا يمكن إنشاء خطة ${activityLabel} مكررة للطلاب: ${conflictingStudentLabels.join('، ')}`,
+                `Cannot create a duplicate ${activityLabel} plan for: ${conflictingStudentLabels.join(', ')}`
+            );
+            setPlanRequestError({ message });
+            toast.error(message);
+            return;
+        }
+
+        const requests = buildPlanRequests(currentFormData, 1);
 
         if (!requests.length) {
             return;
@@ -887,7 +1152,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         }
 
         previewDebounceRef.current = setTimeout(() => {
-            runPreviewRequest(previewFormValues, {
+            requestComputedPreview(previewFormValues, {
                 showSuccessToast: false,
                 showErrorToast: false,
                 moveWizardToPreview: false
@@ -899,7 +1164,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
                 clearTimeout(previewDebounceRef.current);
             }
         };
-    }, [buildPlanRequests, getPlanRequestsSignature, hasRequestedPreview, isSubmittingPlanRequests, planPreviewItems.length, planRequestError, previewFormValues, runPreviewRequest, wizardMode, wizardStep]);
+    }, [buildPlanRequests, getPlanRequestsSignature, hasRequestedPreview, isSubmittingPlanRequests, planPreviewItems.length, planRequestError, previewFormValues, requestComputedPreview, wizardMode, wizardStep]);
 
     const renderPlanPreviewCards = (previewCardsWizardMode = false) => (
         <div className="space-y-4">
