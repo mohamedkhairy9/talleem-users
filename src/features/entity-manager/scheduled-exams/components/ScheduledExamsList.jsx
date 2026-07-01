@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Pagination, Table } from '@/shared/components';
-import { SearchIcon, SettingsIcon, XIcon } from '@/shared/icons';
+import { ClipboardCheckIcon, SearchIcon, SettingsIcon, XIcon } from '@/shared/icons';
 import { formatTimePart, getDisplayDate, getGregorianDate, normalizeDate } from '@/shared/utils/helpers/dateFormatter';
 import { getErrorMessage } from '@/shared/utils';
 import { useDateFormatStore } from '@/app/stores/dateFormat.store';
@@ -144,6 +144,14 @@ const ScheduledExamsList = () => {
         navigate(`/${lang || 'ar'}/scheduled-exams/${row.id}/edit`);
     };
 
+    const handleStartExam = (row) => {
+        if (!row?.id) {
+            return;
+        }
+
+        navigate(`/${lang || 'ar'}/exam-conduction/${row.id}`);
+    };
+
     const handleDelete = (row) => {
         if (!row?.id) {
             return;
@@ -251,6 +259,15 @@ const ScheduledExamsList = () => {
                             showView: true,
                             showEdit: true,
                             showDelete: true,
+                            customActions: [
+                                {
+                                    key: 'start-exam',
+                                    label: t('examConduction.startExam', 'Start Exam'),
+                                    title: t('examConduction.goToExam', 'Go to exam details'),
+                                    icon: ClipboardCheckIcon,
+                                    onClick: handleStartExam
+                                }
+                            ],
                             onView: handleView,
                             onEdit: handleEdit,
                             onDelete: handleDelete,

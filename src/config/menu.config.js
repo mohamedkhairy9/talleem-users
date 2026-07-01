@@ -52,6 +52,24 @@ export const MEMORIZATION_MENU_ITEMS = [
         roles: ['entity_manager']
     },
     {
+        path: ROUTE_PATHS.SCHEDULED_ACTIVITIES,
+        labelKey: 'menu.scheduledActivities',
+        icon: 'CalendarIcon',
+        roles: ['entity_manager'],
+        subItems: [
+            {
+                path: ROUTE_PATHS.SCHEDULED_ACTIVITIES,
+                labelKey: 'menu.scheduledActivities',
+                icon: 'CalendarIcon'
+            },
+            {
+                path: ROUTE_PATHS.SCHEDULED_ACTIVITIES_CREATE,
+                labelKey: 'scheduledActivities.create',
+                icon: 'PlusIcon'
+            }
+        ]
+    },
+    {
         path: ROUTE_PATHS.SCHEDULED_EXAMS,
         labelKey: 'menu.scheduledExams',
         icon: 'CalendarIcon',
@@ -68,6 +86,12 @@ export const MEMORIZATION_MENU_ITEMS = [
                 icon: 'PlusIcon'
             }
         ]
+    },
+    {
+        path: ROUTE_PATHS.EXAM_CONDUCTION,
+        labelKey: 'menu.examConduction',
+        icon: 'ClipboardCheckIcon',
+        roles: ['entity_manager']
     }
 ];
 /**

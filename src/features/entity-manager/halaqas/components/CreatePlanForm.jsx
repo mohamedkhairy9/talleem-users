@@ -690,13 +690,8 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
 
         if (currentActivity !== firstAllowedActivity && !activityOptions.some((activity) => activity.value === currentActivity)) {
             setValue('activity', firstAllowedActivity);
-            return;
         }
-
-        if (isLinkedHifzTasbitFlow && currentActivity !== 'hifz') {
-            setValue('activity', 'hifz');
-        }
-    }, [activityOptions, currentActivity, isLinkedHifzTasbitFlow, setValue]);
+    }, [activityOptions, currentActivity, setValue]);
 
     const planTypeOptions = useMemo(() => PLAN_TYPES.map((type) => ({
         value: type.value,

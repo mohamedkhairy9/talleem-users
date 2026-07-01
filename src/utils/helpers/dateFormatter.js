@@ -1,4 +1,58 @@
 import { useDateFormatStore } from '@/stores/dateFormat.store';
+import i18n from '@/i18n';
+
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const GREGORIAN_FORMAT = 'gregorian';
+
+function parseDateValue(value) {
+    if (!value) {
+        return null;
+    }
+
+    if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    if (typeof value !== 'string') {
+        return null;
+    }
+
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue) {
+        return null;
+    }
+
+    if (ISO_DATE_REGEX.test(trimmedValue)) {
+        const [year, month, day] = trimmedValue.split('-').map(Number);
+        return new Date(Date.UTC(year, (month || 1) - 1, day || 1, 12, 0, 0));
+    }
+
+    const parsedDate = new Date(trimmedValue);
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
+function formatGregorianDate(date, isDateOnly = false) {
+    const day = String(isDateOnly ? date.getUTCDate() : date.getDate()).padStart(2, '0');
+    const month = String((isDateOnly ? date.getUTCMonth() : date.getMonth()) + 1).padStart(2, '0');
+    const year = isDateOnly ? date.getUTCFullYear() : date.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
+function formatHijriDate(date, format) {
+    const currentLanguage = i18n.language || 'ar';
+    const locale = format === 'hijri_indic'
+        ? 'ar-SA-u-ca-islamic-umalqura'
+        : currentLanguage === 'en'
+            ? 'en-US-u-ca-islamic-umalqura-nu-latn'
+            : 'ar-SA-u-ca-islamic-umalqura-nu-latn';
+
+    return new Intl.DateTimeFormat(locale, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    }).format(date);
+}
 /**
  * Type guard: value is the API date object (gregorian + hijri + hijri_indic)
  */
@@ -22,22 +76,23 @@ export function getGregorianDate(value) {
     return typeof value === 'string' ? value : '';
 }
 /**
- * Format a plain date string to DD/MM/YYYY (legacy display).
+ * Format a plain date value using the active date mode.
  */
-export function formatDate(date) {
+export function formatDate(date, format = GREGORIAN_FORMAT) {
     if (!date)
         return '-';
     try {
-        const dateObj = typeof date === 'string' ? new Date(date) : date;
-        if (isNaN(dateObj.getTime()))
-            return '-';
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const year = dateObj.getFullYear();
-        return `${day}/${month}/${year}`;
+        const isDateOnly = typeof date === 'string' && ISO_DATE_REGEX.test(date.trim());
+        const dateObj = parseDateValue(date);
+        if (!dateObj)
+            return typeof date === 'string' ? date : '-';
+        if (format === GREGORIAN_FORMAT) {
+            return formatGregorianDate(dateObj, isDateOnly);
+        }
+        return formatHijriDate(dateObj, format);
     }
     catch {
-        return '-';
+        return typeof date === 'string' ? date : '-';
     }
 }
 /**
@@ -47,14 +102,14 @@ export function formatDate(date) {
 export function getDisplayDate(value, format) {
     if (value == null)
         return '-';
+    const preferred = format ?? useDateFormatStore.getState().dateFormat;
     if (isAppDate(value)) {
-        const preferred = format ?? useDateFormatStore.getState().dateFormat;
         const out = value[preferred];
         return out ?? value.gregorian ?? '-';
     }
     if (typeof value === 'string')
-        return formatDate(value);
-    return formatDate(value);
+        return formatDate(value, preferred);
+    return formatDate(value, preferred);
 }
 /**
  * Normalize date to ISO format (YYYY-MM-DD) for API payloads and form inputs.

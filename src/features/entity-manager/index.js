@@ -21,7 +21,14 @@ export { default as CreateWarningForm } from './warnings/components/CreateWarnin
 export * from './join-requests';
 export { default as JoinRequestsList } from './join-requests/components/JoinRequestsList';
 export { default as ViewJoinRequestModal } from './join-requests/components/ViewJoinRequestModal';
+// Scheduled Activities exports
+export * from './scheduled-activities/hooks/useScheduledActivities';
+export { default as CreateScheduledActivityForm } from './scheduled-activities/components/CreateScheduledActivityForm';
+export { default as ScheduledActivitiesList } from './scheduled-activities/components/ScheduledActivitiesList';
 // Scheduled Exams exports
 export * from './scheduled-exams/hooks/useScheduledExams';
 export { default as CreateScheduledExamForm } from './scheduled-exams/components/CreateScheduledExamForm';
 export { default as ScheduledExamsList } from './scheduled-exams/components/ScheduledExamsList';
+// Exam Conduction exports
+export * from './exam-conduction/hooks/useExamConduction';
+export { default as ExamConductionList } from './exam-conduction/components/ExamConductionList';

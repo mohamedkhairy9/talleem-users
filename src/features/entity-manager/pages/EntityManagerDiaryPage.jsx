@@ -7,7 +7,8 @@ import { useEntityManagerCalendarMonth } from '@/features/entity-manager/calenda
 
 const DAY_NAMES_AR = ['سبت', 'أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'];
 const DAY_NAMES_EN = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-const UPCOMING_FILTERS = ['all', 'halaqas', 'entity_exams', 'management_exams'];
+const DIARY_FILTERS = ['all', 'recitations', 'exams', 'activities'];
+const UPCOMING_GROUPS_LIMIT = 3;
 
 const getTodayDate = () => new Date();
 
@@ -55,41 +56,192 @@ const formatMonthTitle = (date, locale) => new Intl.DateTimeFormat(locale === 'a
     year: 'numeric'
 }).format(date);
 
-const getItemTitle = (item, currentLang, t) => {
-    const candidate = item?.title ?? item?.name ?? item?.halaqa?.title ?? item?.halaqa?.name ?? item?.halaqa_title;
-    if (candidate && typeof candidate === 'object') {
-        return candidate[currentLang] ?? candidate.ar ?? candidate.en ?? t('entityDiary.entryTitle', 'Diary entry');
+const getGroupDate = (group, fallbackDate = null) => (
+    group?.date ||
+    group?.calendar_date ||
+    group?.selected_date ||
+    group?.start_date ||
+    fallbackDate
+);
+
+const getGroupItems = (group) => {
+    if (!group || typeof group !== 'object') {
+        return [];
     }
 
-    return candidate || t('entityDiary.entryTitle', 'Diary entry');
+    if (Array.isArray(group.items)) {
+        return group.items;
+    }
+
+    const nestedArrays = Object.entries(group)
+        .filter(([key, value]) => key !== 'items' && Array.isArray(value))
+        .map(([, value]) => value)
+        .filter((value) => value.some((item) => item && typeof item === 'object'));
+
+    if (nestedArrays.length === 0) {
+        return [];
+    }
+
+    if (nestedArrays.length === 1) {
+        return nestedArrays[0];
+    }
+
+    return nestedArrays.flat();
 };
 
-const classifyUpcomingItem = (item, currentLang, t) => {
-    const title = String(getItemTitle(item, currentLang, t)).toLowerCase();
-
-    if (title.includes('إدارة') || title.includes('management')) {
-        return 'management_exams';
+const getGroupCount = (group) => {
+    if (typeof group?.items_count === 'number') {
+        return group.items_count;
     }
 
-    if (title.includes('اختبار') || title.includes('exam')) {
-        return 'entity_exams';
-    }
-
-    return 'halaqas';
+    return getGroupItems(group).length;
 };
+
+const getFilterGroupsFromPayload = (payload, filterKey) => {
+    if (!payload || typeof payload !== 'object') {
+        return [];
+    }
+
+    if (filterKey === 'all') {
+        return Array.isArray(payload.home_items) ? payload.home_items : [];
+    }
+
+    if (filterKey === 'recitations') {
+        return Array.isArray(payload.halaqas) ? payload.halaqas : [];
+    }
+
+    if (filterKey === 'exams') {
+        return [
+            ...(Array.isArray(payload.entity_exams) ? payload.entity_exams : []),
+            ...(Array.isArray(payload.admin_exams) ? payload.admin_exams : [])
+        ];
+    }
+
+    if (filterKey === 'activities') {
+        return Array.isArray(payload.activities) ? payload.activities : [];
+    }
+
+    return [];
+};
+
+const flattenGroupsItems = (groups, fallbackDate = null) => (
+    groups.flatMap((group) => getGroupItems(group).map((item) => ({
+        ...item,
+        date: item?.date || item?.calendar_date || getGroupDate(group, fallbackDate)
+    })))
+);
 
 const sortItems = (items) => {
     return [...items].sort((a, b) => {
-        const dateA = getGregorianDate(a?.date || a?.session_date || a?.start_date || '') || '';
-        const dateB = getGregorianDate(b?.date || b?.session_date || b?.start_date || '') || '';
+        const dateA = getGregorianDate(a?.date || a?.session_date || a?.start_date || a?.calendar_date || '') || '';
+        const dateB = getGregorianDate(b?.date || b?.session_date || b?.start_date || b?.calendar_date || '') || '';
+
         if (dateA !== dateB) {
             return dateA.localeCompare(dateB);
         }
 
-        const timeA = String(a?.session_time || a?.time || a?.start_time || '');
-        const timeB = String(b?.session_time || b?.time || b?.start_time || '');
+        const timeA = String(a?.session_time || a?.time || a?.start_time || a?.time_from || '');
+        const timeB = String(b?.session_time || b?.time || b?.start_time || b?.time_from || '');
         return timeA.localeCompare(timeB);
     });
+};
+
+const sortGroups = (groups) => {
+    return [...groups].sort((a, b) => {
+        const dateA = getGregorianDate(getGroupDate(a.group, a.date) || '') || '';
+        const dateB = getGregorianDate(getGroupDate(b.group, b.date) || '') || '';
+
+        if (dateA !== dateB) {
+            return dateA.localeCompare(dateB);
+        }
+
+        return a.key.localeCompare(b.key);
+    });
+};
+
+const GroupedDiarySection = ({
+    groups,
+    expandedGroups,
+    onToggleGroup,
+    emptyMessage,
+    isLoading,
+    error,
+    t
+}) => {
+    if (isLoading && groups.length === 0) {
+        return (
+            <div className="flex items-center justify-center py-16">
+                <div className="flex flex-col items-center gap-2">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-primary-600" />
+                    <p className="text-sm text-gray-600">{t('common.loading', 'Loading...')}</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-600">
+                {error?.message || t('entityDiary.loadError', 'Error loading diary data. Please try again.')}
+            </div>
+        );
+    }
+
+    if (groups.length === 0) {
+        return (
+            <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
+                {emptyMessage}
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            {groups.map((entry) => {
+                const isExpanded = Boolean(expandedGroups[entry.key]);
+                const groupItems = sortItems(entry.items);
+
+                return (
+                    <section key={entry.key} className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+                        <button
+                            type="button"
+                            onClick={() => onToggleGroup(entry.key)}
+                            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-start transition-colors hover:bg-slate-50 sm:px-6"
+                        >
+                            <div className="min-w-0">
+                                <div className="text-lg font-semibold text-slate-900">
+                                    {getDisplayDate(entry.date)}
+                                </div>
+                                <div className="mt-1 text-sm text-slate-500">
+                                    {t('entityDiary.entriesCount', '{{count}} items', { count: entry.count })}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-xl bg-[#E8F1F1] px-3 py-2 text-sm font-semibold text-[#0B5A5E]">
+                                    {entry.count}
+                                </div>
+                                <ChevronDownIcon
+                                    width={20}
+                                    height={20}
+                                    className={`text-slate-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                />
+                            </div>
+                        </button>
+
+                        {isExpanded ? (
+                            <div className="border-t border-slate-200 px-4 py-4 sm:px-6">
+                                <EntityManagerDiaryList
+                                    items={groupItems}
+                                    emptyMessage={emptyMessage}
+                                />
+                            </div>
+                        ) : null}
+                    </section>
+                );
+            })}
+        </div>
+    );
 };
 
 const EntityManagerDiaryPage = () => {
@@ -102,27 +254,59 @@ const EntityManagerDiaryPage = () => {
 
     const [selectedDate, setSelectedDate] = useState(todayIso);
     const [hasExplicitSelection, setHasExplicitSelection] = useState(false);
-    const [activeUpcomingFilter, setActiveUpcomingFilter] = useState('all');
+    const [activeDiaryFilter, setActiveDiaryFilter] = useState('all');
+    const [expandedGroups, setExpandedGroups] = useState({});
 
     const selectedDateObject = useMemo(() => parseIsoDate(selectedDate), [selectedDate]);
     const selectedWeekDates = useMemo(() => getWeekDates(selectedDateObject), [selectedDateObject]);
     const selectedWeekIsoDates = useMemo(() => selectedWeekDates.map((date) => toIsoDate(date)), [selectedWeekDates]);
     const selectedRequestDate = selectedDate === todayIso && !hasExplicitSelection ? undefined : selectedDate;
 
-    const { itemsByDate, isFetching: isWeekFetching, error: weekError } = useEntityManagerCalendarMonth(selectedWeekIsoDates);
+    const { payloadByDate, isFetching: isWeekFetching, error: weekError } = useEntityManagerCalendarMonth(selectedWeekIsoDates);
 
-    const selectedDayItems = sortItems(itemsByDate[selectedDate] ?? itemsByDate[todayIso] ?? []);
-    const upcomingItems = useMemo(() => {
-        const combined = selectedWeekIsoDates
+    const selectedPayload = useMemo(
+        () => payloadByDate[selectedDate] ?? payloadByDate[todayIso] ?? {},
+        [payloadByDate, selectedDate, todayIso]
+    );
+
+    const selectedDayItems = useMemo(() => {
+        const groups = getFilterGroupsFromPayload(selectedPayload, activeDiaryFilter);
+        return sortItems(flattenGroupsItems(groups, selectedDate));
+    }, [activeDiaryFilter, selectedDate, selectedPayload]);
+
+    const groupedUpcomingItems = useMemo(() => {
+        const entries = selectedWeekIsoDates
             .filter((date) => date >= selectedDate)
-            .flatMap((date) => itemsByDate[date] ?? []);
+            .flatMap((date) => {
+                const payload = payloadByDate[date] ?? {};
+                const groups = getFilterGroupsFromPayload(payload, activeDiaryFilter);
 
-        const filtered = activeUpcomingFilter === 'all'
-            ? combined
-            : combined.filter((item) => classifyUpcomingItem(item, currentLang, t) === activeUpcomingFilter);
+                return groups.map((group, index) => {
+                    const groupDate = getGregorianDate(getGroupDate(group, date)) || date;
+                    const items = flattenGroupsItems([group], groupDate);
 
-        return sortItems(filtered);
-    }, [selectedWeekIsoDates, selectedDate, itemsByDate, activeUpcomingFilter, currentLang, t]);
+                    return {
+                        key: `${activeDiaryFilter}-${groupDate}-${index}`,
+                        date: groupDate,
+                        count: getGroupCount(group),
+                        items,
+                        group
+                    };
+                });
+            })
+            .filter((entry) => entry.items.length > 0 || entry.count > 0);
+
+        return sortGroups(entries).slice(0, UPCOMING_GROUPS_LIMIT);
+    }, [activeDiaryFilter, payloadByDate, selectedDate, selectedWeekIsoDates]);
+
+    const dayCountsByDate = useMemo(() => {
+        return selectedWeekIsoDates.reduce((acc, date) => {
+            const payload = payloadByDate[date] ?? {};
+            const groups = getFilterGroupsFromPayload(payload, activeDiaryFilter);
+            acc[date] = groups.reduce((total, group) => total + getGroupCount(group), 0);
+            return acc;
+        }, {});
+    }, [activeDiaryFilter, payloadByDate, selectedWeekIsoDates]);
 
     const handleSelectDate = (date) => {
         setSelectedDate(toIsoDate(date));
@@ -139,6 +323,13 @@ const EntityManagerDiaryPage = () => {
         nextDate.setDate(nextDate.getDate() + offsetDays);
         setSelectedDate(toIsoDate(nextDate));
         setHasExplicitSelection(true);
+    };
+
+    const handleToggleGroup = (groupKey) => {
+        setExpandedGroups((previous) => ({
+            ...previous,
+            [groupKey]: !previous[groupKey]
+        }));
     };
 
     return (
@@ -170,7 +361,7 @@ const EntityManagerDiaryPage = () => {
                     {selectedWeekDates.map((date) => {
                         const isoDate = toIsoDate(date);
                         const isSelected = isSameDay(date, selectedDateObject);
-                        const dayItems = itemsByDate[isoDate] ?? [];
+                        const itemsCount = dayCountsByDate[isoDate] ?? 0;
 
                         return (
                             <button
@@ -180,17 +371,17 @@ const EntityManagerDiaryPage = () => {
                                 className="flex flex-col items-center gap-3 rounded-2xl px-2 py-3 transition-colors hover:bg-slate-50"
                             >
                                 <div
-                                    className={`flex h-14 w-14 items-center justify-center rounded-full text-2xl font-bold transition-colors ${isSelected
-                                        ? 'bg-[#0B5A5E] text-white'
-                                        : 'text-slate-800'}`}
+                                    className={`flex h-14 w-14 items-center justify-center rounded-full text-2xl font-bold transition-colors ${
+                                        isSelected ? 'bg-[#0B5A5E] text-white' : 'text-slate-800'
+                                    }`}
                                 >
                                     {date.getDate()}
                                 </div>
 
                                 <div className="min-h-[24px] w-full">
-                                    {dayItems.length > 0 ? (
+                                    {itemsCount > 0 ? (
                                         <div className="mx-auto flex max-w-[72px] items-center justify-center rounded-xl bg-[#E4F2F1] px-2 py-1 text-xs font-semibold text-[#0B5A5E]">
-                                            {t('entityDiary.compactCount', '{{count}}', { count: dayItems.length })}
+                                            {t('entityDiary.compactCount', '{{count}}', { count: itemsCount })}
                                         </div>
                                     ) : isWeekFetching ? (
                                         <div className="mx-auto h-2.5 w-10 rounded-full bg-slate-200" />
@@ -237,8 +428,8 @@ const EntityManagerDiaryPage = () => {
                         <input
                             type="date"
                             value={selectedDate}
-                            onChange={(e) => {
-                                const nextDate = parseIsoDate(e.target.value);
+                            onChange={(event) => {
+                                const nextDate = parseIsoDate(event.target.value);
                                 handleSelectDate(nextDate);
                             }}
                             className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-base outline-none transition-colors focus:border-[#0B5A5E] focus:ring-2 focus:ring-[#0B5A5E]/10"
@@ -247,55 +438,20 @@ const EntityManagerDiaryPage = () => {
                 </div>
             </section>
 
-            <section className="rounded-[32px] bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="text-4xl font-bold tracking-tight text-[#0B5A5E]">
-                        {t('entityDiary.todayEvents', 'Today events')}
-                    </div>
-                    <div className="rounded-2xl bg-[#E8F1F1] px-5 py-3 text-xl font-semibold text-slate-700">
-                        {getDisplayDate(selectedDate)}
-                    </div>
-                </div>
-
-                <div className="mt-5">
-                    <EntityManagerDiaryList
-                        date={selectedRequestDate}
-                        items={selectedDayItems}
-                        isLoading={isWeekFetching && selectedDayItems.length === 0}
-                        error={weekError}
-                        compact
-                        emptyMessage={t('entityDiary.noTodayEvents', 'No events for this day.')}
-                    />
-                </div>
-            </section>
-
             <section className="space-y-4">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h2 className="text-4xl font-bold tracking-tight text-slate-900">
-                            {t('entityDiary.upcomingTitle', 'Upcoming events')}
-                        </h2>
-                        <p className="mt-2 text-2xl text-slate-400">
-                            {t('entityDiary.upcomingSubtitle', 'All your upcoming appointments sorted by time')}
-                        </p>
-                    </div>
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E4F2F1] text-[#0B5A5E]">
-                        <CalendarIcon width={28} height={28} />
-                    </div>
-                </div>
-
                 <div className="rounded-[28px] bg-white p-3 shadow-sm ring-1 ring-slate-100">
                     <div className="flex flex-wrap gap-3">
-                        {UPCOMING_FILTERS.map((filterKey) => {
-                            const isActive = activeUpcomingFilter === filterKey;
+                        {DIARY_FILTERS.map((filterKey) => {
+                            const isActive = activeDiaryFilter === filterKey;
+
                             return (
                                 <button
                                     key={filterKey}
                                     type="button"
-                                    onClick={() => setActiveUpcomingFilter(filterKey)}
-                                    className={`rounded-2xl px-6 py-4 text-xl font-semibold transition-colors ${isActive
-                                        ? 'bg-[#0B5A5E] text-white'
-                                        : 'text-slate-500 hover:bg-slate-50'}`}
+                                    onClick={() => setActiveDiaryFilter(filterKey)}
+                                    className={`rounded-2xl px-6 py-4 text-xl font-semibold transition-colors ${
+                                        isActive ? 'bg-[#0B5A5E] text-white' : 'text-slate-500 hover:bg-slate-50'
+                                    }`}
                                 >
                                     {t(`entityDiary.filters.${filterKey}`)}
                                 </button>
@@ -304,12 +460,53 @@ const EntityManagerDiaryPage = () => {
                     </div>
                 </div>
 
-                <EntityManagerDiaryList
-                    items={upcomingItems}
-                    isLoading={isWeekFetching && upcomingItems.length === 0}
-                    error={weekError}
-                    emptyMessage={t('entityDiary.noUpcomingEvents', 'No upcoming events in this week.')}
-                />
+                <section className="rounded-[32px] bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="text-4xl font-bold tracking-tight text-[#0B5A5E]">
+                            {t('entityDiary.todayEvents', 'Today events')}
+                        </div>
+                        <div className="rounded-2xl bg-[#E8F1F1] px-5 py-3 text-xl font-semibold text-slate-700">
+                            {getDisplayDate(selectedDate)}
+                        </div>
+                    </div>
+
+                    <div className="mt-5">
+                        <EntityManagerDiaryList
+                            date={selectedRequestDate}
+                            items={selectedDayItems}
+                            isLoading={isWeekFetching && selectedDayItems.length === 0}
+                            error={weekError}
+                            compact
+                            emptyMessage={t('entityDiary.noTodayEvents', 'No events for this day.')}
+                        />
+                    </div>
+                </section>
+
+                <section className="space-y-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 className="text-4xl font-bold tracking-tight text-slate-900">
+                                {t('entityDiary.upcomingTitle', 'Upcoming events')}
+                            </h2>
+                            <p className="mt-2 text-2xl text-slate-400">
+                                {t('entityDiary.upcomingSubtitle', 'All your upcoming appointments sorted by time')}
+                            </p>
+                        </div>
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E4F2F1] text-[#0B5A5E]">
+                            <CalendarIcon width={28} height={28} />
+                        </div>
+                    </div>
+
+                    <GroupedDiarySection
+                        groups={groupedUpcomingItems}
+                        expandedGroups={expandedGroups}
+                        onToggleGroup={handleToggleGroup}
+                        emptyMessage={t('entityDiary.noUpcomingEvents', 'No upcoming events in this week.')}
+                        isLoading={isWeekFetching}
+                        error={weekError}
+                        t={t}
+                    />
+                </section>
             </section>
         </div>
     );

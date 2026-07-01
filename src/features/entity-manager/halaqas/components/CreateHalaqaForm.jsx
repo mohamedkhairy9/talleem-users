@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -296,7 +296,7 @@ const MultiChipField = ({ name, control, label, options, error, required = false
                         : [...selectedValues, nextValue];
 
                     if (onToggleOption) {
-                        onToggleOption(nextValues, field);
+                        onToggleOption(nextValues, field, nextValue, alreadySelected);
                         return;
                     }
 
@@ -597,6 +597,7 @@ const CreateHalaqaForm = ({ onBack }) => {
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
     const [studentSearch, setStudentSearch] = useState('');
     const [planWizardStep, setPlanWizardStep] = useState(3);
+    const manualActivitiesRef = useRef([]);
 
     const derivedEntityTypeId = useMemo(() => getPreferredEntityTypeId(
         currentEntity?.memorization_program_entity_type?.id,
@@ -713,22 +714,43 @@ const CreateHalaqaForm = ({ onBack }) => {
         }
     }, [configuredWeeklyHoliday, setValue, weeklyHolidayOptions]);
 
-    useEffect(() => {
-        if (Array.isArray(activities) && activities.length > 0 && autoIncludedHifzActivities.length > 0) {
-            const hasHifz = activities.includes('hifz');
-            if (!hasHifz) {
-                return;
-            }
+    const deriveActivitiesFromManual = useCallback((manualActivities) => {
+        const normalizedActivities = Array.isArray(manualActivities)
+            ? Array.from(new Set(manualActivities))
+            : [];
+        const hasHifz = normalizedActivities.includes(HALAQA_ACTIVITIES[0].value);
 
-            const toAdd = autoIncludedHifzActivities.filter((activity) => !activities.includes(activity));
-            if (toAdd.length > 0) {
-                setValue('activities', [...activities, ...toAdd], {
-                    shouldValidate: true,
-                    shouldDirty: true
-                });
-            }
+        if (!hasHifz || autoIncludedHifzActivities.length === 0) {
+            return normalizedActivities;
         }
-    }, [activities, autoIncludedHifzActivities, setValue]);
+
+        const toAdd = autoIncludedHifzActivities.filter((activity) => !normalizedActivities.includes(activity));
+        return toAdd.length > 0 ? [...normalizedActivities, ...toAdd] : normalizedActivities;
+    }, [autoIncludedHifzActivities]);
+
+    useEffect(() => {
+        if (!Array.isArray(activities)) {
+            manualActivitiesRef.current = [];
+            return;
+        }
+
+        const hasHifz = activities.includes(HALAQA_ACTIVITIES[0].value);
+        const inferredManualActivities = hasHifz
+            ? activities.filter((activity) => activity === HALAQA_ACTIVITIES[0].value || !autoIncludedHifzActivities.includes(activity))
+            : activities;
+
+        manualActivitiesRef.current = inferredManualActivities;
+        const syncedActivities = deriveActivitiesFromManual(inferredManualActivities);
+        const hasChanged = syncedActivities.length !== activities.length ||
+            syncedActivities.some((activity, index) => activity !== activities[index]);
+
+        if (hasChanged) {
+            setValue('activities', syncedActivities, {
+                shouldValidate: true,
+                shouldDirty: true
+            });
+        }
+    }, [activities, autoIncludedHifzActivities, deriveActivitiesFromManual, setValue]);
 
     const isAvailable = useMemo(
         () => canLoadAvailablePeople && Number(teacherId) > 0,
@@ -747,17 +769,19 @@ const CreateHalaqaForm = ({ onBack }) => {
         return t(message, message);
     }, [copy, t]);
 
-    const handleActivitiesChange = useCallback((selectedValues, field) => {
-        let nextValues = selectedValues;
-        const hasHifz = nextValues.includes(HALAQA_ACTIVITIES[0].value);
+    const handleActivitiesChange = useCallback((selectedValues, field, toggledValue, alreadySelected) => {
+        const normalizedManualActivities = Array.isArray(manualActivitiesRef.current)
+            ? [...manualActivitiesRef.current]
+            : [];
+        const nextManualActivities = alreadySelected
+            ? normalizedManualActivities.filter((activity) => activity !== toggledValue)
+            : normalizedManualActivities.includes(toggledValue)
+                ? normalizedManualActivities
+                : [...normalizedManualActivities, toggledValue];
 
-        if (hasHifz && autoIncludedHifzActivities.length > 0) {
-            const toAdd = autoIncludedHifzActivities.filter((activity) => !nextValues.includes(activity));
-            nextValues = [...nextValues, ...toAdd];
-        }
-
-        field.onChange(nextValues);
-    }, [autoIncludedHifzActivities]);
+        manualActivitiesRef.current = nextManualActivities;
+        field.onChange(deriveActivitiesFromManual(nextManualActivities));
+    }, [deriveActivitiesFromManual]);
 
     const buildStudentAssignmentPayload = (halaqaSource) => ({
         name: halaqaSource.name,

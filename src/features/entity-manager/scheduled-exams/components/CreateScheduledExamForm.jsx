@@ -7,6 +7,7 @@ import { Button, FormInput, SelectRFH } from '@/shared/components';
 import { CalendarIcon, CheckIcon, ChevronRightIcon, PlusIcon, TeacherIcon, TrashIcon, UsersIcon } from '@/shared/icons';
 import { formatTimePart, getErrorMessage, normalizeDate, useFormWithValidation } from '@/shared/utils';
 import { useCreateScheduledExam, useScheduledExamFormOptions, useUpdateScheduledExam } from '../hooks/useScheduledExams';
+import { scheduledExamsService } from '../services/scheduled-exams.service';
 import {
     createScheduledExamSchema,
     DEFAULT_SCHEDULED_EXAM_VALUES
@@ -18,6 +19,36 @@ const SELECT_FIELD_CLASSES = '[&_.react-select__control]:min-h-[52px] [&_.react-
 const RESPONSIBLE_OPTIONS = ['entity', 'branch', 'general_management'];
 const METHOD_OPTIONS = ['in_person', 'remote'];
 const JUZ_OPTIONS = Array.from({ length: 30 }, (_, index) => index + 1);
+
+function toOptionLikeItem(item) {
+    const itemId = Number(item?.id ?? item?.teacher_id ?? item?.student_id ?? item?.value);
+
+    if (!Number.isInteger(itemId) || itemId <= 0) {
+        return null;
+    }
+
+    return {
+        ...item,
+        id: itemId,
+        value: itemId
+    };
+}
+
+function getArrayData(response) {
+    if (Array.isArray(response?.data)) {
+        return response.data;
+    }
+
+    if (Array.isArray(response?.data?.data)) {
+        return response.data.data;
+    }
+
+    if (Array.isArray(response)) {
+        return response;
+    }
+
+    return [];
+}
 
 function mapExamToFormValues(exam) {
     if (!exam) {
@@ -162,17 +193,16 @@ const CreateScheduledExamForm = ({ mode = 'create', examId = null, initialExam =
     const isEditMode = mode === 'edit';
     const createScheduledExamMutation = useCreateScheduledExam();
     const updateScheduledExamMutation = useUpdateScheduledExam();
-    const {
-        requiredExamSegmentsList,
-        requiredExamSegmentsOptions,
-        teachersOptions,
-        studentsOptions,
-        platformsOptions,
-        isLoadingRequiredExamSegments,
-        isLoadingTeachers,
-        isLoadingStudents,
-        isLoadingPlatforms
-    } = useScheduledExamFormOptions();
+    const fallbackTeachers = useMemo(() => (
+        Array.isArray(initialExam?.teachers)
+            ? initialExam.teachers.map(toOptionLikeItem).filter(Boolean)
+            : []
+    ), [initialExam]);
+    const fallbackStudents = useMemo(() => (
+        Array.isArray(initialExam?.students)
+            ? initialExam.students.map(toOptionLikeItem).filter(Boolean)
+            : []
+    ), [initialExam]);
 
     const {
         control,
@@ -185,6 +215,35 @@ const CreateScheduledExamForm = ({ mode = 'create', examId = null, initialExam =
     } = useFormWithValidation({
         schema: createScheduledExamSchema,
         defaultValues: DEFAULT_SCHEDULED_EXAM_VALUES
+    });
+
+    const watchedExamDate = useWatch({ control, name: 'exam_date' });
+    const watchedTimeFrom = useWatch({ control, name: 'time_from' });
+    const watchedTimeTo = useWatch({ control, name: 'time_to' });
+    const watchedTeacherIdsValue = useWatch({ control, name: 'teacher_ids' });
+    const watchedTeacherIds = useMemo(() => (
+        Array.isArray(watchedTeacherIdsValue) ? watchedTeacherIdsValue : []
+    ), [watchedTeacherIdsValue]);
+
+    const {
+        requiredExamSegmentsList,
+        requiredExamSegmentsOptions,
+        teachersOptions,
+        teachersList,
+        studentsOptions,
+        studentsList,
+        platformsOptions,
+        hasAvailabilityWindow,
+        isLoadingRequiredExamSegments,
+        isLoadingTeachers,
+        isLoadingStudents,
+        isLoadingPlatforms
+    } = useScheduledExamFormOptions({
+        examDate: normalizeDate(watchedExamDate),
+        timeFrom: watchedTimeFrom,
+        timeTo: watchedTimeTo,
+        fallbackTeachers,
+        fallbackStudents
     });
 
     const {
@@ -201,6 +260,12 @@ const CreateScheduledExamForm = ({ mode = 'create', examId = null, initialExam =
     const examSegmentId = useWatch({ control, name: 'exam_segment_id' });
     const watchedStudentsValue = useWatch({ control, name: 'students' });
     const watchedStudents = useMemo(() => watchedStudentsValue || [], [watchedStudentsValue]);
+    const availableTeacherIds = useMemo(() => (
+        new Set(teachersList.map((teacher) => Number(teacher?.id ?? teacher?.value)).filter((id) => Number.isInteger(id) && id > 0))
+    ), [teachersList]);
+    const availableStudentIds = useMemo(() => (
+        new Set(studentsList.map((student) => Number(student?.id ?? student?.value)).filter((id) => Number.isInteger(id) && id > 0))
+    ), [studentsList]);
 
     const selectedRequiredExamSegment = requiredExamSegmentsList.find(
         (segment) => Number(segment?.id) === Number(examSegmentId)
@@ -232,6 +297,54 @@ const CreateScheduledExamForm = ({ mode = 'create', examId = null, initialExam =
 
         reset(mapExamToFormValues(initialExam));
     }, [initialExam, reset]);
+
+    useEffect(() => {
+        if (isEditMode || !hasAvailabilityWindow || isLoadingTeachers) {
+            return;
+        }
+
+        const filteredTeacherIds = watchedTeacherIds
+            .map(Number)
+            .filter((teacherId) => availableTeacherIds.has(teacherId));
+
+        if (filteredTeacherIds.length !== watchedTeacherIds.length) {
+            setValue('teacher_ids', filteredTeacherIds, {
+                shouldDirty: true,
+                shouldValidate: true
+            });
+        }
+    }, [availableTeacherIds, hasAvailabilityWindow, isEditMode, isLoadingTeachers, setValue, watchedTeacherIds]);
+
+    useEffect(() => {
+        if (isEditMode || !hasAvailabilityWindow || isLoadingStudents) {
+            return;
+        }
+
+        let hasChanges = false;
+
+        const nextStudents = watchedStudents.map((student) => {
+            const studentId = Number(student?.student_id);
+
+            if (!studentId || availableStudentIds.has(studentId)) {
+                return student;
+            }
+
+            hasChanges = true;
+
+            return {
+                ...student,
+                student_id: null,
+                juz_numbers: []
+            };
+        });
+
+        if (hasChanges) {
+            setValue('students', nextStudents, {
+                shouldDirty: true,
+                shouldValidate: true
+            });
+        }
+    }, [availableStudentIds, hasAvailabilityWindow, isEditMode, isLoadingStudents, setValue, watchedStudents]);
 
     useEffect(() => {
         studentFields.forEach((field, index) => {
@@ -271,7 +384,7 @@ const CreateScheduledExamForm = ({ mode = 'create', examId = null, initialExam =
         navigate(`/${lang || 'ar'}/scheduled-exams`);
     };
 
-    const onSubmit = (formData) => {
+    const onSubmit = async (formData) => {
         if (hasRequiredPartsCount) {
             const invalidStudentIndexes = (formData.students || [])
                 .map((student, index) => ({
@@ -310,6 +423,93 @@ const CreateScheduledExamForm = ({ mode = 'create', examId = null, initialExam =
                 juz_numbers: (student.juz_numbers || []).map(Number).sort((left, right) => left - right)
             }))
         };
+
+        clearErrors('teacher_ids');
+        clearErrors('students');
+
+        try {
+            const [availableTeachersResponse, availableStudentsResponse] = await Promise.all([
+                scheduledExamsService.getAvailableTeachers({
+                    exam_date: payload.exam_date,
+                    time_from: payload.time_from,
+                    time_to: payload.time_to
+                }),
+                scheduledExamsService.getAvailableStudents({
+                    exam_date: payload.exam_date,
+                    time_from: payload.time_from,
+                    time_to: payload.time_to
+                })
+            ]);
+
+            const latestAvailableTeacherIds = new Set(
+                getArrayData(availableTeachersResponse)
+                    .map((teacher) => Number(teacher?.id ?? teacher?.value))
+                    .filter((teacherId) => Number.isInteger(teacherId) && teacherId > 0)
+            );
+
+            const latestAvailableStudentIds = new Set(
+                getArrayData(availableStudentsResponse)
+                    .map((student) => Number(student?.id ?? student?.value))
+                    .filter((studentId) => Number.isInteger(studentId) && studentId > 0)
+            );
+
+            const unavailableTeacherIds = payload.teacher_ids.filter((teacherId) => !latestAvailableTeacherIds.has(teacherId));
+            const unavailableStudentIndexes = payload.students
+                .map((student, index) => ({
+                    index,
+                    studentId: Number(student?.student_id)
+                }))
+                .filter((student) => student.studentId > 0 && !latestAvailableStudentIds.has(student.studentId));
+
+            if (unavailableTeacherIds.length > 0) {
+                const teacherAvailabilityMessage = copy(
+                    'يوجد معلم أو أكثر لم يعد متاحًا في هذا الموعد. تم تحديث القائمة، برجاء اختيار المعلمين مرة أخرى.',
+                    'One or more selected teachers are no longer available for this time slot. The list has been refreshed, please choose again.'
+                );
+
+                setValue(
+                    'teacher_ids',
+                    payload.teacher_ids.filter((teacherId) => latestAvailableTeacherIds.has(teacherId)),
+                    { shouldDirty: true, shouldValidate: true }
+                );
+                setError('teacher_ids', {
+                    type: 'manual',
+                    message: teacherAvailabilityMessage
+                });
+                toast.error(teacherAvailabilityMessage);
+                return;
+            }
+
+            if (unavailableStudentIndexes.length > 0) {
+                const studentAvailabilityMessage = copy(
+                    'يوجد طالب أو أكثر لم يعد متاحًا في هذا الموعد. تم تحديث القائمة، برجاء اختيار الطلاب مرة أخرى.',
+                    'One or more selected students are no longer available for this time slot. The list has been refreshed, please choose again.'
+                );
+
+                const unavailableStudentIdSet = new Set(unavailableStudentIndexes.map((student) => student.studentId));
+                setValue(
+                    'students',
+                    payload.students.map((student) => (
+                        unavailableStudentIdSet.has(Number(student.student_id))
+                            ? { ...student, student_id: null, juz_numbers: [] }
+                            : student
+                    )),
+                    { shouldDirty: true, shouldValidate: true }
+                );
+                unavailableStudentIndexes.forEach((student) => {
+                    setError(`students.${student.index}.student_id`, {
+                        type: 'manual',
+                        message: studentAvailabilityMessage
+                    });
+                });
+                toast.error(studentAvailabilityMessage);
+                return;
+            }
+        }
+        catch (availabilityError) {
+            toast.error(getErrorMessage(availabilityError));
+            return;
+        }
 
         if (isEditMode && examId) {
             updateScheduledExamMutation.mutate({ examId, data: payload }, {
@@ -445,6 +645,12 @@ const CreateScheduledExamForm = ({ mode = 'create', examId = null, initialExam =
                     </SectionCard>
 
                     <SectionCard icon={UsersIcon} title={t('scheduledExams.sections.students', 'Student Coverage')}>
+                        <p className="text-sm text-slate-500">
+                            {hasAvailabilityWindow
+                                ? copy('يتم عرض الطلاب المتاحين فقط حسب التاريخ والوقت المحددين.', 'Only available students for the selected date and time are shown.')
+                                : copy('اختر تاريخ ووقت الامتحان أولاً لعرض الطلاب المتاحين.', 'Choose the exam date and time first to load available students.')}
+                        </p>
+
                         <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <p className="text-sm font-semibold text-slate-900">{t('scheduledExams.students', 'Students')}</p>
@@ -504,6 +710,7 @@ const CreateScheduledExamForm = ({ mode = 'create', examId = null, initialExam =
                                                 required
                                                 options={studentOptions}
                                                 loading={isLoadingStudents}
+                                                disabled={!hasAvailabilityWindow}
                                                 placeholder="common.select"
                                                 error={errors.students?.[index]?.student_id?.message ? t(errors.students[index].student_id.message) : undefined}
                                                 classes={SELECT_FIELD_CLASSES}
@@ -532,7 +739,11 @@ const CreateScheduledExamForm = ({ mode = 'create', examId = null, initialExam =
                 <div className="space-y-6">
                     <SectionCard icon={TeacherIcon} title={t('scheduledExams.sections.teachers', 'Teacher Assignment')}>
                         <p className="text-sm text-slate-500">
-                            {t('scheduledExams.teachersHelper', 'Teachers are currently enabled only when the responsible side is the entity.')}
+                            {responsible !== 'entity'
+                                ? t('scheduledExams.teachersHelper', 'Teachers are currently enabled only when the responsible side is the entity.')
+                                : hasAvailabilityWindow
+                                    ? copy('يتم عرض المعلمين المتاحين فقط حسب التاريخ والوقت المحددين.', 'Only available teachers for the selected date and time are shown.')
+                                    : copy('اختر تاريخ ووقت الامتحان أولاً لعرض المعلمين المتاحين.', 'Choose the exam date and time first to load available teachers.')}
                         </p>
 
                         <SelectRFH
@@ -542,7 +753,7 @@ const CreateScheduledExamForm = ({ mode = 'create', examId = null, initialExam =
                             options={teachersOptions}
                             isMulti
                             loading={isLoadingTeachers}
-                            disabled={responsible !== 'entity'}
+                            disabled={responsible !== 'entity' || !hasAvailabilityWindow}
                             placeholder="common.select"
                             classes={SELECT_FIELD_CLASSES}
                         />

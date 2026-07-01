@@ -1,5 +1,5 @@
 import { ROUTE_PATHS } from '@/config';
-import { HalaqasListPage, HalaqaDetailPage, CreateHalaqaPage, EditHalaqaPage, IncomingWarningsPage, WarningsIssuedPage, LicensesPage, JoinRequestsPage, EntityManagerDiaryPage, ScheduledExamsPage, CreateScheduledExamPage, ScheduledExamDetailPage, EditScheduledExamPage } from '@/features/entity-manager/pages';
+import { HalaqasListPage, HalaqaDetailPage, CreateHalaqaPage, EditHalaqaPage, IncomingWarningsPage, WarningsIssuedPage, LicensesPage, JoinRequestsPage, EntityManagerDiaryPage, ScheduledActivitiesPage, CreateScheduledActivityPage, ScheduledActivityDetailPage, EditScheduledActivityPage, ScheduledExamsPage, CreateScheduledExamPage, ScheduledExamDetailPage, EditScheduledExamPage, ExamConductionPage, ExamConductionDetailPage, ConductStudentExamPage, ExamConductionResultPage } from '@/features/entity-manager/pages';
 /**
  * Entity Manager Routes Configuration
  * All routes specific to entity managers
@@ -62,6 +62,26 @@ export const entityManagerRoutes = [
         element: <EntityManagerDiaryPage />,
         roles: ['entity_manager']
     },
+    {
+        path: ROUTE_PATHS.SCHEDULED_ACTIVITIES,
+        element: <ScheduledActivitiesPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.SCHEDULED_ACTIVITIES_DETAIL,
+        element: <ScheduledActivityDetailPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.SCHEDULED_ACTIVITIES_EDIT,
+        element: <EditScheduledActivityPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.SCHEDULED_ACTIVITIES_CREATE,
+        element: <CreateScheduledActivityPage />,
+        roles: ['entity_manager']
+    },
     // Scheduled Exams (entity manager: list and create exam sessions)
     {
         path: ROUTE_PATHS.SCHEDULED_EXAMS,
@@ -81,6 +101,26 @@ export const entityManagerRoutes = [
     {
         path: ROUTE_PATHS.SCHEDULED_EXAMS_CREATE,
         element: <CreateScheduledExamPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.EXAM_CONDUCTION,
+        element: <ExamConductionPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.EXAM_CONDUCTION_DETAIL,
+        element: <ExamConductionDetailPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.EXAM_CONDUCTION_CONDUCT,
+        element: <ConductStudentExamPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.EXAM_CONDUCTION_RESULT,
+        element: <ExamConductionResultPage />,
         roles: ['entity_manager']
     }
 ];

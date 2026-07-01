@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '@/app/stores';
 import { useDateFormatStore } from '@/app/stores/dateFormat.store';
 import { formFieldsService } from '@/features/entity-manager/halaqas/services/form-fields.service';
 import { generateOptions } from '@/features/entity-manager/halaqas/utils/formOptionsUtils';
@@ -8,6 +7,27 @@ import { scheduledExamsService } from '../services/scheduled-exams.service';
 const FORM_OPTIONS_PER_PAGE = 1000;
 const STALE_TIME_MS = 2 * 60 * 1000;
 const QUERY_KEY = ['scheduled-exams'];
+
+function mergeOptionLists(primaryList = [], fallbackList = []) {
+    const mergedMap = new Map();
+
+    [...primaryList, ...fallbackList].forEach((item) => {
+        const itemId = Number(item?.id ?? item?.value);
+
+        if (!Number.isInteger(itemId) || itemId <= 0 || mergedMap.has(itemId)) {
+            return;
+        }
+
+        mergedMap.set(itemId, {
+            ...item,
+            id: itemId,
+            value: itemId
+        });
+    });
+
+    return Array.from(mergedMap.values());
+}
+
 const getArrayData = (response) => {
     if (Array.isArray(response?.data)) {
         return response.data;
@@ -121,28 +141,33 @@ export function useDeleteScheduledExam() {
     });
 }
 
-export function useScheduledExamFormOptions() {
-    const actingEntityId = useAuthStore((state) => state.actingEntityId);
-    const fallbackEntityId = useAuthStore((state) => state.user?.entity?.id);
-    const entityId = actingEntityId ?? fallbackEntityId;
+export function useScheduledExamFormOptions({
+    examDate = '',
+    timeFrom = '',
+    timeTo = '',
+    fallbackTeachers = [],
+    fallbackStudents = []
+} = {}) {
+    const hasAvailabilityWindow = Boolean(examDate && timeFrom && timeTo);
+    const availabilityPayload = hasAvailabilityWindow
+        ? {
+            exam_date: examDate,
+            time_from: timeFrom,
+            time_to: timeTo
+        }
+        : null;
 
     const teachersQuery = useQuery({
-        queryKey: ['scheduled-exams-form', 'teachers', entityId],
-        queryFn: () => formFieldsService.getTeachers({
-            page: 1,
-            per_page: FORM_OPTIONS_PER_PAGE,
-            ...(entityId != null && { entity_id: entityId })
-        }),
+        queryKey: ['scheduled-exams-form', 'available-teachers', examDate || '', timeFrom || '', timeTo || ''],
+        queryFn: () => scheduledExamsService.getAvailableTeachers(availabilityPayload),
+        enabled: hasAvailabilityWindow,
         staleTime: STALE_TIME_MS
     });
 
     const studentsQuery = useQuery({
-        queryKey: ['scheduled-exams-form', 'students', entityId],
-        queryFn: () => formFieldsService.getStudents({
-            page: 1,
-            per_page: FORM_OPTIONS_PER_PAGE,
-            ...(entityId != null && { entity_id: entityId })
-        }),
+        queryKey: ['scheduled-exams-form', 'available-students', examDate || '', timeFrom || '', timeTo || ''],
+        queryFn: () => scheduledExamsService.getAvailableStudents(availabilityPayload),
+        enabled: hasAvailabilityWindow,
         staleTime: STALE_TIME_MS
     });
 
@@ -165,16 +190,19 @@ export function useScheduledExamFormOptions() {
     });
 
     const requiredExamSegmentsList = getArrayData(requiredExamSegmentsQuery.data);
+    const availableTeachersList = mergeOptionLists(getArrayData(teachersQuery.data), fallbackTeachers);
+    const availableStudentsList = mergeOptionLists(getArrayData(studentsQuery.data), fallbackStudents);
 
     return {
-        teachersOptions: generateOptions(teachersQuery.data?.data),
-        studentsOptions: generateOptions(studentsQuery.data?.data),
+        teachersOptions: generateOptions(availableTeachersList),
+        studentsOptions: generateOptions(availableStudentsList),
         platformsOptions: generateOptions(platformsQuery.data?.data),
         requiredExamSegmentsOptions: generateOptions(requiredExamSegmentsList),
-        teachersList: Array.isArray(teachersQuery.data?.data) ? teachersQuery.data.data : [],
-        studentsList: Array.isArray(studentsQuery.data?.data) ? studentsQuery.data.data : [],
+        teachersList: availableTeachersList,
+        studentsList: availableStudentsList,
         platformsList: Array.isArray(platformsQuery.data?.data) ? platformsQuery.data.data : [],
         requiredExamSegmentsList,
+        hasAvailabilityWindow,
         isLoadingTeachers: teachersQuery.isLoading,
         isLoadingStudents: studentsQuery.isLoading,
         isLoadingPlatforms: platformsQuery.isLoading,

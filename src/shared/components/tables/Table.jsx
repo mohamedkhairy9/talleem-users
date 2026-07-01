@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
  * Scrollable body with sticky header when used inside a flex container with min-h-0.
  * Pass scrollable to enable the scroll wrapper (for bounded height).
  */
-const Table = ({ columns = [], data = [], loading = false, emptyMessage = 'No data available', className = '', scrollable = true, actionButtons }) => {
+const Table = ({ columns = [], data = [], loading = false, emptyMessage = 'No data available', className = '', scrollable = true, actionButtons, rowClassName }) => {
     const { t } = useTranslation();
     const isEmpty = !loading && data.length === 0;
     // Render action buttons if configured
@@ -77,7 +77,7 @@ const Table = ({ columns = [], data = [], loading = false, emptyMessage = 'No da
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                    {data.map((row, rowIndex) => (<tr key={rowIndex} className="hover:bg-gray-50">
+                    {data.map((row, rowIndex) => (<tr key={rowIndex} className={`hover:bg-gray-50 ${typeof rowClassName === 'function' ? rowClassName(row) : (rowClassName ?? '')}`}>
                             {allColumns.map((column, colIndex) => (<td key={colIndex} style={getMinWidthStyle(column)} className={`px-6 py-4 text-sm text-gray-900 text-start ${column.cellClassName ?? 'whitespace-nowrap'}`}>
                                     {column.accessor
                     ? typeof column.accessor === 'function'

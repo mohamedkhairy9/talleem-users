@@ -6,7 +6,29 @@ const QUERY_KEY = ['entity-manager-calendar'];
 
 const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
 
+const extractCalendarPayload = (responseBody) => {
+    if (!isRecord(responseBody)) {
+        return {};
+    }
+
+    if (isRecord(responseBody.data)) {
+        if (isRecord(responseBody.data.data)) {
+            return responseBody.data.data;
+        }
+
+        return responseBody.data;
+    }
+
+    return responseBody;
+};
+
 const extractCalendarItems = (responseBody) => {
+    const payload = extractCalendarPayload(responseBody);
+
+    if (Array.isArray(payload?.home_items)) {
+        return payload.home_items;
+    }
+
     if (Array.isArray(responseBody)) {
         return responseBody;
     }
@@ -61,10 +83,12 @@ export function useEntityManagerCalendar(date, options = {}) {
     });
 
     const items = extractCalendarItems(query.data);
+    const payload = extractCalendarPayload(query.data);
 
     return {
         ...query,
-        items
+        items,
+        payload
     };
 }
 
@@ -86,8 +110,14 @@ export function useEntityManagerCalendarMonth(dates = []) {
         return acc;
     }, {});
 
+    const payloadByDate = normalizedDates.reduce((acc, date, index) => {
+        acc[date] = extractCalendarPayload(queries[index]?.data);
+        return acc;
+    }, {});
+
     return {
         itemsByDate,
+        payloadByDate,
         queries,
         isLoading: queries.some((query) => query.isLoading),
         isFetching: queries.some((query) => query.isFetching),
