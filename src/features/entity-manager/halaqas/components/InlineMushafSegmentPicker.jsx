@@ -100,7 +100,7 @@ const InlineMushafSegmentPicker = ({
     const { t, i18n } = useTranslation();
     const currentLang = i18n.language || 'ar';
     const isDailyAmountPlan = planType === 'daily_amount';
-    const supportsEndSelection = planType === 'start_end' || isDailyAmountPlan;
+    const supportsEndSelection = planType === 'start_end';
 
     const [currentPage, setCurrentPage] = useState(direction === 'decremental' ? 604 : 1);
     const [selectedJuz, setSelectedJuz] = useState('all');
@@ -263,6 +263,12 @@ const InlineMushafSegmentPicker = ({
     }, [currentSelection, onCurrentSelectionChange]);
 
     useEffect(() => {
+        if (!supportsEndSelection && selectedEndSegment) {
+            onSelectEndSegment(null);
+        }
+    }, [onSelectEndSegment, selectedEndSegment, supportsEndSelection]);
+
+    useEffect(() => {
         if (selectedJuz === 'all' || selectedSurah === 'all') {
             return;
         }
@@ -353,7 +359,7 @@ const InlineMushafSegmentPicker = ({
                 }
 
                 loadPage(activePage);
-            } catch (e) {
+            } catch {
                 loadPage(activePage);
             } finally {
                 setIsFontLoading(false);
@@ -531,7 +537,9 @@ const InlineMushafSegmentPicker = ({
             </div>
 
             <p className="text-sm text-gray-500">
-                {supportsEndSelection
+                {isDailyAmountPlan
+                    ? t('quran.hintSelectStartOnly', 'Click a segment (on the page or in the list), then click "Set as Start". The system will determine the end automatically.')
+                    : supportsEndSelection
                     ? t('quran.hintStartEnd', 'Click a segment (on the page or in the list), then click "Set as Start" or "Set as End".')
                     : t('quran.clickSegmentThenSet', 'Click a segment (on the page or in the list), then set it as the selected segment.')}
             </p>

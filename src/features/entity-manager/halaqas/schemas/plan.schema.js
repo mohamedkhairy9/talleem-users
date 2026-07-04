@@ -49,7 +49,7 @@ export const createPlanSchema = yup.object({
     }),
     // End fields - required for segment-based plans
     end_segment_verse_key: yup.string().when(['unit', 'plan_type'], {
-        is: (unit, planType) => unit === 'segments' && ['daily_amount', 'start_end'].includes(planType),
+        is: (unit, planType) => unit === 'segments' && planType === 'start_end',
         then: (schema) => schema.required('plan.validation.endSegmentRequired').matches(/^\d+:\d+$/, 'plan.validation.verseKeyFormat'),
         otherwise: (schema) => schema.notRequired()
     }),

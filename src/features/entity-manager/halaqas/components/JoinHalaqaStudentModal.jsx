@@ -265,8 +265,8 @@ const JoinHalaqaStudentModal = ({ isOpen, halaqaId, halaqaName, onClose }) => {
             activity: defaultActivity,
             plan_type: 'daily_amount',
             direction: 'incremental',
-            start_segment_verse_key: undefined,
-            end_segment_verse_key: undefined,
+            start_segment_verse_key: '',
+            end_segment_verse_key: '',
             daily_amount: 1
         }
     });
@@ -297,8 +297,8 @@ const JoinHalaqaStudentModal = ({ isOpen, halaqaId, halaqaName, onClose }) => {
             activity: defaultActivity,
             plan_type: 'daily_amount',
             direction: 'incremental',
-            start_segment_verse_key: undefined,
-            end_segment_verse_key: undefined,
+            start_segment_verse_key: '',
+            end_segment_verse_key: '',
             daily_amount: 1
         });
         setSelectedStartSegment(null);
@@ -316,7 +316,7 @@ const JoinHalaqaStudentModal = ({ isOpen, halaqaId, halaqaName, onClose }) => {
             ? getSegmentBoundaryVerseKey(selectedStartSegment, currentDirection, 'start')
             : currentDirection === 'decremental'
                 ? LAST_QURAN_VERSE_KEY
-                : undefined;
+                : '';
 
         if (currentStartSegmentVerseKey !== nextStartVerseKey) {
             setValue('start_segment_verse_key', nextStartVerseKey, { shouldValidate: true });
@@ -326,12 +326,26 @@ const JoinHalaqaStudentModal = ({ isOpen, halaqaId, halaqaName, onClose }) => {
     useEffect(() => {
         const nextEndVerseKey = selectedEndSegment
             ? getSegmentBoundaryVerseKey(selectedEndSegment, currentDirection, 'end')
-            : undefined;
+            : '';
 
         if (currentEndSegmentVerseKey !== nextEndVerseKey) {
             setValue('end_segment_verse_key', nextEndVerseKey, { shouldValidate: true });
         }
     }, [currentDirection, currentEndSegmentVerseKey, selectedEndSegment, setValue]);
+
+    useEffect(() => {
+        if (!isDailyAmountPlan) {
+            return;
+        }
+
+        if (selectedEndSegment) {
+            setSelectedEndSegment(null);
+        }
+
+        if (currentEndSegmentVerseKey !== '') {
+            setValue('end_segment_verse_key', '', { shouldValidate: true });
+        }
+    }, [currentEndSegmentVerseKey, isDailyAmountPlan, selectedEndSegment, setValue]);
 
     const getErrorMessage = useCallback((message) => {
         if (!message) {
@@ -575,18 +589,20 @@ const JoinHalaqaStudentModal = ({ isOpen, halaqaId, halaqaName, onClose }) => {
 
                                 <LearningPathSummary
                                     title={copy('مسار التعلم', 'Learning Path')}
-                                    buttonLabel={copy('تحديد البداية والنهاية', 'Select Start and End')}
+                                    buttonLabel={isDailyAmountPlan
+                                        ? copy('تحديد البداية', 'Select Start')
+                                        : copy('تحديد البداية والنهاية', 'Select Start and End')}
                                     onOpen={() => setShowMushafSegmentPickerModal(true)}
                                     planType={planType}
                                     selectedStartSegment={selectedStartSegment}
                                     selectedEndSegment={selectedEndSegment}
                                     formatSegmentVerseInfo={formatSegmentVerseInfo}
                                     emptyText={isDailyAmountPlan
-                                        ? copy('لم يتم تحديد البداية والنهاية بعد.', 'No start and end selected yet.')
+                                        ? copy('لم يتم تحديد بداية المقدار بعد. السيستم سيحدد النهاية تلقائياً.', 'No start selected yet. The system will determine the end automatically.')
                                         : copy('لم يتم تحديد البداية والنهاية بعد.', 'No range selected yet.')}
                                     startText={copy('نقطة البداية', 'Start Point')}
                                     endText={copy('نقطة النهاية', 'End Point')}
-                                    showEndSelection={isDailyAmountPlan}
+                                    showEndSelection={false}
                                 />
 
                                 <input type="hidden" {...register('start_segment_verse_key')} />

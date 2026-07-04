@@ -100,14 +100,14 @@ const HalaqaList = () => {
         }
         navigate(`/${lang || currentLang}/halaqas/${id}`);
     };
-    const handleEdit = (id) => {
-        if (!id) {
-            console.warn('Unable to navigate to halaqa edit: missing halaqa id');
-            toast.error(t('halaqa.notFound', 'Halaqa not found'));
-            return;
-        }
-        navigate(`/${lang || currentLang}/halaqas/${id}/edit`);
-    };
+    // const handleEdit = (id) => {
+    //     if (!id) {
+    //         console.warn('Unable to navigate to halaqa edit: missing halaqa id');
+    //         toast.error(t('halaqa.notFound', 'Halaqa not found'));
+    //         return;
+    //     }
+    //     navigate(`/${lang || currentLang}/halaqas/${id}/edit`);
+    // };
 
     const handleDelete = async (id) => {
         if (!id) {
@@ -213,7 +213,7 @@ const HalaqaList = () => {
         {/* Mobile: cards - min-h-[280px] keeps area visible on small screens */}
         <div className="flex flex-1 flex-col overflow-hidden md:hidden min-h-[280px] bg-white rounded-lg">
             <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-                <HalaqaListMobile list={list} isLoading={isLoading} hasError={!!error} errorMessage={error ? t('halaqa.loadError', 'Error loading halaqas.') : undefined} emptyMessage={t('halaqa.noHalaqas', 'No halaqas found')} getLocalizedText={getLocalizedText} formatActivities={formatActivities} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} onJoinStudentAfterStart={handleJoinStudentAfterStart} isDeleting={deleteMutation.isPending} />
+                <HalaqaListMobile list={list} isLoading={isLoading} hasError={!!error} errorMessage={error ? t('halaqa.loadError', 'Error loading halaqas.') : undefined} emptyMessage={t('halaqa.noHalaqas', 'No halaqas found')} getLocalizedText={getLocalizedText} formatActivities={formatActivities} onView={handleView} /* onEdit={handleEdit} */ onDelete={handleDelete} onJoinStudentAfterStart={handleJoinStudentAfterStart} isDeleting={deleteMutation.isPending} />
             </div>
             {totalPages > 1 && (<div className="flex-shrink-0 pt-3">
                 <Pagination currentPage={currentPage} totalPages={totalPages} perPage={meta?.per_page ?? perPage} total={total} onPageChange={setPage} />
@@ -225,7 +225,8 @@ const HalaqaList = () => {
             <div className="flex-1 min-h-0 overflow-hidden">
                 <Table columns={columns} data={list} loading={isLoading} emptyMessage={t('halaqa.noHalaqas', 'No halaqas found')} scrollable actionButtons={{
                     showView: true,
-                    showEdit: true,
+                    // showEdit: true,
+                    showEdit: false,
                     showDelete: true,
                     customActions: [
                         {
@@ -237,7 +238,7 @@ const HalaqaList = () => {
                         }
                     ],
                     onView: (row) => handleView(getHalaqaRowId(row)),
-                    onEdit: (row) => handleEdit(getHalaqaRowId(row)),
+                    // onEdit: (row) => handleEdit(getHalaqaRowId(row)),
                     onDelete: (row) => handleDelete(getHalaqaRowId(row)),
                     isDeleting: deleteMutation.isPending,
                     getRowId: (row) => getHalaqaRowId(row)

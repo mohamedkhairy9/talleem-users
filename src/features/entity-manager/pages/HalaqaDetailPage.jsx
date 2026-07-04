@@ -5,7 +5,7 @@ import { useHalaqa } from '@/features/entity-manager/halaqas/hooks/useHalaqas';
 import { PageHeader, Button } from '@/shared/components';
 import PlanStudentsModal from '@/features/entity-manager/halaqas/components/PlanStudentsModal';
 import HalaqaQuickStats from '@/features/entity-manager/halaqas/components/HalaqaQuickStats';
-import { CalendarIcon, CircleIcon, EditIcon, AlertTriangleIcon, XIcon } from '@/shared/icons';
+import { CalendarIcon, CircleIcon, AlertTriangleIcon, XIcon } from '@/shared/icons';
 import HalaqaBasicInfo from '@/features/entity-manager/halaqas/components/HalaqaBasicInfo';
 import HalaqaDatesSchedule from '@/features/entity-manager/halaqas/components/HalaqaDatesSchedule';
 import HalaqaActivities from '@/features/entity-manager/halaqas/components/HalaqaActivities';
@@ -59,13 +59,13 @@ const HalaqaDetailPage = () => {
     const handleBack = () => {
         navigate(`/${lang || currentLang}/halaqas`);
     };
-    const handleEdit = () => {
-        console.log('Edit halaqa button clicked:', {
-            id,
-            halaqa
-        });
-        navigate(`/${lang || currentLang}/halaqas/${id}/edit`);
-    };
+    // const handleEdit = () => {
+    //     console.log('Edit halaqa button clicked:', {
+    //         id,
+    //         halaqa
+    //     });
+    //     navigate(`/${lang || currentLang}/halaqas/${id}/edit`);
+    // };
     // Create a map of student IDs to student objects for quick lookup
     const studentsMap = useMemo(() => {
         if (!halaqa?.students)
@@ -169,14 +169,16 @@ const HalaqaDetailPage = () => {
             <PageHeader title={getLocalizedText(halaqa.name)} breadcrumb={{
                 label: t('halaqa.backToHalaqas'),
                 onClick: handleBack
-            }} badges={headerBadges} actions={[
-                {
-                    label: t('common.edit'),
-                    onClick: handleEdit,
-                    variant: 'primary',
-                    icon: <EditIcon width={16} height={16} className="me-2" />
-                }
-            ]} />
+            }} badges={headerBadges}
+                // actions={[
+                //     {
+                //         label: t('common.edit'),
+                //         onClick: handleEdit,
+                //         variant: 'primary',
+                //         icon: <EditIcon width={16} height={16} className="me-2" />
+                //     }
+                // ]}
+                actions={[]} />
             <HalaqaQuickStats studentCount={studentCount} maxStudents={maxStudents} plansCount={halaqa.plans?.length ?? 0} durationInDays={halaqa.duration_in_days} activitiesCount={halaqa.activities?.length ?? 0} />
         </div>
 

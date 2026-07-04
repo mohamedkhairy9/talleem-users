@@ -457,10 +457,10 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             plan_type: 'daily_amount',
             unit: 'segments',
             direction: 'incremental',
-            start_segment_verse_key: undefined,
+            start_segment_verse_key: '',
             start_juz_number: undefined,
             start_surah_id: undefined,
-            end_segment_verse_key: undefined,
+            end_segment_verse_key: '',
             end_juz_number: undefined,
             end_surah_id: undefined,
             daily_amount: 1
@@ -475,6 +475,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     const currentDailyAmount = useWatch({ control, name: 'daily_amount' });
     const currentStartSegmentVerseKey = useWatch({ control, name: 'start_segment_verse_key' });
     const currentEndSegmentVerseKey = useWatch({ control, name: 'end_segment_verse_key' });
+    const isDailyAmountPlan = planType === 'daily_amount';
     const [wizardStep, setWizardStep] = useState(1);
     const [studentSearch, setStudentSearch] = useState('');
 
@@ -569,7 +570,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             ? getSegmentBoundaryVerseKey(selectedStartSegment, currentDirection, 'start')
             : currentDirection === 'decremental'
                 ? LAST_QURAN_VERSE_KEY
-                : undefined;
+                : '';
 
         if (currentStartSegmentVerseKey !== nextStartVerseKey) {
             setValue('start_segment_verse_key', nextStartVerseKey);
@@ -579,12 +580,26 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     useEffect(() => {
         const nextEndVerseKey = selectedEndSegment
             ? getSegmentBoundaryVerseKey(selectedEndSegment, currentDirection, 'end')
-            : undefined;
+            : '';
 
         if (currentEndSegmentVerseKey !== nextEndVerseKey) {
             setValue('end_segment_verse_key', nextEndVerseKey);
         }
     }, [currentDirection, currentEndSegmentVerseKey, selectedEndSegment, setValue]);
+
+    useEffect(() => {
+        if (!isDailyAmountPlan) {
+            return;
+        }
+
+        if (selectedEndSegment) {
+            setSelectedEndSegment(null);
+        }
+
+        if (currentEndSegmentVerseKey !== '') {
+            setValue('end_segment_verse_key', '');
+        }
+    }, [currentEndSegmentVerseKey, isDailyAmountPlan, selectedEndSegment, setValue]);
 
     const { studentsOptions: allStudentsOptions, isLoadingStudents } = useCreateHalaqaFormQueries();
     const hasTasbitActivity = Array.isArray(activities) && activities.includes('tasbit');
@@ -706,7 +721,6 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             : copy('للبداية من الناس إلى البقرة', 'From the end back to the beginning')
     })), [copy, t]);
 
-    const isDailyAmountPlan = planType === 'daily_amount';
     const halaqaPlanDates = useMemo(() => {
         const startDate = normalizeDate(getGregorianDate(halaqaData?.start_date ?? halaqaData?.date?.from));
         const endDate = normalizeDate(getGregorianDate(halaqaData?.end_date ?? halaqaData?.date?.to));
@@ -896,10 +910,10 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             plan_type: 'daily_amount',
             unit: 'segments',
             direction: 'incremental',
-            start_segment_verse_key: undefined,
+            start_segment_verse_key: '',
             start_juz_number: undefined,
             start_surah_id: undefined,
-            end_segment_verse_key: undefined,
+            end_segment_verse_key: '',
             end_juz_number: undefined,
             end_surah_id: undefined,
             daily_amount: 1
@@ -1278,6 +1292,18 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
                 </SectionCard>
                 ) : null}
                 {renderPlanPreviewCards(true)}
+                {showPlanMushafViewer && planStartVerseKey && planEndVerseKey ? (
+                    <MushafPageModal
+                        isOpen={showPlanMushafViewer}
+                        onClose={() => {
+                            setShowPlanMushafViewer(false);
+                            setPlanStartVerseKey(undefined);
+                            setPlanEndVerseKey(undefined);
+                        }}
+                        startVerseKey={planStartVerseKey}
+                        endVerseKey={planEndVerseKey}
+                    />
+                ) : null}
             </div>
         );
     }
@@ -1336,18 +1362,20 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
 
             <LearningPathSummary
                 title={copy('مسار التعلم', 'Learning Path')}
-                buttonLabel={copy('تحديد البداية والنهاية', 'Select Start and End')}
+                buttonLabel={isDailyAmountPlan
+                    ? copy('تحديد البداية', 'Select Start')
+                    : copy('تحديد البداية والنهاية', 'Select Start and End')}
                 onOpen={() => setShowMushafSegmentPickerModal(true)}
                 planType={planType}
                 selectedStartSegment={selectedStartSegment}
                 selectedEndSegment={selectedEndSegment}
                 formatSegmentVerseInfo={formatSegmentVerseInfo}
                 emptyText={isDailyAmountPlan
-                    ? copy('لم يتم تحديد البداية والنهاية بعد. افتح المصحف لاختيار بداية المقدار اليومي ونهايته.', 'No start and end selected yet. Open the Mushaf to choose the daily amount range.')
+                    ? copy('لم يتم تحديد بداية المقدار اليومي بعد. افتح المصحف لاختيار البداية والسيستم سيحدد النهاية تلقائياً.', 'No start selected yet. Open the Mushaf to choose the start point. The system will determine the end automatically.')
                     : copy('لم يتم تحديد المقاطع بعد. افتح المصحف لاختيار البداية والنهاية.', 'No segments selected yet. Open the Mushaf to choose the range.')}
                 startText={copy('نقطة البداية', 'Start Point')}
                 endText={copy('نقطة النهاية', 'End Point')}
-                showEndSelection={isDailyAmountPlan}
+                showEndSelection={false}
             />
 
             {!wizardMode ? (
