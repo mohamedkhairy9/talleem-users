@@ -20,6 +20,8 @@ export const ROUTE_PATHS = {
     WARNINGS_ISSUED: 'warnings-management/issued',
     ENTITY_LICENSES: 'entity/licenses',
     JOIN_REQUESTS: 'join-requests',
+    ACCOUNT_MANAGEMENT: 'account-management',
+    ACCOUNT_MANAGEMENT_DETAIL: 'account-management/:accountType/:id',
     ENTITY_MANAGER_DIARY: 'entity-manager/calendar',
     SCHEDULED_ACTIVITIES: 'scheduled-activities',
     SCHEDULED_ACTIVITIES_CREATE: 'scheduled-activities/create',

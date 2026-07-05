@@ -12,6 +12,8 @@ export { default as IncomingWarningsPage } from './IncomingWarningsPage';
 export { default as WarningsIssuedPage } from './WarningsIssuedPage';
 export { default as LicensesPage } from './LicensesPage';
 export { default as JoinRequestsPage } from './JoinRequestsPage';
+export { default as AccountManagementPage } from './AccountManagementPage';
+export { default as AccountManagementDetailPage } from './AccountManagementDetailPage';
 export { default as EntityManagerDiaryPage } from './EntityManagerDiaryPage';
 export { default as ScheduledActivitiesPage } from './ScheduledActivitiesPage';
 export { default as CreateScheduledActivityPage } from './CreateScheduledActivityPage';

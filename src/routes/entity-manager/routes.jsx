@@ -1,5 +1,5 @@
 import { ROUTE_PATHS } from '@/config';
-import { HalaqasListPage, HalaqaDetailPage, CreateHalaqaPage, EditHalaqaPage, WarningsPage, LicensesPage, JoinRequestsPage } from '@/pages/entity-manager';
+import { HalaqasListPage, HalaqaDetailPage, CreateHalaqaPage, EditHalaqaPage, WarningsPage, LicensesPage, JoinRequestsPage, AccountManagementPage, AccountManagementDetailPage } from '@/pages/entity-manager';
 /**
  * Entity Manager Routes Configuration
  * All routes specific to entity managers
@@ -45,6 +45,16 @@ export const entityManagerRoutes = [
     {
         path: ROUTE_PATHS.JOIN_REQUESTS,
         element: <JoinRequestsPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.ACCOUNT_MANAGEMENT,
+        element: <AccountManagementPage />,
+        roles: ['entity_manager']
+    },
+    {
+        path: ROUTE_PATHS.ACCOUNT_MANAGEMENT_DETAIL,
+        element: <AccountManagementDetailPage />,
         roles: ['entity_manager']
     }
 ];

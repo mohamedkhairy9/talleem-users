@@ -10,3 +10,5 @@ export { default as HalaqaDetailPage } from './HalaqaDetailPage';
 export { default as WarningsPage } from './WarningsPage';
 export { default as LicensesPage } from './LicensesPage';
 export { default as JoinRequestsPage } from './JoinRequestsPage';
+export { default as AccountManagementPage } from './AccountManagementPage';
+export { default as AccountManagementDetailPage } from './AccountManagementDetailPage';

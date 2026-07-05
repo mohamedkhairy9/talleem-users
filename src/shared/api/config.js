@@ -31,6 +31,7 @@ export const API_ENDPOINTS = {
     JOIN_REQUESTS: {
         LIST: '/join-requests',
         LIST_PENDING: '/join-requests/pending',
+        DETAIL: (id) => `/join-requests/${id}`,
         PROCESS_STEP: (id) => `/join-requests/${id}/process-step`,
     },
 };

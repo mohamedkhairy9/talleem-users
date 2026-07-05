@@ -39,6 +39,12 @@ export const joinRequestsService = {
         });
     },
     /**
+     * Get full join request details for modal view.
+     */
+    getJoinRequest: (id) => {
+        return axiosInstance.get(API_ENDPOINTS.JOIN_REQUESTS.DETAIL(id));
+    },
+    /**
      * Process a join request step (approve / reject / need review / need upload)
      */
     processStep: (id, data) => {

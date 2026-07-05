@@ -52,6 +52,12 @@ export const MEMORIZATION_MENU_ITEMS = [
         roles: ['entity_manager']
     },
     {
+        path: ROUTE_PATHS.ACCOUNT_MANAGEMENT,
+        labelKey: 'menu.accountManagement',
+        icon: 'UserIcon',
+        roles: ['entity_manager']
+    },
+    {
         path: ROUTE_PATHS.SCHEDULED_ACTIVITIES,
         labelKey: 'menu.scheduledActivities',
         icon: 'CalendarIcon',

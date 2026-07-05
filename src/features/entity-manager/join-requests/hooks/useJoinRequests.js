@@ -19,6 +19,29 @@ export function useJoinRequests(params = {}, options) {
     };
 }
 
+export function useJoinRequestDetail(id, options) {
+    const query = useQuery({
+        queryKey: [...QUERY_KEY, 'detail', id],
+        queryFn: () => joinRequestsService.getJoinRequest(id),
+        enabled: Boolean(id) && options?.enabled !== false,
+        staleTime: 2 * 60 * 1000
+    });
+
+    const responseBody = query.data;
+    const firstLevel = responseBody?.data && !Array.isArray(responseBody.data)
+        ? responseBody.data
+        : null;
+    const secondLevel = firstLevel?.data && !Array.isArray(firstLevel.data)
+        ? firstLevel.data
+        : null;
+    const request = secondLevel ?? firstLevel ?? responseBody ?? null;
+
+    return {
+        ...query,
+        request
+    };
+}
+
 export function useProcessJoinRequestStep() {
     const queryClient = useQueryClient();
     return useMutation({
