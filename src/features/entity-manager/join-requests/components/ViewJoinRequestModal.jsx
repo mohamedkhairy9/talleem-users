@@ -55,6 +55,39 @@ function formatKey(key) {
         .join(' ');
 }
 
+function normalizeStatusToken(value) {
+    return String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ؤ/g, 'و')
+        .replace(/ئ/g, 'ي')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function isTerminalJoinRequestStatus(value) {
+    const normalized = normalizeStatusToken(value);
+
+    if (!normalized) {
+        return false;
+    }
+
+    return (
+        normalized.includes('approved') ||
+        normalized.includes('accepted') ||
+        normalized.includes('rejected') ||
+        normalized.includes('declined') ||
+        normalized.includes('مرفوض') ||
+        normalized.includes('مقبول') ||
+        normalized.includes('تم القبول') ||
+        normalized.includes('تم الرفض')
+    );
+}
+
 function isLocalizedLeafObject(value) {
     return Boolean(
         value &&
@@ -351,8 +384,6 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
     const lang = i18n.language || 'ar';
     const isArabic = lang === 'ar';
     const copy = (arabicText, englishText) => (isArabic ? arabicText : englishText);
-    const isProcessedByYou = Boolean(request?.processed_by_you);
-    const shouldDisableActions = isReadOnly || isProcessedByYou;
     const processStepMutation = useProcessJoinRequestStep();
     const hasInlineDetails = Boolean(
         request &&
@@ -384,10 +415,22 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
 
     const handleSubmitForm = (data) => {
         if (shouldDisableActions) {
-            toast.info(copy(
-                'لقد قمت باتخاذ إجراء على هذا الطلب بالفعل، لذلك لا يمكن تنفيذ إجراء جديد عليه.',
-                'You already processed this request, so no further action is available.'
-            ));
+            toast.info(
+                isProcessedByCurrentUser
+                    ? copy(
+                        'لقد قمت باتخاذ إجراء على هذا الطلب بالفعل، لذلك لا يمكن تنفيذ إجراء جديد عليه.',
+                        'You already processed this request, so no further action is available.'
+                    )
+                    : isFinalizedRequest
+                        ? t(
+                            'joinRequests.finalizedLog',
+                            'This join request has already reached a final state such as approved or rejected, so it cannot be processed again.'
+                        )
+                        : t(
+                            'joinRequests.readOnlyLog',
+                            'This request has already moved past your approval queue and is now shown here as a read-only log record.'
+                        )
+            );
             return;
         }
 
@@ -440,6 +483,14 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
     }
 
     const activeRequest = detailQuery.request ?? request;
+    const isProcessedByCurrentUser = Boolean(activeRequest?.processed_by_you);
+    const isFinalizedRequest = [
+        activeRequest?.status,
+        activeRequest?.status_text,
+        activeRequest?.request_status,
+        activeRequest?.last_status
+    ].some(isTerminalJoinRequestStatus);
+    const shouldDisableActions = isReadOnly || isProcessedByCurrentUser || isFinalizedRequest;
     const requestTypeName = getLocalizedText(activeRequest.request_type?.name, lang);
     const formName = getLocalizedText(activeRequest.form?.name, lang);
     const phaseName = getLocalizedText(activeRequest.current_phase?.name, lang);
@@ -624,11 +675,16 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
                             {shouldDisableActions ? (
                                 <AccordionSection title={t('joinRequests.takeAction')} defaultOpen variant="primary">
                                     <p className="text-sm text-primary-900">
-                                        {isProcessedByYou
+                                        {isProcessedByCurrentUser
                                             ? copy(
                                                 'لقد قمت باتخاذ إجراء على هذا الطلب بالفعل، لذلك لا يمكن تنفيذ إجراء جديد عليه.',
                                                 'You already processed this request, so no further action is available.'
                                             )
+                                            : isFinalizedRequest
+                                                ? t(
+                                                    'joinRequests.finalizedLog',
+                                                    'This join request has already reached a final state such as approved or rejected, so it cannot be processed again.'
+                                                )
                                             : t(
                                                 'joinRequests.readOnlyLog',
                                                 'This request has already moved past your approval queue and is now shown here as a read-only log record.'

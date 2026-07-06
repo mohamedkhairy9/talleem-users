@@ -2,14 +2,27 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuthStore } from '@/app/stores';
 import { Button, Table } from '@/shared/components';
-import { AlertTriangleIcon, CalendarIcon, ClipboardCheckIcon, EyeIcon, TeacherIcon, UsersIcon, XIcon } from '@/shared/icons';
+import { AlertTriangleIcon, ClipboardCheckIcon, EyeIcon, UsersIcon, XIcon } from '@/shared/icons';
 import { useDateFormatStore } from '@/app/stores/dateFormat.store';
 import { formatTimePart, getDisplayDate } from '@/shared/utils/helpers/dateFormatter';
 import { getLocalizedText } from '@/shared/utils/helpers/getLocalizedText';
 import { getErrorMessage } from '@/shared/utils';
-import { useConductExamDetail, useConductExamEvaluationTemplates, useStartStudentExam, useStudentExamResultsMap, useTodayConductExams } from '../hooks/useExamConduction';
+import {
+    useConductExamDetail,
+    useConductExamEvaluationTemplates,
+    useConductExamSessionWindowConfig,
+    useStartStudentExam,
+    useStudentExamResultsMap,
+    useTodayConductExams
+} from '../hooks/useExamConduction';
 import ExamMushafViewer from './ExamMushafViewer';
+import {
+    formatExamConductionWindow,
+    getExamConductionAvailability
+} from '../utils/examAvailability';
+import { getExamStartPermission } from '../utils/examStartPermissions';
 
 const CARD_CLASS = 'rounded-xl border border-gray-200 bg-white p-5 shadow-sm';
 const EXAM_TYPES = ['maqata3', 'sard'];
@@ -21,13 +34,10 @@ const InfoRow = ({ label, value }) => (
     </div>
 );
 
-const DetailCard = ({ icon: Icon, title, children }) => (
+const DetailCard = ({ title, children }) => (
     <section className={CARD_CLASS}>
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-4">
             <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#e7f5f3] text-primary-600">
-                <Icon width={18} height={18} />
-            </div>
         </div>
         <div className="space-y-4">{children}</div>
     </section>
@@ -64,10 +74,16 @@ const ExamConductionWorkspace = () => {
     const navigate = useNavigate();
     const { lang } = useParams();
     const currentLang = i18n.language || 'ar';
+    const actingRole = useAuthStore((state) => state.actingRole ??
+        state.user?.entity?.role ??
+        state.user?.entity?.roles ??
+        state.user?.roles ??
+        null);
     useDateFormatStore((state) => state.dateFormat);
 
     const { list, isLoading: isLoadingTodayExams, error: todayExamsError, refresh } = useTodayConductExams();
     const { templates, isLoading: isLoadingTemplates } = useConductExamEvaluationTemplates();
+    const { beforeMinutes, afterMinutes } = useConductExamSessionWindowConfig();
     const startStudentExamMutation = useStartStudentExam();
     const [selectedExamId, setSelectedExamId] = useState(null);
     const [selectedExamType, setSelectedExamType] = useState('maqata3');
@@ -111,6 +127,30 @@ const ExamConductionWorkspace = () => {
     });
     const selectedTemplate = templates.find((template) => Number(template?.id) === Number(selectedTemplateId)) ?? null;
     const activeStudent = students.find((student) => Number(student?.id) === Number(activeStudentId)) ?? null;
+    const examAvailability = useMemo(() => getExamConductionAvailability(exam, {
+        beforeMinutes,
+        afterMinutes
+    }), [afterMinutes, beforeMinutes, exam]);
+    const startPermission = useMemo(
+        () => getExamStartPermission(exam?.responsible, actingRole),
+        [actingRole, exam?.responsible]
+    );
+    const conductionWindowLabel = useMemo(
+        () => formatExamConductionWindow(examAvailability.window, currentLang),
+        [currentLang, examAvailability.window]
+    );
+    const responsibilityLabel = useMemo(
+        () => getResponsibleLabel(exam, t),
+        [exam, t]
+    );
+    const startPermissionMessage = useMemo(
+        () => t(
+            'examConduction.validation.startNotAllowedForResponsible',
+            'Only the responsible side assigned to this exam can start it. This exam belongs to {{responsible}}.',
+            { responsible: responsibilityLabel }
+        ),
+        [responsibilityLabel, t]
+    );
 
     const studentColumns = useMemo(() => ([
         {
@@ -158,8 +198,16 @@ const ExamConductionWorkspace = () => {
             return;
         }
 
-        if (!exam?.available) {
-            toast.error(t('examConduction.validation.examNotAvailableYet', 'This exam is not available yet. Please wait until the scheduled exam time starts.'));
+        if (!startPermission.canStart) {
+            toast.error(startPermissionMessage);
+            return;
+        }
+
+        if (!examAvailability.isAvailable) {
+            toast.error(t(
+                'examConduction.validation.examOutsideWindow',
+                'This exam is not available right now. It can only be conducted within the configured time window before or after the scheduled session.'
+            ));
             return;
         }
 
@@ -289,18 +337,25 @@ const ExamConductionWorkspace = () => {
             {!isLoadingExamDetail && !examDetailError && exam ? (
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <div className="space-y-6 lg:col-span-2">
-                        <DetailCard icon={CalendarIcon} title={t('examConduction.detail.schedule', 'Schedule')}>
+                        <DetailCard title={t('examConduction.detail.schedule', 'Schedule')}>
                             <InfoRow label={t('examConduction.table.entity', 'Entity')} value={getEntityLabel(exam, currentLang, t)} />
                             <InfoRow label={t('examConduction.table.segment', 'Segment')} value={getExamSegmentLabel(exam, currentLang, t)} />
                             <InfoRow label={t('examConduction.table.date', 'Date')} value={getDisplayDate(exam?.exam_date)} />
                             <InfoRow label={t('examConduction.table.time', 'Time')} value={getTimeRange(exam)} />
-                            <InfoRow label={t('scheduledExams.table.responsible', 'Responsible')} value={getResponsibleLabel(exam, t)} />
+                            <InfoRow label={t('examConduction.table.conductionWindow', 'Conduction Window')} value={conductionWindowLabel} />
+                            <InfoRow label={t('scheduledExams.table.responsible', 'Responsible')} value={responsibilityLabel} />
                             <InfoRow label={t('examConduction.table.method', 'Method')} value={getMethodLabel(exam, t)} />
                             <InfoRow label={t('examConduction.table.location', 'Location')} value={exam?.location || '-'} />
-                            <InfoRow label={t('examConduction.table.availability', 'Availability')} value={exam?.available ? t('examConduction.available', 'Available') : t('examConduction.unavailable', 'Unavailable')} />
+                            <InfoRow label={t('examConduction.table.availability', 'Availability')} value={examAvailability.isAvailable ? t('examConduction.available', 'Available') : t('examConduction.unavailable', 'Unavailable')} />
                         </DetailCard>
 
                         <section className={CARD_CLASS}>
+                            {!startPermission.canStart ? (
+                                <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                    {startPermissionMessage}
+                                </div>
+                            ) : null}
+
                             <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
                                 <div>
                                     <p className="mb-2 text-sm font-medium text-gray-700">
@@ -403,7 +458,7 @@ const ExamConductionWorkspace = () => {
                                             label: t('examConduction.startExam', 'Start Exam'),
                                             title: t('examConduction.startExam', 'Start Exam'),
                                             icon: ClipboardCheckIcon,
-                                            disabled: (row) => startStudentExamMutation.isPending || !selectedTemplateId || resultsMap[row?.id]?.isCompleted,
+                                            disabled: (row) => startStudentExamMutation.isPending || !selectedTemplateId || resultsMap[row?.id]?.isCompleted || !examAvailability.isAvailable,
                                             onClick: handleStartExam
                                         },
                                         {
@@ -498,7 +553,7 @@ const ExamConductionWorkspace = () => {
                     </div>
 
                     <div className="space-y-6">
-                        <DetailCard icon={TeacherIcon} title={t('examConduction.detail.teachers', 'Teachers')}>
+                        <DetailCard title={t('examConduction.detail.teachers', 'Teachers')}>
                             {teachers.length > 0 ? (
                                 <div className="space-y-3">
                                     {teachers.map((teacher, index) => (

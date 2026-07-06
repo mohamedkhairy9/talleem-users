@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuthStore } from '@/app/stores';
 import { Button, Pagination, Table } from '@/shared/components';
 import { ClipboardCheckIcon, SearchIcon, SettingsIcon, XIcon } from '@/shared/icons';
 import { formatTimePart, getDisplayDate, getGregorianDate, normalizeDate } from '@/shared/utils/helpers/dateFormatter';
@@ -10,6 +11,7 @@ import { useDateFormatStore } from '@/app/stores/dateFormat.store';
 import { useConfirmationModal } from '@/shared/hooks/useConfirmationModal';
 import { useDeleteScheduledExam, useScheduledExams } from '../hooks/useScheduledExams';
 import { useScheduledExamsListState } from '../hooks/useScheduledExamsListState';
+import { getExamStartPermission } from '@/features/entity-manager/exam-conduction/utils/examStartPermissions';
 
 function getCount(value) {
     if (Array.isArray(value)) {
@@ -52,6 +54,11 @@ const ScheduledExamsList = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { lang } = useParams();
+    const actingRole = useAuthStore((state) => state.actingRole ??
+        state.user?.entity?.role ??
+        state.user?.entity?.roles ??
+        state.user?.roles ??
+        null);
     useDateFormatStore((state) => state.dateFormat);
     const { showConfirmation } = useConfirmationModal();
     const listState = useScheduledExamsListState();
@@ -146,6 +153,21 @@ const ScheduledExamsList = () => {
 
     const handleStartExam = (row) => {
         if (!row?.id) {
+            return;
+        }
+
+        const startPermission = getExamStartPermission(row?.responsible, actingRole);
+        const responsibilityLabel = t(
+            `scheduledExams.responsibleOptions.${row?.responsible === 'general_management' ? 'generalManagement' : row?.responsible}`,
+            row?.responsible ?? '-'
+        );
+
+        if (!startPermission.canStart) {
+            toast.error(t(
+                'examConduction.validation.startNotAllowedForResponsible',
+                'Only the responsible side assigned to this exam can start it. This exam belongs to {{responsible}}.',
+                { responsible: responsibilityLabel }
+            ));
             return;
         }
 

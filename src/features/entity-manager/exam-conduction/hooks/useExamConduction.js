@@ -1,11 +1,16 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDateFormatStore } from '@/app/stores/dateFormat.store';
 import { examConductionService } from '../services/exam-conduction.service';
+import {
+    getExamTimeAfterSessionForTahfiz,
+    getExamTimeBeforeSessionForTahfiz
+} from '@/features/entity-manager/halaqas/services/configurations.service';
 
 const TODAY_EXAMS_QUERY_KEY = ['exam-conduction', 'today'];
 const EXAM_DETAIL_QUERY_KEY = ['exam-conduction', 'detail'];
 const EVALUATION_TEMPLATES_QUERY_KEY = ['exam-conduction', 'evaluation-templates'];
 const EXAM_RESULT_QUERY_KEY = ['exam-conduction', 'result'];
+const EXAM_SESSION_WINDOW_CONFIG_QUERY_KEY = ['exam-conduction', 'configurations', 'tahfiz', 'session-window'];
 const STALE_TIME_MS = 2 * 60 * 1000;
 
 function extractArray(response) {
@@ -87,6 +92,29 @@ export function useConductExamEvaluationTemplates(options) {
         templates: extractArray(query.data)
             .map(normalizeEvaluationTemplate)
             .filter(Boolean)
+    };
+}
+
+export function useConductExamSessionWindowConfig(options = {}) {
+    const beforeSessionQuery = useQuery({
+        queryKey: [...EXAM_SESSION_WINDOW_CONFIG_QUERY_KEY, 'before'],
+        queryFn: getExamTimeBeforeSessionForTahfiz,
+        enabled: options?.enabled !== false,
+        staleTime: STALE_TIME_MS
+    });
+
+    const afterSessionQuery = useQuery({
+        queryKey: [...EXAM_SESSION_WINDOW_CONFIG_QUERY_KEY, 'after'],
+        queryFn: getExamTimeAfterSessionForTahfiz,
+        enabled: options?.enabled !== false,
+        staleTime: STALE_TIME_MS
+    });
+
+    return {
+        beforeMinutes: beforeSessionQuery.data ?? 0,
+        afterMinutes: afterSessionQuery.data ?? 0,
+        isLoading: Boolean(beforeSessionQuery.isLoading || afterSessionQuery.isLoading),
+        error: beforeSessionQuery.error ?? afterSessionQuery.error ?? null
     };
 }
 

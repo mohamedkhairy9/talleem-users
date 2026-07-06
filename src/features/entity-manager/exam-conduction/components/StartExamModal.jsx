@@ -1,13 +1,20 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuthStore } from '@/app/stores';
 import { Button, SelectRFH } from '@/shared/components';
 import { XIcon } from '@/shared/icons';
 import { getLocalizedText } from '@/shared/utils/helpers/getLocalizedText';
 import { getErrorMessage } from '@/shared/utils';
 import { useForm } from 'react-hook-form';
-import { useConductExamEvaluationTemplates, useStartStudentExam } from '../hooks/useExamConduction';
+import {
+    useConductExamEvaluationTemplates,
+    useConductExamSessionWindowConfig,
+    useStartStudentExam
+} from '../hooks/useExamConduction';
+import { getExamConductionAvailability } from '../utils/examAvailability';
+import { getExamStartPermission } from '../utils/examStartPermissions';
 
 const EXAM_TYPE_OPTIONS = [
     { id: 'maqata3', label: 'مقاطع', value: 'maqata3' },
@@ -19,7 +26,15 @@ const StartExamModal = ({ isOpen, onClose, exam, student }) => {
     const navigate = useNavigate();
     const { lang } = useParams();
     const currentLang = i18n.language || lang || 'ar';
+    const actingRole = useAuthStore((state) => state.actingRole ??
+        state.user?.entity?.role ??
+        state.user?.entity?.roles ??
+        state.user?.roles ??
+        null);
     const { templates, isLoading: isLoadingTemplates } = useConductExamEvaluationTemplates({
+        enabled: isOpen
+    });
+    const { beforeMinutes, afterMinutes } = useConductExamSessionWindowConfig({
         enabled: isOpen
     });
     const startStudentExamMutation = useStartStudentExam();
@@ -39,6 +54,29 @@ const StartExamModal = ({ isOpen, onClose, exam, student }) => {
     });
     const selectedExamType = watch('exam_type');
     const selectedTemplateId = watch('evaluation_parameter_id');
+    const examAvailability = useMemo(() => getExamConductionAvailability(exam, {
+        beforeMinutes,
+        afterMinutes
+    }), [afterMinutes, beforeMinutes, exam]);
+    const startPermission = useMemo(
+        () => getExamStartPermission(exam?.responsible, actingRole),
+        [actingRole, exam?.responsible]
+    );
+    const responsibilityLabel = useMemo(
+        () => t(
+            `scheduledExams.responsibleOptions.${exam?.responsible === 'general_management' ? 'generalManagement' : exam?.responsible}`,
+            exam?.responsible ?? '-'
+        ),
+        [exam?.responsible, t]
+    );
+    const startPermissionMessage = useMemo(
+        () => t(
+            'examConduction.validation.startNotAllowedForResponsible',
+            'Only the responsible side assigned to this exam can start it. This exam belongs to {{responsible}}.',
+            { responsible: responsibilityLabel }
+        ),
+        [responsibilityLabel, t]
+    );
 
     const templateOptions = useMemo(() => (
         templates.map((template) => ({
@@ -90,8 +128,16 @@ const StartExamModal = ({ isOpen, onClose, exam, student }) => {
             return;
         }
 
-        if (!exam?.available) {
-            toast.error(t('examConduction.validation.examNotAvailableYet', 'This exam is not available yet. Please wait until the scheduled exam time starts.'));
+        if (!startPermission.canStart) {
+            toast.error(startPermissionMessage);
+            return;
+        }
+
+        if (!examAvailability.isAvailable) {
+            toast.error(t(
+                'examConduction.validation.examOutsideWindow',
+                'This exam is not available right now. It can only be conducted within the configured time window before or after the scheduled session.'
+            ));
             return;
         }
 
@@ -201,6 +247,12 @@ const StartExamModal = ({ isOpen, onClose, exam, student }) => {
 
                     <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4">
                         <div className="space-y-4">
+                            {!startPermission.canStart ? (
+                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                    {startPermissionMessage}
+                                </div>
+                            ) : null}
+
                             <SelectRFH
                                 name="exam_type"
                                 control={control}
@@ -225,7 +277,12 @@ const StartExamModal = ({ isOpen, onClose, exam, student }) => {
                             <Button type="button" variant="outline" onClick={handleClose} disabled={startStudentExamMutation.isPending}>
                                 {t('common.cancel')}
                             </Button>
-                            <Button type="submit" variant="primary" loading={startStudentExamMutation.isPending}>
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                loading={startStudentExamMutation.isPending}
+                                disabled={!startPermission.canStart}
+                            >
                                 {t('examConduction.startExam', 'Start Exam')}
                             </Button>
                         </div>

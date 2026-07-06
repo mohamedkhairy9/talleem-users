@@ -85,3 +85,13 @@ export async function getEditableWeeklyHolidayForTahfiz() {
     const item = await getConfigurations('tahfiz', 'editable_weekly_holiday');
     return parseBooleanFlagValue(getConfigurationRawValue(item));
 }
+
+export async function getExamTimeBeforeSessionForTahfiz() {
+    const item = await getConfigurations('tahfiz', 'exam_time_before_session');
+    return parseNumericValue(getConfigurationRawValue(item));
+}
+
+export async function getExamTimeAfterSessionForTahfiz() {
+    const item = await getConfigurations('tahfiz', 'exam_time_after_session');
+    return parseNumericValue(getConfigurationRawValue(item));
+}
