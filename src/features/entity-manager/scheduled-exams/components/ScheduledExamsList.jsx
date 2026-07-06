@@ -287,6 +287,7 @@ const ScheduledExamsList = () => {
                                     label: t('examConduction.startExam', 'Start Exam'),
                                     title: t('examConduction.goToExam', 'Go to exam details'),
                                     icon: ClipboardCheckIcon,
+                                    disabled: (row) => !getExamStartPermission(row?.responsible, actingRole).canStart,
                                     onClick: handleStartExam
                                 }
                             ],

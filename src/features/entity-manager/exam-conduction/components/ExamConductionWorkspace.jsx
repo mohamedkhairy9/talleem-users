@@ -458,7 +458,13 @@ const ExamConductionWorkspace = () => {
                                             label: t('examConduction.startExam', 'Start Exam'),
                                             title: t('examConduction.startExam', 'Start Exam'),
                                             icon: ClipboardCheckIcon,
-                                            disabled: (row) => startStudentExamMutation.isPending || !selectedTemplateId || resultsMap[row?.id]?.isCompleted || !examAvailability.isAvailable,
+                                            disabled: (row) => (
+                                                startStudentExamMutation.isPending ||
+                                                !selectedTemplateId ||
+                                                resultsMap[row?.id]?.isCompleted ||
+                                                !examAvailability.isAvailable ||
+                                                !startPermission.canStart
+                                            ),
                                             onClick: handleStartExam
                                         },
                                         {
