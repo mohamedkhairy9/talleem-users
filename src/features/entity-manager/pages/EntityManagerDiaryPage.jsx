@@ -159,6 +159,34 @@ const sortGroups = (groups) => {
     });
 };
 
+const groupItemsByDate = (items, prefix) => {
+    const groupedMap = items.reduce((accumulator, item, index) => {
+        const itemDate = getGregorianDate(item?.date || item?.session_date || item?.start_date || item?.calendar_date || '') || '';
+        if (!itemDate) {
+            return accumulator;
+        }
+
+        if (!accumulator.has(itemDate)) {
+            accumulator.set(itemDate, {
+                key: `${prefix}-${itemDate}`,
+                date: itemDate,
+                count: 0,
+                items: []
+            });
+        }
+
+        const entry = accumulator.get(itemDate);
+        entry.items.push({
+            ...item,
+            __groupIndex: index
+        });
+        entry.count += 1;
+        return accumulator;
+    }, new Map());
+
+    return [...groupedMap.values()].sort((a, b) => a.date.localeCompare(b.date));
+};
+
 const GroupedDiarySection = ({
     groups,
     expandedGroups,
@@ -234,6 +262,7 @@ const GroupedDiarySection = ({
                                 <EntityManagerDiaryList
                                     items={groupItems}
                                     emptyMessage={emptyMessage}
+                                    showItemDate={false}
                                 />
                             </div>
                         ) : null}
@@ -253,15 +282,12 @@ const EntityManagerDiaryPage = () => {
     const todayIso = useMemo(() => toIsoDate(today), [today]);
 
     const [selectedDate, setSelectedDate] = useState(todayIso);
-    const [hasExplicitSelection, setHasExplicitSelection] = useState(false);
     const [activeDiaryFilter, setActiveDiaryFilter] = useState('all');
     const [expandedGroups, setExpandedGroups] = useState({});
 
     const selectedDateObject = useMemo(() => parseIsoDate(selectedDate), [selectedDate]);
     const selectedWeekDates = useMemo(() => getWeekDates(selectedDateObject), [selectedDateObject]);
     const selectedWeekIsoDates = useMemo(() => selectedWeekDates.map((date) => toIsoDate(date)), [selectedWeekDates]);
-    const selectedRequestDate = selectedDate === todayIso && !hasExplicitSelection ? undefined : selectedDate;
-
     const { payloadByDate, isFetching: isWeekFetching, error: weekError } = useEntityManagerCalendarMonth(selectedWeekIsoDates);
 
     const selectedPayload = useMemo(
@@ -273,6 +299,10 @@ const EntityManagerDiaryPage = () => {
         const groups = getFilterGroupsFromPayload(selectedPayload, activeDiaryFilter);
         return sortItems(flattenGroupsItems(groups, selectedDate));
     }, [activeDiaryFilter, selectedDate, selectedPayload]);
+    const selectedDayGroups = useMemo(
+        () => groupItemsByDate(selectedDayItems, `selected-${activeDiaryFilter}`),
+        [activeDiaryFilter, selectedDayItems]
+    );
 
     const groupedUpcomingItems = useMemo(() => {
         const entries = selectedWeekIsoDates
@@ -296,7 +326,16 @@ const EntityManagerDiaryPage = () => {
             })
             .filter((entry) => entry.items.length > 0 || entry.count > 0);
 
-        return sortGroups(entries).slice(0, UPCOMING_GROUPS_LIMIT);
+        const mergedItems = sortGroups(entries).flatMap((entry) => (
+            Array.isArray(entry.items)
+                ? entry.items.map((item) => ({
+                    ...item,
+                    date: item?.date || item?.calendar_date || entry.date
+                }))
+                : []
+        ));
+
+        return groupItemsByDate(mergedItems, `upcoming-${activeDiaryFilter}`).slice(0, UPCOMING_GROUPS_LIMIT);
     }, [activeDiaryFilter, payloadByDate, selectedDate, selectedWeekIsoDates]);
 
     const dayCountsByDate = useMemo(() => {
@@ -310,19 +349,16 @@ const EntityManagerDiaryPage = () => {
 
     const handleSelectDate = (date) => {
         setSelectedDate(toIsoDate(date));
-        setHasExplicitSelection(true);
     };
 
     const handleToday = () => {
         setSelectedDate(todayIso);
-        setHasExplicitSelection(false);
     };
 
     const handleWeekChange = (offsetDays) => {
         const nextDate = new Date(selectedDateObject);
         nextDate.setDate(nextDate.getDate() + offsetDays);
         setSelectedDate(toIsoDate(nextDate));
-        setHasExplicitSelection(true);
     };
 
     const handleToggleGroup = (groupKey) => {
@@ -471,13 +507,14 @@ const EntityManagerDiaryPage = () => {
                     </div>
 
                     <div className="mt-5">
-                        <EntityManagerDiaryList
-                            date={selectedRequestDate}
-                            items={selectedDayItems}
+                        <GroupedDiarySection
+                            groups={selectedDayGroups}
+                            expandedGroups={expandedGroups}
+                            onToggleGroup={handleToggleGroup}
+                            emptyMessage={t('entityDiary.noTodayEvents', 'No events for this day.')}
                             isLoading={isWeekFetching && selectedDayItems.length === 0}
                             error={weekError}
-                            compact
-                            emptyMessage={t('entityDiary.noTodayEvents', 'No events for this day.')}
+                            t={t}
                         />
                     </div>
                 </section>
