@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useEntityManagerCalendar } from '../hooks/useCalendar';
+import { useHalaqa } from '@/features/entity-manager/halaqas/hooks/useHalaqas';
+import PlanScheduleModal from '@/features/entity-manager/halaqas/components/PlanScheduleModal';
 import { getDisplayDate, getGregorianDate, getLocalizedText as getLocalizedTextHelper } from '@/shared/utils';
 import { useDateFormatStore } from '@/app/stores';
 import { CalendarIcon, TeacherIcon, BookOpenIcon, UsersIcon, BriefcaseIcon, ChevronDownIcon } from '@/shared/icons';
@@ -183,6 +185,321 @@ const sortByDateAndTime = (items) => {
         const timeB = getItemSessionTime(b) || '';
         return timeA.localeCompare(timeB);
     });
+};
+
+const normalizeObject = (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return null;
+    }
+
+    if (value.data && typeof value.data === 'object' && !Array.isArray(value.data)) {
+        return value.data;
+    }
+
+    return value;
+};
+
+const isPlanLike = (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return false;
+    }
+
+    return Boolean(
+        value.plan_type ||
+        value.daily_amount ||
+        value.start_verse_key ||
+        value.end_verse_key ||
+        Array.isArray(value.daily_schedule)
+    );
+};
+
+const dedupePlans = (plans) => {
+    const seen = new Set();
+
+    return plans.filter((plan, index) => {
+        const key = plan?.id ??
+            `${plan?.student_id ?? 'student'}-${plan?.activity ?? 'activity'}-${plan?.start_verse_key ?? 'start'}-${plan?.end_verse_key ?? 'end'}-${index}`;
+
+        if (seen.has(key)) {
+            return false;
+        }
+
+        seen.add(key);
+        return true;
+    });
+};
+
+const extractPlansFromSource = (source) => {
+    const normalized = normalizeObject(source);
+
+    if (!normalized) {
+        return [];
+    }
+
+    const arrayCandidates = [
+        normalized.plans,
+        normalized.halaqa?.plans,
+        normalized.student_plans,
+        normalized.halaqa_plans
+    ];
+
+    for (const candidate of arrayCandidates) {
+        if (Array.isArray(candidate) && candidate.length > 0) {
+            return dedupePlans(candidate.filter(Boolean));
+        }
+    }
+
+    const objectCandidates = [
+        normalized.plan,
+        normalized.halaqa_plan,
+        normalized.student_plan
+    ];
+
+    for (const candidate of objectCandidates) {
+        if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
+            return [candidate];
+        }
+    }
+
+    if (isPlanLike(normalized)) {
+        return [normalized];
+    }
+
+    return [];
+};
+
+const extractStudentsFromSource = (source) => {
+    const normalized = normalizeObject(source);
+
+    if (!normalized) {
+        return [];
+    }
+
+    if (Array.isArray(normalized.students)) {
+        return normalized.students.filter(Boolean);
+    }
+
+    if (Array.isArray(normalized.halaqa?.students)) {
+        return normalized.halaqa.students.filter(Boolean);
+    }
+
+    return [];
+};
+
+const buildStudentsMap = (students) => {
+    const map = new Map();
+
+    students.forEach((student) => {
+        const studentId = student?.id ?? student?.student_id;
+
+        if (studentId != null && !map.has(studentId)) {
+            map.set(studentId, student);
+        }
+    });
+
+    return map;
+};
+
+const getPlanStudents = (plan, studentsMap) => {
+    if (Array.isArray(plan?.students) && plan.students.length > 0) {
+        return plan.students;
+    }
+
+    if (plan?.student) {
+        return [plan.student];
+    }
+
+    if (plan?.student_id && studentsMap.has(plan.student_id)) {
+        return [studentsMap.get(plan.student_id)];
+    }
+
+    if (plan?.student_id) {
+        return [{ id: plan.student_id }];
+    }
+
+    return [];
+};
+
+const getPlanStudentLabel = (plan, studentsMap, currentLang, t) => {
+    const planStudents = getPlanStudents(plan, studentsMap);
+
+    if (planStudents.length === 0) {
+        return plan?.student_id ? t('plan.studentId', { id: plan.student_id }) : null;
+    }
+
+    if (planStudents.length === 1) {
+        return (
+            getLocalizedTextHelper(planStudents[0]?.name, currentLang, null) ||
+            planStudents[0]?.name ||
+            t('plan.studentId', { id: planStudents[0]?.id ?? plan?.student_id ?? '-' })
+        );
+    }
+
+    return t('plan.studentCount', { count: planStudents.length });
+};
+
+const getPlanUnitLabel = (plan, t) => {
+    if (!plan?.unit) {
+        return null;
+    }
+
+    if (plan.unit === 'parts') {
+        return t('plan.unit.juz', 'Juz');
+    }
+
+    return t(`plan.unit.${plan.unit}`, plan.unit);
+};
+
+const getPlanRangeLabel = (plan) => {
+    const start = plan?.start_verse_key;
+    const end = plan?.end_verse_key ?? plan?.computed_last_verse_key;
+
+    if (!start && !end) {
+        return null;
+    }
+
+    return `${start || '?'} - ${end || '?'}`;
+};
+
+const DiaryPlanCard = ({ plan, studentsMap, currentLang, t }) => {
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const studentLabel = getPlanStudentLabel(plan, studentsMap, currentLang, t);
+    const rangeLabel = getPlanRangeLabel(plan);
+    const unitLabel = getPlanUnitLabel(plan, t);
+    const scheduleCount = plan?.daily_schedule?.length || 0;
+    const hasSchedule = scheduleCount > 0;
+    const planTitle = `${t(`halaqa.activity.${plan?.activity}`, plan?.activity || t('plan.plan', 'Plan'))}${studentLabel ? ` - ${studentLabel}` : ''}`;
+
+    return (
+        <>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="rounded-xl bg-[#DDEEEF] px-3 py-2 text-xs font-semibold text-[#0B5A5E]">
+                        {t(`halaqa.activity.${plan?.activity}`, plan?.activity || t('plan.plan', 'Plan'))}
+                    </div>
+                    {plan?.plan_type ? (
+                        <div className="rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-600">
+                            {t(`plan.type.${plan.plan_type}`, plan.plan_type)}
+                        </div>
+                    ) : null}
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {studentLabel ? (
+                        <div>
+                            <div className="text-xs text-slate-500">{t('plan.students', 'Students')}</div>
+                            <div className="mt-1 text-sm font-semibold text-slate-900">{studentLabel}</div>
+                        </div>
+                    ) : null}
+
+                    {rangeLabel ? (
+                        <div>
+                            <div className="text-xs text-slate-500">{t('plan.segmentRange', 'Segment range')}</div>
+                            <div className="mt-1 text-sm font-semibold text-slate-900">{rangeLabel}</div>
+                        </div>
+                    ) : null}
+
+                    {plan?.daily_amount ? (
+                        <div>
+                            <div className="text-xs text-slate-500">{t('plan.dailyAmount', 'Daily')}</div>
+                            <div className="mt-1 text-sm font-semibold text-slate-900">{plan.daily_amount}</div>
+                        </div>
+                    ) : null}
+
+                    {unitLabel ? (
+                        <div>
+                            <div className="text-xs text-slate-500">{t('plan.unit', 'Unit')}</div>
+                            <div className="mt-1 text-sm font-semibold text-slate-900">{unitLabel}</div>
+                        </div>
+                    ) : null}
+                </div>
+
+                {hasSchedule ? (
+                    <div className="mt-4 border-t border-slate-200 pt-4">
+                        <button
+                            type="button"
+                            onClick={() => setShowScheduleModal(true)}
+                            className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-[#0B5A5E] transition-colors hover:bg-slate-100"
+                        >
+                            <CalendarIcon width={16} height={16} />
+                            <span>{t('plan.viewSchedule', 'View Daily Schedule')}</span>
+                            <span className="rounded-lg bg-[#E4F2F1] px-2 py-0.5 text-xs text-[#0B5A5E]">{scheduleCount}</span>
+                        </button>
+                    </div>
+                ) : null}
+            </div>
+
+            {hasSchedule ? (
+                <PlanScheduleModal
+                    isOpen={showScheduleModal}
+                    onClose={() => setShowScheduleModal(false)}
+                    dailySchedule={plan.daily_schedule || []}
+                    planTitle={planTitle}
+                />
+            ) : null}
+        </>
+    );
+};
+
+const DiaryPlansSection = ({ item, currentLang, t }) => {
+    const embeddedPlans = useMemo(() => extractPlansFromSource(item), [item]);
+    const halaqaId = item?.halaqa_id ?? item?.halaqa?.id ?? null;
+    const halaqaQuery = useHalaqa(embeddedPlans.length === 0 ? halaqaId : null);
+    const fetchedPlans = useMemo(() => extractPlansFromSource(halaqaQuery.data), [halaqaQuery.data]);
+    const plans = embeddedPlans.length > 0 ? embeddedPlans : fetchedPlans;
+    const studentsMap = useMemo(() => {
+        const students = [
+            ...extractStudentsFromSource(item),
+            ...extractStudentsFromSource(halaqaQuery.data)
+        ];
+
+        return buildStudentsMap(students);
+    }, [item, halaqaQuery.data]);
+
+    if (halaqaQuery.isLoading && plans.length === 0) {
+        return (
+            <div className="mt-5 border-t border-slate-200 pt-5">
+                <div className="text-sm text-slate-500">{t('common.loading', 'Loading...')}</div>
+            </div>
+        );
+    }
+
+    if (plans.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="mt-5 border-t border-slate-200 pt-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#E4F2F1] text-[#0B5A5E]">
+                        <BookOpenIcon width={20} height={20} />
+                    </div>
+                    <div>
+                        <div className="text-sm text-slate-500">{t('plan.plans', 'Plans')}</div>
+                        <div className="text-lg font-semibold text-slate-900">
+                            {plans.length} {t('plan.plans', 'Plans')}
+                        </div>
+                    </div>
+                </div>
+                <div className="rounded-xl bg-[#E8F1F1] px-3 py-2 text-sm font-semibold text-[#0B5A5E]">
+                    {plans.length}
+                </div>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-2">
+                {plans.map((plan, index) => (
+                    <DiaryPlanCard
+                        key={plan?.id ?? `${plan?.student_id ?? 'student'}-${plan?.activity ?? 'activity'}-${index}`}
+                        plan={plan}
+                        studentsMap={studentsMap}
+                        currentLang={currentLang}
+                        t={t}
+                    />
+                ))}
+            </div>
+        </div>
+    );
 };
 
 const EntityManagerDiaryList = ({
@@ -469,6 +786,8 @@ const EntityManagerDiaryList = ({
                                         </div>
                                     </div>
                                 )}
+
+                                <DiaryPlansSection item={item} currentLang={currentLang} t={t} />
                             </div>
                         ) : null}
                     </article>
