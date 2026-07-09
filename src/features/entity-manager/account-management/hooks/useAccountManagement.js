@@ -27,14 +27,27 @@ function extractListAndMeta(responseBody) {
 }
 
 function extractDataPayload(responseBody) {
+    if (responseBody == null) {
+        return null;
+    }
+
+    if (Array.isArray(responseBody?.data)) {
+        return responseBody.data;
+    }
+
     const firstLevel = responseBody?.data && !Array.isArray(responseBody.data)
         ? responseBody.data
         : null;
+
+    if (Array.isArray(firstLevel?.data)) {
+        return firstLevel.data;
+    }
+
     const secondLevel = firstLevel?.data != null
         ? firstLevel.data
         : null;
 
-    return secondLevel ?? firstLevel ?? responseBody ?? null;
+    return secondLevel ?? firstLevel ?? responseBody;
 }
 
 export function useAccountManagement(accountType = 'teacher', params = {}, options) {

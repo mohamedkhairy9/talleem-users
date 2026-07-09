@@ -57,6 +57,14 @@ function toArray(value) {
         return value.data;
     }
 
+    if (Array.isArray(value?.items)) {
+        return value.items;
+    }
+
+    if (Array.isArray(value?.results)) {
+        return value.results;
+    }
+
     return [];
 }
 
@@ -78,34 +86,80 @@ function prettifyKey(key = '') {
         .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function getValueFromObject(value, key) {
-    if (!isPlainObject(value)) {
+function buildLocalizedValue(arValue, enValue) {
+    if (!arValue && !enValue) {
         return null;
     }
 
-    return value[key] ?? value?.data?.[key] ?? null;
+    return {
+        ...(arValue ? { ar: arValue } : {}),
+        ...(enValue ? { en: enValue } : {})
+    };
+}
+
+function hasMeaningfulValue(value) {
+    if (value == null) {
+        return false;
+    }
+
+    if (typeof value === 'string') {
+        return value.trim() !== '';
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+        return true;
+    }
+
+    if (Array.isArray(value)) {
+        return value.length > 0;
+    }
+
+    if (isPlainObject(value)) {
+        return Object.keys(value).length > 0;
+    }
+
+    return false;
+}
+
+function getPreferredLocalizedValue(...candidates) {
+    return candidates.find((candidate) => hasMeaningfulValue(candidate)) ?? null;
+}
+
+function getPersonNameSource(person) {
+    if (person == null || typeof person === 'string' || typeof person === 'number') {
+        return person ?? null;
+    }
+
+    return getPreferredLocalizedValue(
+        person?.name,
+        person?.full_name,
+        person?.title,
+        person?.label,
+        person?.display_name,
+        person?.halaqa_name,
+        person?.teacher_name,
+        person?.student_name,
+        buildLocalizedValue(person?.name_ar ?? person?.full_name_ar, person?.name_en ?? person?.full_name_en),
+        buildLocalizedValue(person?.halaqa_name_ar, person?.halaqa_name_en),
+        buildLocalizedValue(person?.teacher_name_ar, person?.teacher_name_en),
+        buildLocalizedValue(person?.student_name_ar, person?.student_name_en),
+        person?.user?.name,
+        person?.user?.full_name,
+        buildLocalizedValue(person?.user?.name_ar ?? person?.user?.full_name_ar, person?.user?.name_en ?? person?.user?.full_name_en),
+        person?.profile?.name,
+        person?.profile?.full_name,
+        buildLocalizedValue(person?.profile?.name_ar ?? person?.profile?.full_name_ar, person?.profile?.name_en ?? person?.profile?.full_name_en)
+    );
 }
 
 function getAccountName(profile, currentLang, t) {
-    const nameValue =
-        getValueFromObject(profile, 'name') ??
-        getValueFromObject(profile, 'full_name') ??
-        getValueFromObject(getValueFromObject(profile, 'user'), 'name') ??
-        getValueFromObject(getValueFromObject(profile, 'profile'), 'name');
+    const nameValue = getPersonNameSource(profile);
 
     if (!nameValue) {
         return t('accountManagement.accountFallback', 'Account Details');
     }
 
     return getLocalizedText(nameValue, currentLang, t('accountManagement.accountFallback', 'Account Details'));
-}
-
-function getLocalizedFallbackValue(value, currentLang, t) {
-    if (value == null || value === '') {
-        return t('common.not_available', 'N/A');
-    }
-
-    return getLocalizedText(value, currentLang, t('common.not_available', 'N/A'));
 }
 
 function getSimpleObjectSummary(value, currentLang, t) {
@@ -215,7 +269,7 @@ function getLabelForKey(key, t) {
 
 function getPrimaryArrayEntries(payload) {
     if (Array.isArray(payload)) {
-        return [{ key: 'items', value: payload }];
+        return [['items', payload]];
     }
 
     if (!isPlainObject(payload)) {
@@ -410,9 +464,50 @@ const CollectionRenderer = ({ title, items, currentLang, t }) => {
     );
 };
 
+const StudentPlansSection = ({ payload, currentLang, t }) => {
+    const items = Array.isArray(payload)
+        ? payload
+        : toArray(payload?.plans ?? payload?.items ?? payload?.halaqas ?? payload);
+
+    if (items.length === 0) {
+        return <EmptyState message={t('accountManagement.noSectionData', 'No data available for this section.')} />;
+    }
+
+    return (
+        <div className="space-y-6">
+            {items.map((item, index) => {
+                const title = getHalaqaName(item, currentLang, t);
+                const rows = buildStudentPlanRows(item, currentLang, t);
+
+                return (
+                    <DetailCard
+                        key={item?.id ?? item?.halaqa_id ?? item?.halaqa?.id ?? index}
+                        icon={BookOpenIcon}
+                        title={title}
+                    >
+                        <dl className="space-y-3">
+                            {rows.map((row) => (
+                                <InfoRow
+                                    key={`${title}-${row.label}`}
+                                    label={row.label}
+                                    value={row.value}
+                                />
+                            ))}
+                        </dl>
+                    </DetailCard>
+                );
+            })}
+        </div>
+    );
+};
+
 function getTeacherHalaqaList(payload) {
     if (Array.isArray(payload)) {
         return payload;
+    }
+
+    if (Array.isArray(payload?.data)) {
+        return payload.data;
     }
 
     if (Array.isArray(payload?.halaqas)) {
@@ -441,11 +536,278 @@ function getPersonLabel(person, currentLang, t, fallbackKey = 'accountManagement
         return String(person);
     }
 
-    return getLocalizedFallbackValue(
-        person?.name ?? person?.full_name ?? person?.title ?? person?.label,
+    const localizedPersonName = getPersonNameSource(person);
+
+    if (localizedPersonName) {
+        return getLocalizedText(
+            localizedPersonName,
+            currentLang,
+            t(fallbackKey, 'Account Details')
+        );
+    }
+
+    if (person?.email || person?.user?.email) {
+        return person?.email ?? person?.user?.email;
+    }
+
+    if (person?.id != null || person?.student_id != null || person?.teacher_id != null || person?.halaqa_id != null) {
+        return `#${person?.id ?? person?.student_id ?? person?.teacher_id ?? person?.halaqa_id}`;
+    }
+
+    return getLocalizedText(
+        person,
         currentLang,
         t(fallbackKey, 'Account Details')
     );
+}
+
+function getSafeText(value, currentLang, t) {
+    if (value == null || value === '') {
+        return t('common.not_available', 'N/A');
+    }
+
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        return String(value);
+    }
+
+    if (Array.isArray(value)) {
+        if (value.length === 0) {
+            return t('common.not_available', 'N/A');
+        }
+
+        return value.map((item) => getSafeText(item, currentLang, t)).join(', ');
+    }
+
+    if (isPlainObject(value)) {
+        const localized = getLocalizedText(
+            value?.name ?? value?.title ?? value?.label ?? value?.status ?? value,
+            currentLang,
+            ''
+        );
+
+        if (localized) {
+            return localized;
+        }
+
+        if (value.id != null) {
+            return `#${value.id}`;
+        }
+
+        try {
+            return JSON.stringify(value);
+        } catch {
+            return t('common.not_available', 'N/A');
+        }
+    }
+
+    return String(value);
+}
+
+function getPeriodLabel(value, currentLang, t) {
+    if (!value) {
+        return t('common.not_available', 'N/A');
+    }
+
+    if (typeof value === 'string') {
+        return t(`halaqa.period.${value}`, value);
+    }
+
+    return getSafeText(value, currentLang, t);
+}
+
+function getActivitiesLabel(activities, currentLang, t) {
+    const normalizedActivities = toArray(activities);
+
+    if (normalizedActivities.length === 0) {
+        return t('common.not_available', 'N/A');
+    }
+
+    return normalizedActivities
+        .map((activity) => {
+            if (typeof activity === 'string') {
+                return t(`halaqa.activity.${activity}`, activity);
+            }
+
+            return getLocalizedText(
+                activity?.name ?? activity?.title,
+                currentLang,
+                t('common.not_available', 'N/A')
+            );
+        })
+        .join(', ');
+}
+
+function getWeeklyHolidayLabel(value, t) {
+    if (Array.isArray(value)) {
+        if (value.length === 0) {
+            return t('common.not_available', 'N/A');
+        }
+
+        return value
+            .map((item) => {
+                const normalizedItem = typeof item === 'string' ? item : String(item);
+                return t(`halaqa.weekdays.${normalizedItem}`, normalizedItem);
+            })
+            .join(', ');
+    }
+
+    if (typeof value === 'string' && value.trim() !== '') {
+        return value
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => t(`halaqa.weekdays.${item}`, item))
+            .join(', ');
+    }
+
+    return t('common.not_available', 'N/A');
+}
+
+function getStudentCountValue(item) {
+    const nestedStudents = toArray(item?.students);
+
+    if (typeof item?.current_students_count === 'number') {
+        return item.current_students_count;
+    }
+
+    if (typeof item?.students_count === 'number') {
+        return item.students_count;
+    }
+
+    if (nestedStudents.length > 0) {
+        return nestedStudents.length;
+    }
+
+    if (typeof item?.max_students === 'number') {
+        return item.max_students;
+    }
+
+    return null;
+}
+
+function getHalaqaAverageGradeValue(item) {
+    return item?.halaqa_plans_average_grade ??
+        item?.plans_average_grade ??
+        item?.average_grade ??
+        item?.avg_grade ??
+        null;
+}
+
+function getHalaqaName(item, currentLang, t) {
+    return getSafeText(getPersonLabel(
+        item?.halaqa ??
+        item?.halaqa_detail ??
+        buildLocalizedValue(item?.halaqa_name_ar, item?.halaqa_name_en) ??
+        item?.halaqa_name ??
+        item,
+        currentLang,
+        t,
+        'common.not_available'
+    ), currentLang, t);
+}
+
+function getTeacherName(item, currentLang, t) {
+    return getSafeText(getPersonLabel(
+        item?.teacher ??
+        item?.halaqa?.teacher ??
+        item?.supervisor ??
+        item?.instructor ??
+        buildLocalizedValue(
+            item?.teacher_name_ar ?? item?.halaqa?.teacher_name_ar,
+            item?.teacher_name_en ?? item?.halaqa?.teacher_name_en
+        ) ??
+        item?.teacher_name,
+        currentLang,
+        t,
+        'common.not_available'
+    ), currentLang, t);
+}
+
+function buildStudentPlanRows(item, currentLang, t) {
+    return [
+        {
+            label: t('accountManagement.fields.halaqa', 'Halaqa'),
+            value: getHalaqaName(item, currentLang, t)
+        },
+        {
+            label: t('halaqa.teacher', 'Teacher'),
+            value: getTeacherName(item, currentLang, t)
+        },
+        {
+            label: t('halaqa.period', 'Period'),
+            value: getPeriodLabel(item?.period ?? item?.halaqa?.period, currentLang, t)
+        },
+        {
+            label: t('halaqa.startDate', 'Start Date'),
+            value: getDisplayValue(item?.start_date ?? item?.halaqa?.start_date, 'start_date', currentLang, t)
+        },
+        {
+            label: t('halaqa.endDate', 'End Date'),
+            value: getDisplayValue(item?.end_date ?? item?.halaqa?.end_date, 'end_date', currentLang, t)
+        },
+        {
+            label: t('halaqa.activities', 'Activities'),
+            value: getActivitiesLabel(item?.activities ?? item?.halaqa?.activities, currentLang, t)
+        },
+        {
+            label: prettifyKey('current_students_count'),
+            value: getStudentCountValue(item) ?? t('common.not_available', 'N/A')
+        },
+        {
+            label: prettifyKey('halaqa_plans_average_grade'),
+            value: getHalaqaAverageGradeValue(item) ?? t('common.not_available', 'N/A')
+        },
+        {
+            label: prettifyKey('weekly_holiday'),
+            value: getWeeklyHolidayLabel(item?.weekly_holiday ?? item?.halaqa?.weekly_holiday, t)
+        }
+    ].filter((row) => row.value != null && row.value !== '');
+}
+
+function extractStudentsList(halaqa) {
+    return toArray(
+        halaqa?.students ??
+        halaqa?.student_list ??
+        halaqa?.students_list ??
+        halaqa?.members
+    );
+}
+
+function buildTeacherHalaqaRows(halaqa, currentLang, t) {
+    return [
+        {
+            label: t('accountManagement.fields.halaqa', 'Halaqa'),
+            value: getHalaqaName(halaqa, currentLang, t)
+        },
+        {
+            label: t('halaqa.teacher', 'Teacher'),
+            value: getTeacherName(halaqa, currentLang, t)
+        },
+        {
+            label: t('halaqa.period', 'Period'),
+            value: getPeriodLabel(halaqa?.period, currentLang, t)
+        },
+        {
+            label: t('halaqa.startDate', 'Start Date'),
+            value: getDisplayValue(halaqa?.start_date, 'start_date', currentLang, t)
+        },
+        {
+            label: t('halaqa.endDate', 'End Date'),
+            value: getDisplayValue(halaqa?.end_date, 'end_date', currentLang, t)
+        },
+        {
+            label: t('halaqa.activities', 'Activities'),
+            value: getActivitiesLabel(halaqa?.activities, currentLang, t)
+        },
+        {
+            label: prettifyKey('current_students_count'),
+            value: getStudentCountValue(halaqa) ?? t('common.not_available', 'N/A')
+        },
+        {
+            label: prettifyKey('weekly_holiday'),
+            value: getWeeklyHolidayLabel(halaqa?.weekly_holiday, t)
+        }
+    ].filter((row) => row.value != null && row.value !== '');
 }
 
 const TeacherNestedSectionCard = ({
@@ -532,11 +894,8 @@ const TeacherHalaqasSection = ({
             {halaqas.map((halaqa, index) => {
                 const halaqaId = halaqa?.id ?? halaqa?.halaqa_id ?? index;
                 const halaqaName = getPersonLabel(halaqa, currentLang, t, 'accountManagement.sections.halaqas');
-                const students = toArray(halaqa?.students);
-                const objectPayload = getObjectOnlyPayload(halaqa);
-                const filteredObjectPayload = objectPayload
-                    ? Object.fromEntries(Object.entries(objectPayload).filter(([key]) => key !== 'students'))
-                    : null;
+                const students = extractStudentsList(halaqa);
+                const summaryRows = buildTeacherHalaqaRows(halaqa, currentLang, t);
 
                 return (
                     <DetailCard
@@ -544,8 +903,16 @@ const TeacherHalaqasSection = ({
                         icon={UsersIcon}
                         title={halaqaName}
                     >
-                        {filteredObjectPayload ? (
-                            <StructuredObjectDetails data={filteredObjectPayload} currentLang={currentLang} t={t} />
+                        {summaryRows.length > 0 ? (
+                            <dl className="space-y-3">
+                                {summaryRows.map((row) => (
+                                    <InfoRow
+                                        key={`${halaqaId}-${row.label}`}
+                                        label={row.label}
+                                        value={row.value}
+                                    />
+                                ))}
+                            </dl>
                         ) : null}
 
                         <div className="pt-2">
@@ -804,6 +1171,8 @@ const AccountManagementDetailPage = () => {
                         t={t}
                     />
                 </div>
+            ) : accountType === 'student' && activeTab === 'plans' ? (
+                <StudentPlansSection payload={activePayload} currentLang={currentLang} t={t} />
             ) : (
                 renderDefaultSection()
             )}
