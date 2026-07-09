@@ -22,6 +22,8 @@ const extractCalendarPayload = (responseBody) => {
     return responseBody;
 };
 
+export { extractCalendarPayload };
+
 const extractCalendarItems = (responseBody) => {
     const payload = extractCalendarPayload(responseBody);
 
@@ -123,4 +125,9 @@ export function useEntityManagerCalendarMonth(dates = []) {
         isFetching: queries.some((query) => query.isFetching),
         error: queries.find((query) => query.error)?.error ?? null
     };
+}
+
+export async function getEntityManagerCalendarPayload(date) {
+    const response = await entityManagerCalendarService.getCalendar(date ? { date } : {});
+    return extractCalendarPayload(response);
 }

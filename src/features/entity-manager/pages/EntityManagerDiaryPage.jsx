@@ -1,14 +1,16 @@
 import React, { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { CalendarIcon, ChevronDownIcon, ChevronRightIcon } from '@/shared/icons';
 import { getDisplayDate, getGregorianDate } from '@/shared/utils';
 import EntityManagerDiaryList from '@/features/entity-manager/calendar/components/EntityManagerDiaryList';
-import { useEntityManagerCalendarMonth } from '@/features/entity-manager/calendar/hooks/useCalendar';
+import { getEntityManagerCalendarPayload, useEntityManagerCalendarMonth } from '@/features/entity-manager/calendar/hooks/useCalendar';
 
 const DAY_NAMES_AR = ['سبت', 'أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'];
 const DAY_NAMES_EN = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const DIARY_FILTERS = ['all', 'recitations', 'exams', 'activities'];
 const UPCOMING_GROUPS_LIMIT = 3;
+const UPCOMING_SEARCH_MAX_DAYS = 730;
 
 const getTodayDate = () => new Date();
 
@@ -26,6 +28,12 @@ const parseIsoDate = (isoDate) => {
 
     const [year, month, day] = isoDate.split('-').map(Number);
     return new Date(year, (month || 1) - 1, day || 1);
+};
+
+const addDaysToIsoDate = (isoDate, daysToAdd) => {
+    const nextDate = parseIsoDate(isoDate);
+    nextDate.setDate(nextDate.getDate() + daysToAdd);
+    return toIsoDate(nextDate);
 };
 
 const getWeekStart = (date) => {
@@ -146,19 +154,6 @@ const sortItems = (items) => {
     });
 };
 
-const sortGroups = (groups) => {
-    return [...groups].sort((a, b) => {
-        const dateA = getGregorianDate(getGroupDate(a.group, a.date) || '') || '';
-        const dateB = getGregorianDate(getGroupDate(b.group, b.date) || '') || '';
-
-        if (dateA !== dateB) {
-            return dateA.localeCompare(dateB);
-        }
-
-        return a.key.localeCompare(b.key);
-    });
-};
-
 const groupItemsByDate = (items, prefix) => {
     const groupedMap = items.reduce((accumulator, item, index) => {
         const itemDate = getGregorianDate(item?.date || item?.session_date || item?.start_date || item?.calendar_date || '') || '';
@@ -185,6 +180,11 @@ const groupItemsByDate = (items, prefix) => {
     }, new Map());
 
     return [...groupedMap.values()].sort((a, b) => a.date.localeCompare(b.date));
+};
+
+const isRateLimitError = (error) => {
+    return Number(error?.status) === 429 ||
+        String(error?.message || '').toLowerCase().includes('too many attempts');
 };
 
 const GroupedDiarySection = ({
@@ -303,40 +303,75 @@ const EntityManagerDiaryPage = () => {
         () => groupItemsByDate(selectedDayItems, `selected-${activeDiaryFilter}`),
         [activeDiaryFilter, selectedDayItems]
     );
+    const upcomingQuery = useQuery({
+        queryKey: ['entity-manager-calendar', 'nearest-upcoming', selectedDate, activeDiaryFilter, UPCOMING_GROUPS_LIMIT],
+        queryFn: async () => {
+            const collectedEntries = [];
+            const seenDates = new Set();
 
-    const groupedUpcomingItems = useMemo(() => {
-        const entries = selectedWeekIsoDates
-            .filter((date) => date >= selectedDate)
-            .flatMap((date) => {
-                const payload = payloadByDate[date] ?? {};
-                const groups = getFilterGroupsFromPayload(payload, activeDiaryFilter);
+            selectedWeekIsoDates
+                .filter((date) => date >= selectedDate)
+                .forEach((date) => {
+                    const payload = payloadByDate[date] ?? {};
+                    const groups = getFilterGroupsFromPayload(payload, activeDiaryFilter);
+                    const items = sortItems(flattenGroupsItems(groups, date));
+                    const count = groups.reduce((total, group) => total + getGroupCount(group), 0);
 
-                return groups.map((group, index) => {
-                    const groupDate = getGregorianDate(getGroupDate(group, date)) || date;
-                    const items = flattenGroupsItems([group], groupDate);
-
-                    return {
-                        key: `${activeDiaryFilter}-${groupDate}-${index}`,
-                        date: groupDate,
-                        count: getGroupCount(group),
-                        items,
-                        group
-                    };
+                    if ((items.length > 0 || count > 0) && !seenDates.has(date) && collectedEntries.length < UPCOMING_GROUPS_LIMIT) {
+                        collectedEntries.push({
+                            key: `upcoming-${activeDiaryFilter}-${date}`,
+                            date,
+                            count: count || items.length,
+                            items
+                        });
+                        seenDates.add(date);
+                    }
                 });
-            })
-            .filter((entry) => entry.items.length > 0 || entry.count > 0);
 
-        const mergedItems = sortGroups(entries).flatMap((entry) => (
-            Array.isArray(entry.items)
-                ? entry.items.map((item) => ({
-                    ...item,
-                    date: item?.date || item?.calendar_date || entry.date
-                }))
-                : []
-        ));
+            const searchStartOffset = selectedWeekIsoDates.length;
 
-        return groupItemsByDate(mergedItems, `upcoming-${activeDiaryFilter}`).slice(0, UPCOMING_GROUPS_LIMIT);
-    }, [activeDiaryFilter, payloadByDate, selectedDate, selectedWeekIsoDates]);
+            for (
+                let offset = searchStartOffset;
+                offset <= UPCOMING_SEARCH_MAX_DAYS && collectedEntries.length < UPCOMING_GROUPS_LIMIT;
+                offset += 1
+            ) {
+                const date = addDaysToIsoDate(selectedDate, offset);
+
+                if (seenDates.has(date)) {
+                    continue;
+                }
+
+                try {
+                    const payload = await getEntityManagerCalendarPayload(date);
+                    const groups = getFilterGroupsFromPayload(payload, activeDiaryFilter);
+                    const items = sortItems(flattenGroupsItems(groups, date));
+                    const count = groups.reduce((total, group) => total + getGroupCount(group), 0);
+
+                    if (items.length === 0 && count === 0) {
+                        continue;
+                    }
+
+                    collectedEntries.push({
+                        key: `upcoming-${activeDiaryFilter}-${date}`,
+                        date,
+                        count: count || items.length,
+                        items
+                    });
+                    seenDates.add(date);
+                } catch (error) {
+                    if (isRateLimitError(error)) {
+                        break;
+                    }
+
+                    throw error;
+                }
+            }
+
+            return collectedEntries.slice(0, UPCOMING_GROUPS_LIMIT);
+        },
+        staleTime: 2 * 60 * 1000,
+        retry: false
+    });
 
     const dayCountsByDate = useMemo(() => {
         return selectedWeekIsoDates.reduce((acc, date) => {
@@ -535,12 +570,12 @@ const EntityManagerDiaryPage = () => {
                     </div>
 
                     <GroupedDiarySection
-                        groups={groupedUpcomingItems}
+                        groups={upcomingQuery.data ?? []}
                         expandedGroups={expandedGroups}
                         onToggleGroup={handleToggleGroup}
                         emptyMessage={t('entityDiary.noUpcomingEvents', 'No upcoming events in this week.')}
-                        isLoading={isWeekFetching}
-                        error={weekError}
+                        isLoading={upcomingQuery.isLoading || upcomingQuery.isFetching}
+                        error={upcomingQuery.error}
                         t={t}
                     />
                 </section>
