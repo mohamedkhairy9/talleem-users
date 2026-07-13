@@ -55,6 +55,27 @@ function formatKey(key) {
         .join(' ');
 }
 
+const FIELD_LABEL_TRANSLATION_KEYS = {
+    has_medical_issues: 'joinRequests.field.has_medical_issues',
+    medical_issues: 'joinRequests.field.medical_issues',
+    qualifications: 'joinRequests.field.qualifications'
+};
+
+function normalizeFieldKey(key) {
+    return String(key ?? '')
+        .trim()
+        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+        .replace(/[\s-]+/g, '_')
+        .toLowerCase();
+}
+
+function getFieldLabel(key, t) {
+    const normalizedKey = normalizeFieldKey(key);
+    const translationKey = FIELD_LABEL_TRANSLATION_KEYS[normalizedKey] ?? `joinRequests.field.${normalizedKey || key}`;
+
+    return t(translationKey, formatKey(normalizedKey || key));
+}
+
 function normalizeStatusToken(value) {
     return String(value ?? '')
         .trim()
@@ -365,7 +386,7 @@ function renderValue(value, lang, t, fieldKey = '', depth = 0) {
                 {entries.map(([nestedKey, nestedValue]) => (
                     <div key={nestedKey} className="border-s border-slate-200 ps-3">
                         <div className="mb-1 text-xs font-medium text-slate-500">
-                            {t(`joinRequests.field.${nestedKey}`, formatKey(nestedKey))}
+                            {getFieldLabel(nestedKey, t)}
                         </div>
                         <div className="break-words text-sm text-slate-900">
                             {renderValue(nestedValue, lang, t, nestedKey, depth + 1)}
@@ -554,7 +575,7 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
                             {entries.map(([key, value]) => (
                                 <DataField
                                     key={key}
-                                    label={t(`joinRequests.field.${key}`, formatKey(key))}
+                                    label={getFieldLabel(key, t)}
                                     value={renderValue(value, lang, t, key)}
                                 />
                             ))}
