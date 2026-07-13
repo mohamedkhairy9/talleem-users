@@ -91,6 +91,20 @@ function normalizeStatusToken(value) {
 }
 
 function isTerminalJoinRequestStatus(value) {
+    if (value && typeof value === 'object') {
+        return [
+            value.status,
+            value.status_text,
+            value.request_status,
+            value.last_status,
+            value.name
+        ].some(isTerminalJoinRequestStatus);
+    }
+
+    if (Number(value) === 1 || Number(value) === 2) {
+        return true;
+    }
+
     const normalized = normalizeStatusToken(value);
 
     if (!normalized) {
@@ -107,6 +121,146 @@ function isTerminalJoinRequestStatus(value) {
         normalized.includes('تم القبول') ||
         normalized.includes('تم الرفض')
     );
+}
+
+function getWorkflowStepId(value) {
+    if (value == null) {
+        return null;
+    }
+
+    if (typeof value === 'number' || typeof value === 'string') {
+        const normalizedValue = String(value).trim();
+        return normalizedValue || null;
+    }
+
+    if (typeof value === 'object') {
+        const candidate = value.id ??
+            value.step_id ??
+            value.phase_id ??
+            value.workflow_step_id ??
+            value.current_step_id ??
+            null;
+
+        return candidate != null ? String(candidate).trim() : null;
+    }
+
+    return null;
+}
+
+function getWorkflowStepName(value) {
+    if (!value || typeof value !== 'object') {
+        return '';
+    }
+
+    const name = value.name ?? value.title ?? value.label ?? '';
+
+    if (typeof name === 'string') {
+        return normalizeStatusToken(name);
+    }
+
+    if (name && typeof name === 'object') {
+        return normalizeStatusToken(`${name.ar ?? ''} ${name.en ?? ''}`);
+    }
+
+    return '';
+}
+
+function getRequestStepId(request) {
+    return getWorkflowStepId(request?.current_step) ??
+        getWorkflowStepId(request?.current_phase) ??
+        getWorkflowStepId(request?.current_step_id) ??
+        getWorkflowStepId(request?.current_phase_id);
+}
+
+function getRequestStepName(request) {
+    return getWorkflowStepName(request?.current_step) || getWorkflowStepName(request?.current_phase);
+}
+
+function getLogStepId(log) {
+    return getWorkflowStepId(log?.step) ??
+        getWorkflowStepId(log?.phase) ??
+        getWorkflowStepId(log?.step_id) ??
+        getWorkflowStepId(log?.phase_id) ??
+        getWorkflowStepId(log?.workflow_step_id);
+}
+
+function getLogStepName(log) {
+    return getWorkflowStepName(log?.step) || getWorkflowStepName(log?.phase);
+}
+
+function collectWorkflowActorTokens(value) {
+    if (value == null) {
+        return [];
+    }
+
+    if (typeof value === 'string' || typeof value === 'number') {
+        return [normalizeStatusToken(value)];
+    }
+
+    if (Array.isArray(value)) {
+        return value.flatMap(collectWorkflowActorTokens);
+    }
+
+    if (typeof value === 'object') {
+        return [
+            value.role,
+            value.roles,
+            value.user_type,
+            value.type,
+            value.name,
+            value.slug,
+            value.code,
+            value.title,
+            value.label
+        ].flatMap(collectWorkflowActorTokens);
+    }
+
+    return [];
+}
+
+function hasEntityManagerToken(values) {
+    return values.some((value) => {
+        const token = normalizeStatusToken(value);
+
+        return token.includes('entity_manager') ||
+            token.includes('entity manager') ||
+            token.includes('entitymanager') ||
+            (token.includes('entity') && token.includes('manager'));
+    });
+}
+
+function isEntityManagerProcessedLog(log) {
+    if (!isTerminalJoinRequestStatus(log?.status ?? log?.status_text ?? log?.request_status ?? log?.last_status)) {
+        return false;
+    }
+
+    return hasEntityManagerToken([
+        ...collectWorkflowActorTokens(log?.user),
+        ...collectWorkflowActorTokens(log?.actor),
+        ...collectWorkflowActorTokens(log?.processed_by),
+        ...collectWorkflowActorTokens(log?.processor),
+        ...collectWorkflowActorTokens(log?.role),
+        ...collectWorkflowActorTokens(log?.roles),
+        getLogStepName(log)
+    ]);
+}
+
+function isProcessedLogForCurrentWorkflowStep(log, request) {
+    if (!isTerminalJoinRequestStatus(log?.status ?? log?.status_text ?? log?.request_status ?? log?.last_status)) {
+        return false;
+    }
+
+    const requestStepId = getRequestStepId(request);
+    const logStepId = getLogStepId(log);
+
+    if (requestStepId && logStepId) {
+        return requestStepId === logStepId;
+    }
+
+    const requestStepName = getRequestStepName(request);
+    const logStepName = getLogStepName(log);
+
+    return Boolean(requestStepName && logStepName && requestStepName === logStepName);
 }
 
 function isLocalizedLeafObject(value) {
@@ -504,20 +658,30 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
     }
 
     const activeRequest = detailQuery.request ?? request;
+    const logs = Array.isArray(activeRequest.logs) ? activeRequest.logs : [];
     const isProcessedByCurrentUser = Boolean(activeRequest?.processed_by_you);
     const isFinalizedRequest = [
         activeRequest?.status,
         activeRequest?.status_text,
         activeRequest?.request_status,
-        activeRequest?.last_status
+        activeRequest?.last_status,
+        activeRequest?.current_step?.status,
+        activeRequest?.current_step?.status_text,
+        activeRequest?.current_phase?.status,
+        activeRequest?.current_phase?.status_text
     ].some(isTerminalJoinRequestStatus);
-    const shouldDisableActions = isReadOnly || isProcessedByCurrentUser || isFinalizedRequest;
+    const isCurrentWorkflowStepProcessed = logs.some((log) => isProcessedLogForCurrentWorkflowStep(log, activeRequest));
+    const isProcessedByEntityManager = logs.some(isEntityManagerProcessedLog);
+    const shouldDisableActions = isReadOnly ||
+        isProcessedByCurrentUser ||
+        isFinalizedRequest ||
+        isCurrentWorkflowStepProcessed ||
+        isProcessedByEntityManager;
     const requestTypeName = getLocalizedText(activeRequest.request_type?.name, lang);
     const formName = getLocalizedText(activeRequest.form?.name, lang);
     const phaseName = getLocalizedText(activeRequest.current_phase?.name, lang);
     const localizedStatus = localizeJoinRequestStatusText(activeRequest.status_text ?? activeRequest.status, lang) || '-';
     const detailFiles = hasAttachmentUrls(activeRequest.files) ? activeRequest.files : null;
-    const logs = Array.isArray(activeRequest.logs) ? activeRequest.logs : [];
     const submittedData = activeRequest.submitted_data && typeof activeRequest.submitted_data === 'object'
         ? {
             ...activeRequest.submitted_data,
