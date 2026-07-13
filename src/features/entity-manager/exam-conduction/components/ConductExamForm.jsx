@@ -10,6 +10,10 @@ import { getLocalizedText } from '@/shared/utils/helpers/getLocalizedText';
 import { getErrorMessage } from '@/shared/utils';
 import { useConductExamDetail, useConductExamEvaluationTemplates, useSubmitStudentExam } from '../hooks/useExamConduction';
 import ExamMushafViewer from './ExamMushafViewer';
+import {
+    getExamConductionSegmentPayloadId,
+    getExamConductionSegments
+} from '../utils/examSegments';
 
 const CARD_CLASS = 'rounded-xl border border-gray-200 bg-white p-5 shadow-sm';
 
@@ -23,32 +27,6 @@ function getSessionData(state) {
 
 function getTimeRange(exam) {
     return `${formatTimePart(exam?.time_from)} - ${formatTimePart(exam?.time_to)}`;
-}
-
-function buildSegments(sessionData, student) {
-    const rawSegments = normalizeArray(sessionData?.segments);
-
-    if (rawSegments.length > 0) {
-        return rawSegments.map((segment, index) => ({
-            id: segment?.id ?? segment?.segment_id ?? segment?.juz_number ?? index + 1,
-            order: segment?.order ?? index + 1,
-            juz_number: segment?.juz_number ?? segment?.id ?? segment?.segment_id ?? index + 1,
-            first_verse_key: segment?.first_verse_key ?? null,
-            last_verse_key: segment?.last_verse_key || null,
-            column_total: segment?.column_total ?? 0,
-            quran_exam_segment_item_id: segment?.quran_exam_segment_item_id ?? null
-        }));
-    }
-
-    return normalizeArray(student?.juz_numbers).map((juzNumber, index) => ({
-        id: juzNumber,
-        order: index + 1,
-        juz_number: juzNumber,
-        first_verse_key: null,
-        last_verse_key: null,
-        column_total: 0,
-        quran_exam_segment_item_id: null
-    }));
 }
 
 function buildCriteria(sessionData, selectedTemplate, currentLang, t) {
@@ -137,7 +115,13 @@ const ConductExamForm = () => {
         );
     }, [location.state?.selectedTemplate, location.state?.startPayload?.evaluation_parameter_id, templates]);
 
-    const segments = useMemo(() => buildSegments(sessionData, selectedStudent), [sessionData, selectedStudent]);
+    const examType = sessionData?.exam_type ?? location.state?.startPayload?.exam_type ?? 'maqata3';
+    const segments = useMemo(() => getExamConductionSegments({
+        examType,
+        rawSegments: sessionData?.segments,
+        studentJuzNumbers: selectedStudent?.juz_numbers,
+        fallbackJuzNumbers: normalizeArray(sessionData?.segments).map((segment) => segment?.juz_number)
+    }), [examType, selectedStudent?.juz_numbers, sessionData?.segments]);
     const criteria = useMemo(
         () => buildCriteria(sessionData, selectedTemplate, currentLang, t),
         [sessionData, selectedTemplate, currentLang, t]
@@ -193,7 +177,7 @@ const ConductExamForm = () => {
 
         const payload = {
             segments: segments.map((segment) => ({
-                segment_id: segment.id,
+                segment_id: getExamConductionSegmentPayloadId(segment),
                 grades: criteria.map((criteriaItem) => {
                     const rawValue = scores[`${segment.id}-${criteriaItem.id}`];
                     const fieldKey = `${segment.id}-${criteriaItem.id}`;
@@ -281,7 +265,7 @@ const ConductExamForm = () => {
                         </h2>
                         <div className="space-y-3 text-sm text-gray-700">
                             <p><span className="font-medium text-gray-900">{t('examConduction.student', 'Student')}:</span> {selectedStudent?.name || '-'}</p>
-                            <p><span className="font-medium text-gray-900">{t('examConduction.examType', 'Exam Type')}:</span> {t(`examConduction.types.${location.state?.startPayload?.exam_type || 'maqata3'}`, location.state?.startPayload?.exam_type || '-')}</p>
+                            <p><span className="font-medium text-gray-900">{t('examConduction.examType', 'Exam Type')}:</span> {t(`examConduction.types.${examType}`, examType || '-')}</p>
                             <p><span className="font-medium text-gray-900">{t('examConduction.evaluationTemplate', 'Evaluation Template')}:</span> {getLocalizedText(selectedTemplate?.name, currentLang, '-')}</p>
                             <p><span className="font-medium text-gray-900">{t('examConduction.status', 'Status')}:</span> {t(`examConduction.statuses.${sessionData?.status || 'started'}`, sessionData?.status || '-')}</p>
                             <p><span className="font-medium text-gray-900">{t('scheduledExams.table.date', 'Date')}:</span> {getDisplayDate(exam?.exam_date)}</p>

@@ -7,6 +7,7 @@ import { useDateFormatStore } from '@/app/stores/dateFormat.store';
 import { formatTimePart, getDisplayDate } from '@/shared/utils/helpers/dateFormatter';
 import { getLocalizedText } from '@/shared/utils/helpers/getLocalizedText';
 import { useStudentExamResult } from '@/features/entity-manager/exam-conduction/hooks/useExamConduction';
+import { getExamConductionSegments } from '@/features/entity-manager/exam-conduction/utils/examSegments';
 
 const CARD_CLASS = 'rounded-xl border border-gray-200 bg-white p-5 shadow-sm';
 
@@ -40,6 +41,14 @@ const ExamConductionResultPage = () => {
     const currentLang = i18n.language || lang || 'ar';
     useDateFormatStore((state) => state.dateFormat);
     const { result, isLoading, error } = useStudentExamResult(scheduledExamId || '', studentId || '');
+    const resultSegments = React.useMemo(() => getExamConductionSegments({
+        examType: result?.exam_type,
+        rawSegments: result?.segments,
+        studentJuzNumbers: result?.student?.juz_numbers,
+        fallbackJuzNumbers: Array.isArray(result?.segments)
+            ? result.segments.map((segment) => segment?.juz_number)
+            : []
+    }), [result?.exam_type, result?.segments, result?.student?.juz_numbers]);
 
     const handleBack = () => {
         navigate(`/${lang || 'ar'}/exam-conduction/${scheduledExamId}`);
@@ -106,8 +115,11 @@ const ExamConductionResultPage = () => {
 
                     <ResultCard icon={BookOpenIcon} title={t('examConduction.segmentResults', 'Segment Results')}>
                         <div className="space-y-4">
-                            {(Array.isArray(result?.segments) ? result.segments : []).map((segment) => (
-                                <div key={segment?.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            {resultSegments.map((segment, index) => {
+                                const rawSegment = Array.isArray(result?.segments) ? result.segments[index] : null;
+
+                                return (
+                                    <div key={segment?.id ?? rawSegment?.id ?? index} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                                         <div>
                                             <h3 className="text-sm font-semibold text-gray-900">
@@ -123,7 +135,7 @@ const ExamConductionResultPage = () => {
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                        {(Array.isArray(segment?.grades) ? segment.grades : []).map((gradeItem) => (
+                                        {(Array.isArray(rawSegment?.grades) ? rawSegment.grades : []).map((gradeItem) => (
                                             <div key={gradeItem?.id ?? `${segment?.id}-${gradeItem?.criteria_id}`} className="rounded-lg border border-gray-200 bg-white p-3">
                                                 <p className="text-sm font-medium text-gray-900">
                                                     {getLocalizedText(gradeItem?.criteria_name, currentLang, '-')}
@@ -137,8 +149,9 @@ const ExamConductionResultPage = () => {
                                             </div>
                                         ))}
                                     </div>
-                                </div>
-                            ))}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </ResultCard>
                 </div>

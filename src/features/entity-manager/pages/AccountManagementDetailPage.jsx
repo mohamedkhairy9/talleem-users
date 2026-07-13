@@ -20,7 +20,7 @@ import {
     useTeacherStudentNestedSection
 } from '@/features/entity-manager/account-management/hooks/useAccountManagement';
 
-const CARD_CLASS = 'rounded-xl border border-gray-200 bg-white p-5 shadow-sm';
+const CARD_CLASS = 'rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5';
 const MAX_TABLE_COLUMNS = 8;
 const DEFAULT_TAB = 'profile';
 
@@ -458,6 +458,7 @@ const CollectionRenderer = ({ title, items, currentLang, t }) => {
                 data={items}
                 loading={false}
                 scrollable={false}
+                mobileCards
                 emptyMessage={t('accountManagement.noSectionData', 'No data available for this section.')}
             />
         </DetailCard>
@@ -474,7 +475,7 @@ const StudentPlansSection = ({ payload, currentLang, t }) => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {items.map((item, index) => {
                 const title = getHalaqaName(item, currentLang, t);
                 const rows = buildStudentPlanRows(item, currentLang, t);
@@ -945,6 +946,7 @@ const TeacherHalaqasSection = ({
                                                         type="button"
                                                         variant="outline"
                                                         size="sm"
+                                                        className="w-full justify-center sm:w-auto"
                                                         onClick={() => onSelectStudentSection({
                                                             halaqaId,
                                                             halaqaName,
@@ -959,6 +961,7 @@ const TeacherHalaqasSection = ({
                                                         type="button"
                                                         variant="ghost"
                                                         size="sm"
+                                                        className="w-full justify-center sm:w-auto"
                                                         onClick={() => onSelectStudentSection({
                                                             halaqaId,
                                                             halaqaName,
@@ -1122,27 +1125,29 @@ const AccountManagementDetailPage = () => {
             ) : null}
 
             <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                <div className="flex flex-wrap gap-2">
-                    {tabs.map((tab) => {
-                        const IconComponent = tab.icon;
-                        const isActive = tab.key === activeTab;
+                <div className="overflow-x-auto pb-1">
+                    <div className="flex min-w-max gap-2 sm:min-w-0 sm:flex-wrap">
+                        {tabs.map((tab) => {
+                            const IconComponent = tab.icon;
+                            const isActive = tab.key === activeTab;
 
-                        return (
-                            <button
-                                key={tab.key}
-                                type="button"
-                                onClick={() => handleTabChange(tab.key)}
-                                className={`inline-flex min-h-[44px] items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium transition-all ${
-                                    isActive
-                                        ? 'bg-primary-600 text-white shadow-sm'
-                                        : 'bg-gray-50 text-gray-600 hover:bg-primary-50 hover:text-primary-700'
-                                }`}
-                            >
-                                <IconComponent width={16} height={16} />
-                                <span>{t(tab.labelKey, tab.fallback)}</span>
-                            </button>
-                        );
-                    })}
+                            return (
+                                <button
+                                    key={tab.key}
+                                    type="button"
+                                    onClick={() => handleTabChange(tab.key)}
+                                    className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium transition-all ${
+                                        isActive
+                                            ? 'bg-primary-600 text-white shadow-sm'
+                                            : 'bg-gray-50 text-gray-600 hover:bg-primary-50 hover:text-primary-700'
+                                    }`}
+                                >
+                                    <IconComponent width={16} height={16} />
+                                    <span>{t(tab.labelKey, tab.fallback)}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 

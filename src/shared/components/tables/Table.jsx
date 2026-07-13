@@ -1,27 +1,67 @@
 import { EyeIcon, EditIcon, TrashIcon } from '@/shared/icons';
 import { useTranslation } from 'react-i18next';
+
 /**
  * Table Component
  * Scrollable body with sticky header when used inside a flex container with min-h-0.
  * Pass scrollable to enable the scroll wrapper (for bounded height).
  */
-const Table = ({ columns = [], data = [], loading = false, emptyMessage = 'No data available', className = '', scrollable = true, actionButtons, rowClassName }) => {
+const Table = ({
+    columns = [],
+    data = [],
+    loading = false,
+    emptyMessage = 'No data available',
+    className = '',
+    scrollable = true,
+    actionButtons,
+    rowClassName,
+    mobileCards = false
+}) => {
     const { t } = useTranslation();
     const isEmpty = !loading && data.length === 0;
-    // Render action buttons if configured
-    const renderActionButtons = (row) => {
-        if (!actionButtons)
+
+    const getCellContent = (column, row) => {
+        if (column.accessor) {
+            return typeof column.accessor === 'function'
+                ? column.accessor(row)
+                : row[column.accessor];
+        }
+
+        if (column.cell) {
+            return column.cell(row);
+        }
+
+        return '-';
+    };
+
+    const renderActionButtons = (row, { mobile = false } = {}) => {
+        if (!actionButtons) {
             return null;
-        const { showView, showEdit, showDelete, onView, onEdit, onDelete, isDeleting, customActions = [] } = actionButtons;
+        }
+
+        const {
+            showView,
+            showEdit,
+            showDelete,
+            onView,
+            onEdit,
+            onDelete,
+            isDeleting,
+            customActions = []
+        } = actionButtons;
         const hasAnyAction = showView || showEdit || showDelete || customActions.length > 0;
-        if (!hasAnyAction)
+
+        if (!hasAnyAction) {
             return null;
-        return (<div className="flex items-center gap-1">
+        }
+
+        return (
+            <div className="flex flex-wrap items-center gap-2">
                 {customActions.map((action) => {
                     const isDisabled = typeof action.disabled === 'function' ? action.disabled(row) : Boolean(action.disabled);
                     const label = typeof action.label === 'function' ? action.label(row) : action.label;
                     const title = typeof action.title === 'function' ? action.title(row) : (action.title ?? label);
-                    const className = action.className ?? 'inline-flex items-center gap-1 rounded-lg bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100 disabled:opacity-50 disabled:cursor-not-allowed';
+                    const customClassName = action.className ?? 'inline-flex items-center gap-1 rounded-lg bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-50';
                     const Icon = action.icon;
 
                     return (
@@ -30,7 +70,7 @@ const Table = ({ columns = [], data = [], loading = false, emptyMessage = 'No da
                             type="button"
                             onClick={() => action.onClick(row)}
                             disabled={isDisabled}
-                            className={className}
+                            className={customClassName}
                             aria-label={title}
                             title={title}
                         >
@@ -39,18 +79,56 @@ const Table = ({ columns = [], data = [], loading = false, emptyMessage = 'No da
                         </button>
                     );
                 })}
-                {showView && onView && (<button type="button" onClick={() => onView(row)} className="p-2 rounded-lg text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors" aria-label={t('common.view', 'View')} title={t('common.view', 'View')}>
-                        <EyeIcon width={18} height={18}/>
-                    </button>)}
-                {showEdit && onEdit && (<button type="button" onClick={() => onEdit(row)} className="p-2 rounded-lg text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors" aria-label={t('common.edit', 'Edit')} title={t('common.edit', 'Edit')}>
-                        <EditIcon width={18} height={18}/>
-                    </button>)}
-                {showDelete && onDelete && (<button type="button" onClick={() => onDelete(row)} disabled={isDeleting} className="p-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" aria-label={t('common.delete', 'Delete')} title={t('common.delete', 'Delete')}>
-                        <TrashIcon width={18} height={18}/>
-                    </button>)}
-            </div>);
+
+                {showView && onView ? (
+                    <button
+                        type="button"
+                        onClick={() => onView(row)}
+                        className={mobile
+                            ? 'inline-flex items-center gap-1 rounded-lg bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100'
+                            : 'rounded-lg p-2 text-gray-600 transition-colors hover:bg-primary-50 hover:text-primary-600'}
+                        aria-label={t('common.view', 'View')}
+                        title={t('common.view', 'View')}
+                    >
+                        <EyeIcon width={18} height={18} />
+                        {mobile ? <span>{t('common.view', 'View')}</span> : null}
+                    </button>
+                ) : null}
+
+                {showEdit && onEdit ? (
+                    <button
+                        type="button"
+                        onClick={() => onEdit(row)}
+                        className={mobile
+                            ? 'inline-flex items-center gap-1 rounded-lg bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100'
+                            : 'rounded-lg p-2 text-gray-600 transition-colors hover:bg-primary-50 hover:text-primary-600'}
+                        aria-label={t('common.edit', 'Edit')}
+                        title={t('common.edit', 'Edit')}
+                    >
+                        <EditIcon width={18} height={18} />
+                        {mobile ? <span>{t('common.edit', 'Edit')}</span> : null}
+                    </button>
+                ) : null}
+
+                {showDelete && onDelete ? (
+                    <button
+                        type="button"
+                        onClick={() => onDelete(row)}
+                        disabled={isDeleting}
+                        className={mobile
+                            ? 'inline-flex items-center gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50'
+                            : 'rounded-lg p-2 text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50'}
+                        aria-label={t('common.delete', 'Delete')}
+                        title={t('common.delete', 'Delete')}
+                    >
+                        <TrashIcon width={18} height={18} />
+                        {mobile ? <span>{t('common.delete', 'Delete')}</span> : null}
+                    </button>
+                ) : null}
+            </div>
+        );
     };
-    // Combine columns with action column if configured
+
     const actionColumn = actionButtons && (actionButtons.showView || actionButtons.showEdit || actionButtons.showDelete || actionButtons.customActions?.length > 0)
         ? {
             header: t('common.actions', 'Actions'),
@@ -58,65 +136,132 @@ const Table = ({ columns = [], data = [], loading = false, emptyMessage = 'No da
         }
         : null;
     const allColumns = actionColumn ? [...columns, actionColumn] : columns;
+    const mobileCardColumns = columns.filter((column) => !column.hideOnMobileCard);
+
     const DEFAULT_MIN_WIDTH_PX = 100;
     const getMinWidthStyle = (col) => {
         const raw = col.minWidth != null ? col.minWidth : DEFAULT_MIN_WIDTH_PX;
         const value = typeof raw === 'number' ? `${raw}px` : raw;
         return { minWidth: value };
     };
-    const tableContent = (<>
-            <table className="w-max min-w-full table-auto divide-y divide-gray-200 border-collapse">
-                <colgroup>
-                    {allColumns.map((col, index) => (<col key={index} style={getMinWidthStyle(col)}/>))}
-                </colgroup>
-                <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
-                    <tr>
-                        {allColumns.map((column, index) => (<th key={index} style={getMinWidthStyle(column)} className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                {column.header}
-                            </th>))}
+
+    const tableContent = (
+        <table className="w-max min-w-full table-auto divide-y divide-gray-200 border-collapse">
+            <colgroup>
+                {allColumns.map((col, index) => (
+                    <col key={index} style={getMinWidthStyle(col)} />
+                ))}
+            </colgroup>
+
+            <thead className="sticky top-0 z-10 bg-gray-50 shadow-sm">
+                <tr>
+                    {allColumns.map((column, index) => (
+                        <th
+                            key={index}
+                            style={getMinWidthStyle(column)}
+                            className="px-6 py-3 text-start text-xs font-medium uppercase tracking-wider text-gray-500"
+                        >
+                            {column.header}
+                        </th>
+                    ))}
+                </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-200 bg-white">
+                {data.map((row, rowIndex) => (
+                    <tr
+                        key={rowIndex}
+                        className={`hover:bg-gray-50 ${typeof rowClassName === 'function' ? rowClassName(row) : (rowClassName ?? '')}`}
+                    >
+                        {allColumns.map((column, colIndex) => (
+                            <td
+                                key={colIndex}
+                                style={getMinWidthStyle(column)}
+                                className={`px-6 py-4 text-start text-sm text-gray-900 ${column.cellClassName ?? 'whitespace-nowrap'}`}
+                            >
+                                {getCellContent(column, row)}
+                            </td>
+                        ))}
                     </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                    {data.map((row, rowIndex) => (<tr key={rowIndex} className={`hover:bg-gray-50 ${typeof rowClassName === 'function' ? rowClassName(row) : (rowClassName ?? '')}`}>
-                            {allColumns.map((column, colIndex) => (<td key={colIndex} style={getMinWidthStyle(column)} className={`px-6 py-4 text-sm text-gray-900 text-start ${column.cellClassName ?? 'whitespace-nowrap'}`}>
-                                    {column.accessor
-                    ? typeof column.accessor === 'function'
-                        ? column.accessor(row)
-                        : row[column.accessor]
-                    : column.cell
-                        ? column.cell(row)
-                        : '-'}
-                                </td>))}
-                        </tr>))}
-                </tbody>
-            </table>
-        </>);
+                ))}
+            </tbody>
+        </table>
+    );
+
+    const mobileCardsContent = mobileCards ? (
+        <div className="space-y-3 p-3 md:hidden">
+            {data.map((row, rowIndex) => (
+                <article
+                    key={row?.id ?? row?.uuid ?? row?.student_id ?? row?.teacher_id ?? rowIndex}
+                    className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                >
+                    <div className="space-y-3">
+                        {mobileCardColumns.map((column, colIndex) => (
+                            <div
+                                key={`${rowIndex}-${colIndex}`}
+                                className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
+                            >
+                                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                                    {column.mobileLabel ?? column.header}
+                                </p>
+                                <div className="break-words text-sm text-gray-900">
+                                    {getCellContent(column, row)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {actionColumn ? (
+                        <div className="mt-4 border-t border-gray-100 pt-3">
+                            {renderActionButtons(row, { mobile: true })}
+                        </div>
+                    ) : null}
+                </article>
+            ))}
+        </div>
+    ) : null;
+
     if (loading && data.length === 0) {
-        return (<div className={`flex justify-center items-center py-12 ${className}`}>
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"/>
-            </div>);
+        return (
+            <div className={`flex items-center justify-center py-12 ${className}`}>
+                <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary-600" />
+            </div>
+        );
     }
+
     if (isEmpty) {
-        return (<div className={`text-center py-12 text-gray-500 ${className}`}>
+        return (
+            <div className={`py-12 text-center text-gray-500 ${className}`}>
                 {emptyMessage}
-            </div>);
+            </div>
+        );
     }
+
     if (scrollable) {
-        return (<div className={`flex flex-col min-h-0 h-full rounded-lg bg-white overflow-hidden ${className}`}>
-                {/*
-                Uses flex-1 to fill available space and adapts to viewport height changes.
-                Parent container should have flex layout with min-h-0 for proper sizing.
-            */}
-                <div className="table-scrollbar flex-1 min-h-0 overflow-auto overflow-x-auto relative">
-                    {loading && data.length > 0 && (<div className="absolute inset-0 bg-white/80 flex items-center justify-center z-20 rounded-lg pointer-events-none">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"/>
-                        </div>)}
+        return (
+            <div className={`flex h-full min-h-0 flex-col overflow-hidden rounded-lg bg-white ${className}`}>
+                {mobileCardsContent}
+
+                <div className={`table-scrollbar relative min-h-0 flex-1 overflow-auto overflow-x-auto ${mobileCards ? 'hidden md:block' : ''}`}>
+                    {loading && data.length > 0 ? (
+                        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-white/80">
+                            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary-600" />
+                        </div>
+                    ) : null}
                     {tableContent}
                 </div>
-            </div>);
+            </div>
+        );
     }
-    return (<div className={`overflow-x-auto ${className}`}>
-            {tableContent}
-        </div>);
+
+    return (
+        <div className={className}>
+            {mobileCardsContent}
+            <div className={`overflow-x-auto ${mobileCards ? 'hidden md:block' : ''}`}>
+                {tableContent}
+            </div>
+        </div>
+    );
 };
+
 export default Table;

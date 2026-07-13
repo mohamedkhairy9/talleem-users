@@ -215,7 +215,7 @@ const AccountManagementList = () => {
                             variant="outline"
                             onClick={resetFilters}
                             disabled={!hasActiveFilters}
-                            className="inline-flex items-center gap-2"
+                            className="inline-flex w-full items-center gap-2 sm:w-auto"
                         >
                             <XIcon width={16} height={16} />
                             {t('common.resetFilters', 'Reset filters')}
@@ -225,7 +225,7 @@ const AccountManagementList = () => {
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
-                <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+                <div className="flex flex-shrink-0 flex-col gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                         <h2 className="text-lg font-semibold text-gray-900">
                             {t('accountManagement.listHeading', 'Accounts List')}
@@ -242,8 +242,8 @@ const AccountManagementList = () => {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <Button type="button" variant="ghost" size="sm" onClick={() => refresh()} disabled={isLoading}>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => refresh()} disabled={isLoading} className="w-full justify-center sm:w-auto">
                             {t('common.refresh', 'Refresh')}
                         </Button>
                         <div className="flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700">
@@ -258,6 +258,7 @@ const AccountManagementList = () => {
                         columns={columns}
                         data={list}
                         loading={isLoading}
+                        mobileCards
                         emptyMessage={t(
                             accountType === 'teacher'
                                 ? 'accountManagement.noTeachers'

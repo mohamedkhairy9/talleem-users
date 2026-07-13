@@ -7,13 +7,13 @@ const AccountManagementPage = () => {
     const { t } = useTranslation();
 
     return (
-        <div className="flex min-h-full flex-col space-y-6">
+        <div className="flex min-h-full flex-col space-y-4 sm:space-y-6">
             <PageHeader
                 title={t('accountManagement.title', 'Account Management')}
                 subtitle={t('accountManagement.subtitle', 'Choose whether you want to manage teacher or student accounts for your entity.')}
             />
 
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-white p-6 shadow-sm">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-white p-4 shadow-sm sm:p-6">
                 <AccountManagementList />
             </div>
         </div>
@@ -21,4 +21,3 @@ const AccountManagementPage = () => {
 };
 
 export default AccountManagementPage;
-

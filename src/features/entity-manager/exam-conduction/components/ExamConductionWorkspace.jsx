@@ -23,6 +23,7 @@ import {
     getExamConductionAvailability
 } from '../utils/examAvailability';
 import { getExamStartPermission } from '../utils/examStartPermissions';
+import { getExamConductionSegments } from '../utils/examSegments';
 
 const CARD_CLASS = 'rounded-xl border border-gray-200 bg-white p-5 shadow-sm';
 const EXAM_TYPES = ['maqata3', 'sard'];
@@ -151,6 +152,14 @@ const ExamConductionWorkspace = () => {
         ),
         [responsibilityLabel, t]
     );
+    const startedExamSegments = useMemo(() => getExamConductionSegments({
+        examType: startedExamSession?.exam_type || selectedExamType,
+        rawSegments: startedExamSession?.segments,
+        studentJuzNumbers: activeStudent?.juz_numbers,
+        fallbackJuzNumbers: Array.isArray(startedExamSession?.segments)
+            ? startedExamSession.segments.map((segment) => segment?.juz_number)
+            : []
+    }), [activeStudent?.juz_numbers, selectedExamType, startedExamSession?.exam_type, startedExamSession?.segments]);
 
     const studentColumns = useMemo(() => ([
         {
@@ -529,7 +538,7 @@ const ExamConductionWorkspace = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200 bg-white">
-                                            {(Array.isArray(startedExamSession?.segments) ? startedExamSession.segments : []).map((segment) => (
+                                            {startedExamSegments.map((segment) => (
                                                 <tr key={segment?.id}>
                                                     <td className="px-4 py-3 text-sm text-gray-900">{segment?.order ?? '-'}</td>
                                                     <td className="px-4 py-3 text-sm text-gray-900">{segment?.juz_number ?? '-'}</td>
@@ -616,7 +625,7 @@ const ExamConductionWorkspace = () => {
 
                             <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 sm:px-6">
                                 <ExamMushafViewer
-                                    segments={startedExamSession?.segments}
+                                    segments={startedExamSegments}
                                     selectedSegmentId={activeSegmentId}
                                     onSelectSegment={setActiveSegmentId}
                                 />
