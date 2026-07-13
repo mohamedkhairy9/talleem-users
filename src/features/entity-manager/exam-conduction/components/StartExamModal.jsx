@@ -167,7 +167,7 @@ const StartExamModal = ({ isOpen, onClose, exam, student }) => {
             return;
         }
 
-        const selectedTemplate = templates.find((template) => template.id === Number(values.evaluation_parameter_id)) ?? null;
+        const selectedTemplate = templates.find((template) => Number(template?.id) === Number(values.evaluation_parameter_id)) ?? null;
 
         if (!values.evaluation_parameter_id) {
             setError('evaluation_parameter_id', {

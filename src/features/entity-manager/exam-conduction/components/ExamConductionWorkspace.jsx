@@ -260,7 +260,7 @@ const ExamConductionWorkspace = () => {
                 startData: startedExamSession,
                 startPayload: {
                     exam_type: startedExamSession?.exam_type || selectedExamType,
-                    evaluation_parameter_id: Number(startedExamSession?.evaluation_parameter?.id ?? selectedTemplateId)
+                    evaluation_parameter_id: Number(selectedTemplateId ?? startedExamSession?.evaluation_parameter?.id)
                 },
                 selectedTemplate
             }
@@ -521,7 +521,7 @@ const ExamConductionWorkspace = () => {
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <InfoRow label={t('examConduction.student', 'Student')} value={activeStudent?.name || '-'} />
                                     <InfoRow label={t('examConduction.examType', 'Exam Type')} value={t(`examConduction.types.${startedExamSession?.exam_type || selectedExamType}`, startedExamSession?.exam_type || selectedExamType)} />
-                                    <InfoRow label={t('examConduction.evaluationTemplate', 'Evaluation Template')} value={getLocalizedText(startedExamSession?.evaluation_parameter?.name ?? selectedTemplate?.name, currentLang, '-')} />
+                                    <InfoRow label={t('examConduction.evaluationTemplate', 'Evaluation Template')} value={getLocalizedText(selectedTemplate?.name ?? startedExamSession?.evaluation_parameter?.name, currentLang, '-')} />
                                     <InfoRow label={t('examConduction.conductedBy', 'Conducted By')} value={startedExamSession?.conducted_by?.name || '-'} />
                                 </div>
 

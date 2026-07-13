@@ -32,7 +32,7 @@ function getTimeRange(exam) {
 function buildCriteria(sessionData, selectedTemplate, currentLang, t) {
     const rawCriteria = normalizeArray(sessionData?.evaluation_parameter?.criteria);
     const templateCriteria = normalizeArray(selectedTemplate?.criteria);
-    const criteria = rawCriteria.length > 0 ? rawCriteria : templateCriteria;
+    const criteria = templateCriteria.length > 0 ? templateCriteria : rawCriteria;
 
     return criteria.map((criteriaItem) => ({
         id: criteriaItem?.id ?? criteriaItem?.criteria_id,
@@ -58,7 +58,7 @@ function buildInitialScores(segments, criteria) {
 }
 
 function getEvaluationTemplate(templates, templateId) {
-    return templates.find((template) => template.id === Number(templateId)) ?? null;
+    return templates.find((template) => Number(template?.id) === Number(templateId)) ?? null;
 }
 
 function validateGradeValue(rawValue, maxDegree, t) {
