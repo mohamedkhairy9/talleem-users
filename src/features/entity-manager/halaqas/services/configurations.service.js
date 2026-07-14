@@ -11,7 +11,8 @@ function getConfigurationRawValue(item) {
 }
 
 function parseBooleanFlagValue(value) {
-    return String(value ?? '').trim() === '1';
+    const normalizedValue = String(value ?? '').trim().toLowerCase();
+    return value === true || normalizedValue === '1' || normalizedValue === 'true';
 }
 
 function parseNumericValue(value) {
@@ -83,6 +84,11 @@ export async function getWeeklyHolidayForTahfiz() {
 
 export async function getEditableWeeklyHolidayForTahfiz() {
     const item = await getConfigurations('tahfiz', 'editable_weekly_holiday');
+    return parseBooleanFlagValue(getConfigurationRawValue(item));
+}
+
+export async function getCloneHifzPlanToTasbitForTahfiz() {
+    const item = await getConfigurations('tahfiz', 'clone_hifz_plan_to_tasbit');
     return parseBooleanFlagValue(getConfigurationRawValue(item));
 }
 

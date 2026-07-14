@@ -92,6 +92,66 @@ const getDurationInDays = (startDate, endDate, weeklyHolidays = []) => {
     return totalDays;
 };
 
+const normalizeWeeklyHolidayValues = (weeklyHoliday) => {
+    if (Array.isArray(weeklyHoliday)) {
+        return Array.from(new Set(
+            weeklyHoliday
+                .map((value) => String(value ?? '').trim())
+                .filter(Boolean)
+        ));
+    }
+
+    if (typeof weeklyHoliday === 'string') {
+        return Array.from(new Set(
+            weeklyHoliday
+                .split(/[,،]/)
+                .map((value) => value.trim())
+                .filter(Boolean)
+        ));
+    }
+
+    return [];
+};
+
+const serializeWeeklyHolidayValues = (weeklyHoliday) => (
+    normalizeWeeklyHolidayValues(weeklyHoliday).join(',')
+);
+
+const normalizeActivityValues = (activityEntries) => (
+    (Array.isArray(activityEntries) ? activityEntries : [])
+        .map((entry) => (typeof entry === 'string' ? entry : entry?.activity))
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean)
+);
+
+const getPayloadActivityValues = (activityEntries) => {
+    const normalizedActivities = normalizeActivityValues(activityEntries);
+    const hasHifz = normalizedActivities.includes('hifz');
+
+    return hasHifz
+        ? normalizedActivities.filter((activity) => activity !== 'tasbit')
+        : normalizedActivities;
+};
+
+const buildActivitiesPayload = (activityEntries, activityWeeklyHolidayMap = {}) => {
+    const normalizedEntries = Array.isArray(activityEntries) ? activityEntries : [];
+    const payloadActivities = getPayloadActivityValues(normalizedEntries);
+
+    return payloadActivities.map((activity) => {
+        const matchingEntry = normalizedEntries.find((entry) => (
+            entry && typeof entry === 'object' && !Array.isArray(entry) && entry.activity === activity
+        ));
+        const weeklyHolidaySource = Object.prototype.hasOwnProperty.call(activityWeeklyHolidayMap, activity)
+            ? activityWeeklyHolidayMap[activity]
+            : matchingEntry?.weekly_holiday;
+
+        return {
+            activity,
+            weekly_holiday: serializeWeeklyHolidayValues(weeklyHolidaySource ?? [])
+        };
+    });
+};
+
 const getPreferredEntityTypeId = (...sources) => {
     for (const source of sources) {
         const value = Number(source);
@@ -524,7 +584,7 @@ const CreateHalaqaForm = ({ onBack }) => {
     const entity = useAuthStore((state) => state.user?.entity);
     const isArabic = i18n.language === 'ar';
     const copy = useCallback((arabicText, englishText) => (isArabic ? arabicText : englishText), [isArabic]);
-    const { control, handleSubmit, formState: { errors }, setValue } = useFormWithValidation({
+    const { control, handleSubmit, formState: { errors }, setValue, setError, clearErrors } = useFormWithValidation({
         schema: createHalaqaSchema,
         defaultValues: {
             name: { ar: '', en: '' },
@@ -534,7 +594,7 @@ const CreateHalaqaForm = ({ onBack }) => {
             start_date: '',
             end_date: '',
             activities: [],
-            weekly_holiday: [],
+            activity_weekly_holiday: {},
             evaluation_system_type: HALAQA_EVALUATION_SYSTEM_TYPES[0]?.value ?? 'رقمي',
             total_mark: undefined,
             max_students: undefined,
@@ -551,7 +611,7 @@ const CreateHalaqaForm = ({ onBack }) => {
     const memorizationProgramEntityTypeId = useWatch({ control, name: 'memorization_program_entity_type_id' });
     const startDate = useWatch({ control, name: 'start_date' });
     const endDate = useWatch({ control, name: 'end_date' });
-    const weeklyHoliday = useWatch({ control, name: 'weekly_holiday' });
+    const activityWeeklyHoliday = useWatch({ control, name: 'activity_weekly_holiday' });
     const period = useWatch({ control, name: 'period' });
     const sessionTime = useWatch({ control, name: 'session_time' });
     const activities = useWatch({ control, name: 'activities' });
@@ -581,7 +641,6 @@ const CreateHalaqaForm = ({ onBack }) => {
         maxStudentsPerHalaqa,
         editableMaxStudents,
         weeklyHoliday: configuredWeeklyHoliday,
-        editableWeeklyHoliday,
         isLoadingTeachers,
         isLoadingPlatforms
     } = useCreateHalaqaFormQueries({
@@ -651,10 +710,29 @@ const CreateHalaqaForm = ({ onBack }) => {
         () => (Array.isArray(autoIncludeActivities) ? autoIncludeActivities : []),
         [autoIncludeActivities]
     );
+    const activityHolidayFieldEntries = useMemo(() => {
+        const normalizedActivities = normalizeActivityValues(activities);
+        const hasHifz = normalizedActivities.includes('hifz');
+
+        return normalizedActivities.filter((activity) => (
+            activity !== 'tasbit' || !hasHifz
+        ));
+    }, [activities]);
+    const selectedWeeklyHolidays = useMemo(() => {
+        const activityWeeklyHolidayMap = activityWeeklyHoliday && typeof activityWeeklyHoliday === 'object'
+            ? activityWeeklyHoliday
+            : {};
+
+        return Array.from(new Set(
+            activityHolidayFieldEntries.flatMap((activity) => (
+                normalizeWeeklyHolidayValues(activityWeeklyHolidayMap[activity])
+            ))
+        ));
+    }, [activityHolidayFieldEntries, activityWeeklyHoliday]);
 
     const durationInDays = useMemo(
-        () => getDurationInDays(startDate, endDate, weeklyHoliday),
-        [endDate, startDate, weeklyHoliday]
+        () => getDurationInDays(startDate, endDate, selectedWeeklyHolidays),
+        [endDate, selectedWeeklyHolidays, startDate]
     );
     const durationLabel = durationInDays == null
         ? ''
@@ -703,16 +781,41 @@ const CreateHalaqaForm = ({ onBack }) => {
     }, [maxStudentsPerHalaqa, setValue]);
 
     useEffect(() => {
-        if (Array.isArray(configuredWeeklyHoliday) && configuredWeeklyHoliday.length > 0) {
-            const allowedValues = new Set(weeklyHolidayOptions.map((option) => option.value));
-            const normalizedWeeklyHoliday = configuredWeeklyHoliday.filter((value) => allowedValues.has(value));
+        const allowedValues = new Set(weeklyHolidayOptions.map((option) => option.value));
+        const normalizedConfiguredWeeklyHoliday = normalizeWeeklyHolidayValues(configuredWeeklyHoliday)
+            .filter((value) => allowedValues.has(value));
+        const currentActivityWeeklyHoliday = activityWeeklyHoliday && typeof activityWeeklyHoliday === 'object'
+            ? activityWeeklyHoliday
+            : {};
+        const nextActivityWeeklyHoliday = {};
+        let hasChanged = false;
 
-            setValue('weekly_holiday', normalizedWeeklyHoliday, {
-                shouldValidate: true,
+        activityHolidayFieldEntries.forEach((activity) => {
+            const currentValues = normalizeWeeklyHolidayValues(currentActivityWeeklyHoliday[activity])
+                .filter((value) => allowedValues.has(value));
+            const nextValues = currentValues.length > 0 ? currentValues : normalizedConfiguredWeeklyHoliday;
+
+            nextActivityWeeklyHoliday[activity] = nextValues;
+
+            if (
+                currentValues.length !== nextValues.length ||
+                currentValues.some((value, index) => value !== nextValues[index])
+            ) {
+                hasChanged = true;
+            }
+        });
+
+        if (Object.keys(currentActivityWeeklyHoliday).length !== Object.keys(nextActivityWeeklyHoliday).length) {
+            hasChanged = true;
+        }
+
+        if (hasChanged) {
+            setValue('activity_weekly_holiday', nextActivityWeeklyHoliday, {
+                shouldValidate: false,
                 shouldDirty: false
             });
         }
-    }, [configuredWeeklyHoliday, setValue, weeklyHolidayOptions]);
+    }, [activityHolidayFieldEntries, activityWeeklyHoliday, configuredWeeklyHoliday, setValue, weeklyHolidayOptions]);
 
     const deriveActivitiesFromManual = useCallback((manualActivities) => {
         const normalizedActivities = Array.isArray(manualActivities)
@@ -783,14 +886,49 @@ const CreateHalaqaForm = ({ onBack }) => {
         field.onChange(deriveActivitiesFromManual(nextManualActivities));
     }, [deriveActivitiesFromManual]);
 
+    const validateActivityWeeklyHoliday = useCallback((selectedActivities, weeklyHolidayByActivity) => {
+        let isValid = true;
+
+        const normalizedActivities = normalizeActivityValues(selectedActivities);
+        const hasHifz = normalizedActivities.includes('hifz');
+
+        normalizedActivities.forEach((activity) => {
+            if (activity === 'tasbit' && hasHifz) {
+                clearErrors(`activity_weekly_holiday.${activity}`);
+                return;
+            }
+
+            const weeklyHolidayValues = normalizeWeeklyHolidayValues(weeklyHolidayByActivity?.[activity]);
+
+            if (weeklyHolidayValues.length === 0) {
+                setError(`activity_weekly_holiday.${activity}`, {
+                    type: 'manual',
+                    message: copy('اختر الإجازة الأسبوعية لهذا النشاط', 'Select weekly holidays for this activity')
+                });
+                isValid = false;
+                return;
+            }
+
+            clearErrors(`activity_weekly_holiday.${activity}`);
+        });
+
+        return isValid;
+    }, [clearErrors, copy, setError]);
+
     const buildStudentAssignmentPayload = (halaqaSource) => ({
         name: halaqaSource.name,
         teacher_id: halaqaSource.teacher?.id || halaqaSource.teacher_id,
         period: halaqaSource.period,
         start_date: normalizeDate(halaqaSource.start_date ?? halaqaSource.date?.from),
         end_date: normalizeDate(halaqaSource.end_date ?? halaqaSource.date?.to),
-        activities: Array.isArray(halaqaSource.activities) && halaqaSource.activities.length > 0
-            ? halaqaSource.activities
+        activities: buildActivitiesPayload(
+            halaqaSource.activities,
+            halaqaSource.activity_weekly_holiday
+        ).length > 0
+            ? buildActivitiesPayload(
+                halaqaSource.activities,
+                halaqaSource.activity_weekly_holiday
+            )
             : createdActivities,
         student_ids: selectedStudentIds
     });
@@ -807,23 +945,33 @@ const CreateHalaqaForm = ({ onBack }) => {
             return;
         }
 
+        const resolvedActivities = getPayloadActivityValues(formData.activities);
+
+        if (!validateActivityWeeklyHoliday(resolvedActivities, formData.activity_weekly_holiday)) {
+            return;
+        }
+
         const {
             platform_id,
             meeting_link,
-            weekly_holiday,
+            activity_weekly_holiday,
             total_mark,
             memorization_program_entity_type_id: _memorizationProgramEntityTypeId,
             ...restData
         } = formData;
+        const activitiesPayload = buildActivitiesPayload(
+            formData.activities,
+            activity_weekly_holiday
+        );
 
         const payload = {
             ...restData,
+            activities: activitiesPayload,
             start_date: normalizeDate(formData.start_date),
             end_date: normalizeDate(formData.end_date),
             session_time: normalizeSessionTime(formData.session_time),
             memorization_program_entity_type_id: resolvedEntityTypeId,
             ...(sessionModeId != null ? { session_mode_id: sessionModeId } : {}),
-            ...(Array.isArray(weekly_holiday) && weekly_holiday.length > 0 ? { weekly_holiday: weekly_holiday.join(',') } : {}),
             ...(formData.evaluation_system_type === numericEvaluationValue && typeof total_mark === 'number'
                 ? { total_mark }
                 : {}),
@@ -838,9 +986,10 @@ const CreateHalaqaForm = ({ onBack }) => {
             period: payload.period,
             start_date: payload.start_date,
             end_date: payload.end_date,
-            activities: Array.isArray(payload.activities) ? payload.activities : []
+            activities: activitiesPayload,
+            activity_weekly_holiday
         });
-        setCreatedActivities(Array.isArray(formData.activities) ? formData.activities : []);
+        setCreatedActivities(resolvedActivities);
         setStep(2);
 
         /* createHalaqaMutation.mutate(payload, {
@@ -859,10 +1008,11 @@ const CreateHalaqaForm = ({ onBack }) => {
                         period: payload.period,
                         start_date: payload.start_date,
                         end_date: payload.end_date,
-                        activities: Array.isArray(payload.activities) ? payload.activities : []
+                        activities: activitiesPayload,
+                        activity_weekly_holiday
                     };
                     setCreatedHalaqaContext(createdContext);
-                    setCreatedActivities(Array.isArray(formData.activities) ? formData.activities : []);
+                    setCreatedActivities(resolvedActivities);
                     setStep(2);
                     return;
                 }
@@ -1259,6 +1409,29 @@ const CreateHalaqaForm = ({ onBack }) => {
                             onToggleOption={handleActivitiesChange}
                         />
 
+                        {activityHolidayFieldEntries.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-4">
+                                {activityHolidayFieldEntries.map((activity) => (
+                                    <MultiChipField
+                                        key={activity}
+                                        name={`activity_weekly_holiday.${activity}`}
+                                        control={control}
+                                        label={copy(
+                                            `الإجازة الأسبوعية لنشاط ${t(`halaqa.activity.${activity}`, activity)}`,
+                                            `Weekly holidays for ${t(`halaqa.activity.${activity}`, activity)}`
+                                        )}
+                                        required
+                                        options={weeklyHolidayOptions}
+                                        error={getErrorMessage(errors.activity_weekly_holiday?.[activity]?.message)}
+                                        onToggleOption={(selectedValues, field) => {
+                                            clearErrors(`activity_weekly_holiday.${activity}`);
+                                            field.onChange(selectedValues);
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        ) : null}
+
                         <SingleSelectPillsField
                             name="evaluation_system_type"
                             control={control}
@@ -1367,14 +1540,14 @@ const CreateHalaqaForm = ({ onBack }) => {
                             endLabel={t('halaqa.sessionEndTime', copy('وقت النهاية', 'End Time'))}
                         />
 
-                        <MultiChipField
+                        {false ? (<MultiChipField
                             name="weekly_holiday"
                             control={control}
                             label={t('halaqa.weeklyHoliday', copy('العطلة الأسبوعية', 'Weekly Holidays'))}
                             options={weeklyHolidayOptions}
                             error={getErrorMessage(errors.weekly_holiday?.message)}
-                            disabled={!editableWeeklyHoliday}
-                        />
+                            disabled={false}
+                        />) : null}
                     </SectionCard>
 
                     <SectionCard icon={TeacherIcon} title={copy('اختر معلم الحلقة', 'Choose the Halaqa Teacher')}>

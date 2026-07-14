@@ -1,7 +1,5 @@
 import * as yup from 'yup';
-import { HALAQA_EVALUATION_SYSTEM_TYPES, HALAQA_WEEKLY_HOLIDAYS } from '../config';
-
-const HALAQA_WEEKLY_HOLIDAY_VALUES = HALAQA_WEEKLY_HOLIDAYS.map((day) => day.value);
+import { HALAQA_EVALUATION_SYSTEM_TYPES } from '../config';
 const HALAQA_EVALUATION_SYSTEM_TYPE_VALUES = HALAQA_EVALUATION_SYSTEM_TYPES.map((item) => item.value);
 const NUMERIC_EVALUATION_SYSTEM_TYPE = HALAQA_EVALUATION_SYSTEM_TYPES.find((item) => item.labelKey === 'halaqa.evaluationSystemTypeOptions.numeric')?.value ?? 'رقمي';
 
@@ -27,7 +25,6 @@ export const createHalaqaSchema = yup.object({
         return new Date(value) >= new Date(start_date);
     }),
     activities: yup.array().of(yup.string().oneOf(['tasbit', 'hifz', 'murajaa'])).min(1, 'halaqa.validation.activitiesRequired').required('halaqa.validation.activitiesRequired'),
-    weekly_holiday: yup.array().of(yup.string().oneOf(HALAQA_WEEKLY_HOLIDAY_VALUES)).notRequired().default([]),
     evaluation_system_type: yup.string()
         .oneOf(HALAQA_EVALUATION_SYSTEM_TYPE_VALUES)
         .required('halaqa.validation.evaluationSystemTypeRequired'),

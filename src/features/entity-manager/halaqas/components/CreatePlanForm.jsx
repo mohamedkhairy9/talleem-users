@@ -20,28 +20,6 @@ const CARD_CLASS = 'rounded-[28px] border border-slate-200/80 bg-white p-5 shado
 const SELECT_FIELD_CLASSES = '[&_.react-select__control]:min-h-[56px] [&_.react-select__control]:rounded-2xl [&_.react-select__control]:border-slate-200 [&_.react-select__control]:shadow-sm [&_.react-select__control]:px-1 [&_.react-select__control--is-focused]:border-[#0d7a78] [&_.react-select__placeholder]:text-slate-400';
 const LAST_QURAN_VERSE_KEY = '114:6';
 
-const addDaysToDateString = (dateStr, days) => {
-    const normalizedDate = normalizeDate(dateStr);
-
-    if (!normalizedDate) {
-        return '';
-    }
-
-    const date = new Date(`${normalizedDate}T00:00:00`);
-
-    if (Number.isNaN(date.getTime())) {
-        return normalizedDate;
-    }
-
-    date.setDate(date.getDate() + days);
-
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-};
-
 const getInclusiveDaysBetween = (startDate, endDate) => {
     const normalizedStart = normalizeDate(startDate);
     const normalizedEnd = normalizeDate(endDate);
@@ -350,7 +328,7 @@ const StepperField = ({ name, control, label, error, helperText }) => (
     />
 );
 
-const AutoTasbitNotice = ({ title, description, control }) => (
+const AutoTasbitNotice = ({ title, description, control, disabled = false }) => (
     <div className="rounded-[24px] border border-emerald-100 bg-emerald-50/80 p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="space-y-1">
@@ -362,6 +340,7 @@ const AutoTasbitNotice = ({ title, description, control }) => (
                     name="auto_tasbit_enabled"
                     control={control}
                     label={title}
+                    disabled={disabled}
                 />
             </div>
         </div>
@@ -494,6 +473,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     const previewDebounceRef = useRef(null);
     const latestPreviewSignatureRef = useRef(null);
     const latestPreviewRequestIdRef = useRef(0);
+    const hasInitializedAutoTasbitRef = useRef(false);
     const isSubmittingPlan = createPlanMutation.isPending || isSubmittingPlanRequests;
     const activePlanError = planRequestError ?? createPlanMutation.error ?? null;
 
@@ -601,9 +581,14 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         }
     }, [currentEndSegmentVerseKey, isDailyAmountPlan, selectedEndSegment, setValue]);
 
-    const { studentsOptions: allStudentsOptions, isLoadingStudents } = useCreateHalaqaFormQueries();
-    const hasTasbitActivity = Array.isArray(activities) && activities.includes('tasbit');
-    const isLinkedHifzTasbitFlow = Array.isArray(activities) && activities.includes('hifz') && activities.includes('tasbit');
+    const {
+        studentsOptions: allStudentsOptions,
+        isLoadingStudents,
+        cloneHifzPlanToTasbit
+    } = useCreateHalaqaFormQueries();
+    const shouldCloneHifzPlanToTasbit = Boolean(cloneHifzPlanToTasbit);
+    const hasTasbitActivity = (Array.isArray(activities) && activities.includes('tasbit')) || shouldCloneHifzPlanToTasbit;
+    const isLinkedHifzTasbitFlow = Array.isArray(activities) && activities.includes('hifz') && hasTasbitActivity;
 
     const baseStudentsOptions = useMemo(() => {
         if (students && students.length > 0) {
@@ -628,10 +613,10 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     const blockedActivitiesForSelection = useMemo(
         () => getBlockedActivitiesForPlan({
             activity: currentActivity,
-            autoTasbitEnabled,
+            autoTasbitEnabled: shouldCloneHifzPlanToTasbit || autoTasbitEnabled,
             hasTasbitActivity
         }),
-        [autoTasbitEnabled, currentActivity, hasTasbitActivity]
+        [autoTasbitEnabled, currentActivity, hasTasbitActivity, shouldCloneHifzPlanToTasbit]
     );
 
     const studentsOptions = useMemo(() => (
@@ -670,6 +655,21 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             });
         }
     }, [selectedStudentIds, setValue, studentsOptions]);
+
+    useEffect(() => {
+        if (currentActivity !== 'hifz' || !shouldCloneHifzPlanToTasbit || hasInitializedAutoTasbitRef.current) {
+            return;
+        }
+
+        hasInitializedAutoTasbitRef.current = true;
+
+        if (!autoTasbitEnabled) {
+            setValue('auto_tasbit_enabled', true, {
+                shouldValidate: false,
+                shouldDirty: false
+            });
+        }
+    }, [autoTasbitEnabled, currentActivity, setValue, shouldCloneHifzPlanToTasbit]);
 
     const filteredWizardStudents = useMemo(() => {
         const searchValue = studentSearch.trim().toLowerCase();
@@ -753,10 +753,6 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
 
     const getStartVerseKey = useCallback((formData) => formData.start_segment_verse_key ?? null, []);
 
-    const shouldAutoCreateTasbitPlan = useCallback((activity, enabled) => (
-        activity === 'hifz' && hasTasbitActivity && Boolean(enabled)
-    ), [hasTasbitActivity]);
-
     const buildPayload = useCallback((formData, saveOrNot, activityOverride = formData.activity, dateOverrides = {}) => {
         const startVerseKey = getStartVerseKey(formData);
 
@@ -777,6 +773,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             save_or_not: saveOrNot,
             ...(startDate ? { start_date: startDate } : {}),
             ...(endDate ? { end_date: endDate } : {}),
+            ...(activityOverride === 'hifz' && formData.auto_tasbit_enabled ? { auto_tasbit_enabled: true } : {}),
             ...(formData.plan_type === 'daily_amount' && formData.daily_amount ? { daily_amount: formData.daily_amount } : {}),
             ...(formData.end_segment_verse_key ? { end_verse_key: formData.end_segment_verse_key } : {})
         };
@@ -797,22 +794,8 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             data: primaryPayload
         }];
 
-        if (shouldAutoCreateTasbitPlan(formData.activity, formData.auto_tasbit_enabled)) {
-            const tasbitStartDate = halaqaPlanDates.startDate
-                ? addDaysToDateString(halaqaPlanDates.startDate, 1)
-                : '';
-
-            requests.push({
-                activity: 'tasbit',
-                data: buildPayload(formData, saveOrNot, 'tasbit', {
-                    start_date: tasbitStartDate,
-                    end_date: halaqaPlanDates.endDate
-                })
-            });
-        }
-
         return requests.filter((request) => Boolean(request.data));
-    }, [buildPayload, halaqaPlanDates.endDate, halaqaPlanDates.startDate, shouldAutoCreateTasbitPlan]);
+    }, [buildPayload, halaqaPlanDates.endDate, halaqaPlanDates.startDate]);
 
     const getPlanRequestsSignature = useCallback((requests) => JSON.stringify(
         requests.map((request) => ({
@@ -941,7 +924,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     const getConflictingStudentLabels = useCallback((formData) => {
         const blockedActivities = getBlockedActivitiesForPlan({
             activity: formData?.activity,
-            autoTasbitEnabled: Boolean(formData?.auto_tasbit_enabled),
+            autoTasbitEnabled: shouldCloneHifzPlanToTasbit || Boolean(formData?.auto_tasbit_enabled),
             hasTasbitActivity
         });
 
@@ -960,12 +943,18 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
                 return existingActivities && Array.from(blockedActivities).some((activity) => existingActivities.has(activity));
             })
             .map((studentId) => studentLabelById.get(studentId) || t('plan.studentId', { id: studentId }));
-    }, [baseStudentsOptions, existingPlanActivitiesByStudentId, hasTasbitActivity, t]);
+    }, [baseStudentsOptions, existingPlanActivitiesByStudentId, hasTasbitActivity, shouldCloneHifzPlanToTasbit, t]);
 
     const normalizePreviewPlanResponse = useCallback((response) => {
         const normalizedResponse = response?.data ?? response;
         return normalizedResponse?.data ?? normalizedResponse;
     }, []);
+
+    const shouldShowClonedTasbitPreview = useCallback((formData) => (
+        formData?.activity === 'hifz' &&
+        shouldCloneHifzPlanToTasbit &&
+        Boolean(formData?.auto_tasbit_enabled)
+    ), [shouldCloneHifzPlanToTasbit]);
 
     const requestComputedPreview = useCallback(async (formData, {
         showSuccessToast = false,
@@ -1017,10 +1006,29 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
                 const responseData = normalizePreviewPlanResponse(response);
 
                 if (responseData) {
-                    previewItems.push({
-                        activity: request.activity,
-                        data: responseData
+                    const responseItems = Array.isArray(responseData) ? responseData : [responseData];
+
+                    responseItems.forEach((item) => {
+                        previewItems.push({
+                            activity: item?.activity ?? request.activity,
+                            data: item
+                        });
                     });
+
+                    const hasTasbitPreview = previewItems.some((item) => item.activity === 'tasbit');
+                    if (request.activity === 'hifz' && shouldShowClonedTasbitPreview(formData) && !hasTasbitPreview) {
+                        const hifzPreviewData = responseItems.find((item) => (item?.activity ?? request.activity) === 'hifz') ?? responseItems[0];
+
+                        if (hifzPreviewData) {
+                            previewItems.push({
+                                activity: 'tasbit',
+                                data: {
+                                    ...hifzPreviewData,
+                                    activity: 'tasbit'
+                                }
+                            });
+                        }
+                    }
                 }
             }
 
@@ -1058,7 +1066,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
                 setIsSubmittingPlanRequests(false);
             }
         }
-    }, [buildPlanRequests, copy, createPlanMutation, getConflictingStudentLabels, getPlanRequestsSignature, halaqaId, normalizePreviewPlanResponse, t, wizardMode]);
+    }, [buildPlanRequests, copy, createPlanMutation, getConflictingStudentLabels, getPlanRequestsSignature, halaqaId, normalizePreviewPlanResponse, shouldShowClonedTasbitPreview, t, wizardMode]);
 
     const onSubmit = async (formData) => {
         await requestComputedPreview(formData, {
@@ -1102,7 +1110,8 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             }
 
             toast.success(t('plan.createSuccess', copy('تم إنشاء الخطة بنجاح', 'Plan created successfully')));
-            queryClient.invalidateQueries({ queryKey: ['halaqa', halaqaId] });
+            await queryClient.invalidateQueries({ queryKey: ['halaqa', halaqaId] });
+            await queryClient.refetchQueries({ queryKey: ['halaqa', halaqaId], type: 'active' });
             resetForm();
             if (wizardMode) {
                 setWizardStep(1);

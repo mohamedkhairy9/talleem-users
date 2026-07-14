@@ -3,6 +3,7 @@ import { useAuthStore } from '@/app/stores';
 import { formFieldsService } from '../services/form-fields.service';
 import {
     getAutoIncludeActivitiesForTahfiz,
+    getCloneHifzPlanToTasbitForTahfiz,
     getEditableEvaluationSystemForTahfiz,
     getEditableMaxStudentsForTahfiz,
     getEditableWeeklyHolidayForTahfiz,
@@ -64,6 +65,7 @@ export const HALAQA_FORM_QUERY_KEYS = {
     editableMaxStudents: ['halaqa-form', 'configurations', 'tahfiz', 'editable_max_students'],
     weeklyHoliday: ['halaqa-form', 'configurations', 'tahfiz', 'weekly_holiday'],
     editableWeeklyHoliday: ['halaqa-form', 'configurations', 'tahfiz', 'editable_weekly_holiday'],
+    cloneHifzPlanToTasbit: ['halaqa-form', 'configurations', 'tahfiz', 'clone_hifz_plan_to_tasbit'],
 };
 const FORM_OPTIONS_PER_PAGE = 1000;
 const STALE_TIME_MS = 2 * 60 * 1000;
@@ -167,6 +169,11 @@ export function useCreateHalaqaFormQueries({
         queryFn: getEditableWeeklyHolidayForTahfiz,
         staleTime: STALE_TIME_MS,
     });
+    const cloneHifzPlanToTasbitQuery = useQuery({
+        queryKey: HALAQA_FORM_QUERY_KEYS.cloneHifzPlanToTasbit,
+        queryFn: getCloneHifzPlanToTasbitForTahfiz,
+        staleTime: STALE_TIME_MS,
+    });
     const rawTeachersList = useAvailability
         ? extractAvailabilityList(teachersQuery.data, 'available_teachers')
         : getFirstArray(teachersQuery.data?.data, teachersQuery.data);
@@ -200,6 +207,7 @@ export function useCreateHalaqaFormQueries({
     const editableMaxStudents = editableMaxStudentsQuery.data ?? false;
     const weeklyHoliday = weeklyHolidayQuery.data ?? [];
     const editableWeeklyHoliday = editableWeeklyHolidayQuery.data ?? false;
+    const cloneHifzPlanToTasbit = cloneHifzPlanToTasbitQuery.data ?? false;
     return {
         teachersOptions,
         teachersList,
@@ -214,6 +222,7 @@ export function useCreateHalaqaFormQueries({
         editableMaxStudents,
         weeklyHoliday,
         editableWeeklyHoliday,
+        cloneHifzPlanToTasbit,
         isLoadingCurrentEntity: currentEntityQuery.isLoading,
         isLoadingTeachers: teachersQuery.isLoading,
         isLoadingStudents: includeStudents ? studentsQuery.isLoading : false,
@@ -224,7 +233,8 @@ export function useCreateHalaqaFormQueries({
             maxStudentsPerHalaqaQuery.isLoading ||
             editableMaxStudentsQuery.isLoading ||
             weeklyHolidayQuery.isLoading ||
-            editableWeeklyHolidayQuery.isLoading,
+            editableWeeklyHolidayQuery.isLoading ||
+            cloneHifzPlanToTasbitQuery.isLoading,
         isLoading,
     };
 }
