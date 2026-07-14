@@ -1,9 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BookIcon } from '@/shared/icons';
+import { normalizeActivityValues } from '../utils/activityUtils';
 const HalaqaActivities = ({ activities }) => {
     const { t } = useTranslation();
-    if (!activities || activities.length === 0)
+    const activityValues = normalizeActivityValues(activities);
+    if (activityValues.length === 0)
         return null;
     return (<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-2 mb-6">
@@ -15,7 +17,7 @@ const HalaqaActivities = ({ activities }) => {
                 </h2>
             </div>
             <div className="flex flex-wrap gap-2">
-                {activities.map((activity, index) => (<span key={index} className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-100 to-purple-50 text-purple-800 border border-purple-200">
+                {activityValues.map((activity, index) => (<span key={index} className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-100 to-purple-50 text-purple-800 border border-purple-200">
                         {String(t(`halaqa.activity.${activity}`, activity))}
                     </span>))}
             </div>

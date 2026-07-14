@@ -15,6 +15,7 @@ import { createPlanSchema } from '../schemas/plan.schema';
 import MushafPageModal from './MushafPageModal';
 import MushafSegmentPickerModal from './MushafSegmentPickerModal';
 import PlanPreviewCard from './PlanPreviewCard';
+import { normalizeActivityValues } from '../utils/activityUtils';
 
 const CARD_CLASS = 'rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.5)] md:p-6';
 const SELECT_FIELD_CLASSES = '[&_.react-select__control]:min-h-[56px] [&_.react-select__control]:rounded-2xl [&_.react-select__control]:border-slate-200 [&_.react-select__control]:shadow-sm [&_.react-select__control]:px-1 [&_.react-select__control--is-focused]:border-[#0d7a78] [&_.react-select__placeholder]:text-slate-400';
@@ -401,6 +402,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     const currentLang = i18n.language || 'ar';
     const isArabic = currentLang === 'ar';
     const copy = useCallback((arabicText, englishText) => (isArabic ? arabicText : englishText), [isArabic]);
+    const activityValues = useMemo(() => normalizeActivityValues(activities), [activities]);
 
     const halaqaData = useMemo(() => {
         const raw = halaqaResponse?.data;
@@ -408,16 +410,16 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     }, [halaqaResponse]);
 
     const defaultActivity = useMemo(() => {
-        if (Array.isArray(activities) && activities.includes('hifz')) {
+        if (activityValues.includes('hifz')) {
             return 'hifz';
         }
 
-        if (activities && activities.length > 0) {
-            return activities[0];
+        if (activityValues.length > 0) {
+            return activityValues[0];
         }
 
         return 'hifz';
-    }, [activities]);
+    }, [activityValues]);
 
     const {
         control,
@@ -431,7 +433,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         schema: createPlanSchema,
         defaultValues: {
             activity: defaultActivity,
-            auto_tasbit_enabled: Array.isArray(activities) && activities.includes('tasbit'),
+            auto_tasbit_enabled: activityValues.includes('tasbit'),
             student_ids: [],
             plan_type: 'daily_amount',
             unit: 'segments',
@@ -587,8 +589,8 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         cloneHifzPlanToTasbit
     } = useCreateHalaqaFormQueries();
     const shouldCloneHifzPlanToTasbit = Boolean(cloneHifzPlanToTasbit);
-    const hasTasbitActivity = (Array.isArray(activities) && activities.includes('tasbit')) || shouldCloneHifzPlanToTasbit;
-    const isLinkedHifzTasbitFlow = Array.isArray(activities) && activities.includes('hifz') && hasTasbitActivity;
+    const hasTasbitActivity = activityValues.includes('tasbit') || shouldCloneHifzPlanToTasbit;
+    const isLinkedHifzTasbitFlow = activityValues.includes('hifz') && hasTasbitActivity;
 
     const baseStudentsOptions = useMemo(() => {
         if (students && students.length > 0) {
@@ -686,15 +688,15 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             label: t(activity.labelKey, activity.value)
         }));
 
-        if (activities && activities.length > 0) {
+        if (activityValues.length > 0) {
             return allActivities.filter((activity) => (
-                activities.includes(activity.value) &&
+                activityValues.includes(activity.value) &&
                 (!isLinkedHifzTasbitFlow || activity.value !== 'tasbit')
             ));
         }
 
         return allActivities;
-    }, [activities, isLinkedHifzTasbitFlow, t]);
+    }, [activityValues, isLinkedHifzTasbitFlow, t]);
 
     useEffect(() => {
         const firstAllowedActivity = activityOptions[0]?.value;

@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useConfirmationModal } from '@/shared/hooks/useConfirmationModal';
 import { useDateFormatStore } from '@/app/stores';
 import { PlusIcon } from '@/shared/icons';
+import { normalizeActivityValues } from '../utils/activityUtils';
 
 const getHalaqaRowId = (row) =>
     row?.id ??
@@ -88,9 +89,10 @@ const HalaqaList = () => {
         return t('common.not_available', 'N/A');
     };
     const formatActivities = (activities) => {
-        if (!activities?.length)
+        const activityValues = normalizeActivityValues(activities);
+        if (!activityValues.length)
             return '-';
-        return activities.map((a) => t(`halaqa.activity.${a}`, a)).join(', ');
+        return activityValues.map((activity) => t(`halaqa.activity.${activity}`, activity)).join(', ');
     };
     const handleView = (id) => {
         if (!id) {

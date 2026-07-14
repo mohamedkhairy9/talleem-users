@@ -13,6 +13,7 @@ import { useHalaqa, useJoinHalaqaStudent } from '../hooks/useHalaqas';
 import { HALAQA_ACTIVITIES, PLAN_DIRECTIONS, PLAN_TYPES } from '../config';
 import { joinHalaqaStudentSchema } from '../schemas/join-halaqa-student.schema';
 import MushafSegmentPickerModal from './MushafSegmentPickerModal';
+import { normalizeActivityValues } from '../utils/activityUtils';
 
 const CARD_CLASS = 'rounded-[24px] border border-slate-200 bg-slate-50/70 p-4';
 const SELECT_FIELD_CLASSES = '[&_.react-select__control]:min-h-[52px] [&_.react-select__control]:rounded-2xl [&_.react-select__control]:border-slate-200 [&_.react-select__control]:shadow-sm [&_.react-select__control]:px-1 [&_.react-select__control--is-focused]:border-[#0d7a78] [&_.react-select__placeholder]:text-slate-400';
@@ -226,18 +227,19 @@ const JoinHalaqaStudentModal = ({ isOpen, halaqaId, halaqaName, onClose }) => {
     const joinStudentMutation = useJoinHalaqaStudent();
     const { studentsOptions: allStudentsOptions, isLoadingStudents } = useCreateHalaqaFormQueries();
     const halaqa = data?.data ?? data ?? null;
+    const halaqaActivityValues = useMemo(() => normalizeActivityValues(halaqa?.activities), [halaqa?.activities]);
     const [surahData, setSurahData] = useState(null);
     const [selectedStartSegment, setSelectedStartSegment] = useState(null);
     const [selectedEndSegment, setSelectedEndSegment] = useState(null);
     const [showMushafSegmentPickerModal, setShowMushafSegmentPickerModal] = useState(false);
 
     const defaultActivity = useMemo(() => {
-        if (Array.isArray(halaqa?.activities) && halaqa.activities.length > 0) {
-            return halaqa.activities[0];
+        if (halaqaActivityValues.length > 0) {
+            return halaqaActivityValues[0];
         }
 
         return 'hifz';
-    }, [halaqa?.activities]);
+    }, [halaqaActivityValues]);
 
     const minStartDate = useMemo(() => {
         const today = getTodayDateString();
@@ -306,10 +308,10 @@ const JoinHalaqaStudentModal = ({ isOpen, halaqaId, halaqaName, onClose }) => {
     }, [defaultActivity, isOpen, minStartDate, reset]);
 
     useEffect(() => {
-        if (Array.isArray(halaqa?.activities) && halaqa.activities.length > 0 && currentActivity && !halaqa.activities.includes(currentActivity) && currentActivity !== halaqa.activities[0]) {
-            setValue('activity', halaqa.activities[0]);
+        if (halaqaActivityValues.length > 0 && currentActivity && !halaqaActivityValues.includes(currentActivity) && currentActivity !== halaqaActivityValues[0]) {
+            setValue('activity', halaqaActivityValues[0]);
         }
-    }, [currentActivity, halaqa?.activities, setValue]);
+    }, [currentActivity, halaqaActivityValues, setValue]);
 
     useEffect(() => {
         const nextStartVerseKey = selectedStartSegment
@@ -372,12 +374,12 @@ const JoinHalaqaStudentModal = ({ isOpen, halaqaId, halaqaName, onClose }) => {
             label: t(activity.labelKey, activity.value)
         }));
 
-        if (Array.isArray(halaqa?.activities) && halaqa.activities.length > 0) {
-            return allActivityOptions.filter((activity) => halaqa.activities.includes(activity.value));
+        if (halaqaActivityValues.length > 0) {
+            return allActivityOptions.filter((activity) => halaqaActivityValues.includes(activity.value));
         }
 
         return allActivityOptions;
-    }, [halaqa?.activities, t]);
+    }, [halaqaActivityValues, t]);
 
     const planTypeOptions = useMemo(() => PLAN_TYPES.map((type) => ({
         value: type.value,
