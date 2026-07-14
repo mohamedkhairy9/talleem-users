@@ -390,14 +390,20 @@
       "label": "Email",
       "placeholder": "Enter your email"
     },
+    "nationalId": {
+      "label": "National ID",
+      "placeholder": "Enter your National ID",
+      "required": "National ID is required"
+    },
     "password": {
       "label": "Password",
-      "placeholder": "Enter your password"
+      "placeholder": "Enter your password",
+      "required": "Password is required"
     },
     "login": "Login",
     "loginTitle": "Login to your account",
     "login_failed": "Login failed. Please try again.",
-    "invalidCredentials": "Invalid email or password",
+    "invalidCredentials": "Invalid National ID or password",
     "start_journey": "Start Your Journey",
     "register": "Register",
     "join_now": "Join Now",

@@ -8,19 +8,6 @@ import { ROUTE_PATHS } from '@/config';
 import { useTranslation } from 'react-i18next';
 import i18n, { DEFAULT_LANG } from '@/i18n';
 /**
- * Login Form Schema
- */
-const loginSchema = yup.object({
-    email: yup
-        .string()
-        .email('Invalid email address')
-        .required('Email is required'),
-    password: yup
-        .string()
-        .min(6, 'Password must be at least 6 characters')
-        .required('Password is required')
-});
-/**
  * Login Form Component
  */
 const LoginForm = () => {
@@ -29,15 +16,28 @@ const LoginForm = () => {
     const loginMutation = useLoginMutation();
     const { t } = useTranslation();
     const isRtl = i18n.language === 'ar';
+    const loginSchema = yup.object({
+        national_id: yup
+            .string()
+            .trim()
+            .required(t('auth.nationalId.required', 'National ID is required')),
+        password: yup
+            .string()
+            .min(6, t('validation.minLength', { min: 6, defaultValue: 'Minimum length is 6 characters' }))
+            .required(t('auth.password.required', 'Password is required'))
+    });
     const { control, handleSubmit, formState: { errors } } = useFormWithValidation({
         schema: loginSchema,
         defaultValues: {
-            email: '',
+            national_id: '',
             password: ''
         }
     });
     const onSubmit = async (data) => {
-        loginMutation.mutate(data, {
+        loginMutation.mutate({
+            national_id: data.national_id.trim(),
+            password: data.password
+        }, {
             onSuccess: () => {
                 // Redirect to the page user was trying to access, or dashboard
                 const from = location.state?.from?.pathname;
@@ -53,9 +53,9 @@ const LoginForm = () => {
         });
     };
     return (<form dir={isRtl ? 'rtl' : 'ltr'} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <FormInput name="email" control={control} label={t('auth.email.label', 'Email')} type="email" required error={errors.email?.message}/>
+            <FormInput name="national_id" control={control} label={t('auth.nationalId.label', 'National ID')} type="text" inputMode="numeric" autoComplete="username" placeholder={t('auth.nationalId.placeholder', 'Enter your National ID')} required error={errors.national_id?.message}/>
 
-            <FormInput name="password" control={control} label={t('auth.password.label', 'Password')} type="password" required error={errors.password?.message}/>
+            <FormInput name="password" control={control} label={t('auth.password.label', 'Password')} type="password" autoComplete="current-password" required error={errors.password?.message}/>
 
             {loginMutation.error && (<div className="text-red-600 text-sm">
                     {loginMutation.error.message || t('auth.login_failed', 'Login failed. Please try again.')}
