@@ -62,6 +62,10 @@ export const halaqasService = {
     createPlan: (halaqaId, data) => {
         return axiosInstance.post(`/halaqas/${halaqaId}/plans`, data);
     },
+    /** Update one student's plan inside a halaqa. */
+    updateStudentPlan: (halaqaId, studentId, data) => {
+        return axiosInstance.put(`/halaqas/${halaqaId}/students/${studentId}/plan`, data);
+    },
     /**
      * Join a student to a halaqa after the halaqa has already started
      * POST /halaqas/:id/students/join

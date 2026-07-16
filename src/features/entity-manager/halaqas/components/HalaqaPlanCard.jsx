@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { BookOpenIcon, CalendarIcon } from '@/shared/icons';
 import { Button } from '@/shared/components';
 import PlanScheduleModal from './PlanScheduleModal';
-const HalaqaPlanCard = ({ plan, planStudents, onViewStudents, getLocalizedText }) => {
+const HalaqaPlanCard = ({ plan, planStudents, onViewStudents, onEditStudentPlan, getLocalizedText }) => {
     const { t } = useTranslation();
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const hasSchedule = plan.daily_schedule && plan.daily_schedule.length > 0;
@@ -74,7 +74,15 @@ const HalaqaPlanCard = ({ plan, planStudents, onViewStudents, getLocalizedText }
                             <p className="text-sm font-semibold text-gray-900">
                                 {plan.start_verse_key || '?'} - {plan.end_verse_key || '?'}
                             </p>
-                        </div>)}
+                    </div>)}
+
+                    {planStudents.length > 0 && onEditStudentPlan ? (<div className="pt-3 border-t border-gray-200 space-y-2">
+                            {planStudents.map((student) => (<Button key={student?.id} type="button" variant="outline" size="sm" onClick={() => onEditStudentPlan(plan, student)} className="w-full">
+                                    {planStudents.length === 1
+                ? t('common.edit', 'Edit Plan')
+                : `${t('common.edit', 'Edit Plan')}: ${getLocalizedText(student?.name) || `#${student?.id}`}`}
+                                </Button>))}
+                        </div>) : null}
 
                     {/* Schedule Button */}
                     {hasSchedule && (<div className="pt-3 border-t border-gray-200">

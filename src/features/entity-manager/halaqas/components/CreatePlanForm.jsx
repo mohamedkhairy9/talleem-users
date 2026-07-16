@@ -8,7 +8,7 @@ import SelectRFH from '@/shared/components/ui/SelectRFH';
 import { BookOpenIcon, CheckIcon, ChevronRightIcon, SearchIcon, UserIcon, UsersIcon } from '@/shared/icons';
 import { getGregorianDate, normalizeDate, useFormWithValidation } from '@/shared/utils';
 import { getJuzNumberForVerseKey, getVerseKeyDisplay, loadSurahData } from '@/shared/utils/helpers/surahHelper';
-import { useCreatePlan, useHalaqa } from '../hooks/useHalaqas';
+import { useCreatePlan, useHalaqa, useUpdateStudentPlan } from '../hooks/useHalaqas';
 import { useCreateHalaqaFormQueries } from '../hooks/useCreateHalaqaFormQueries';
 import { HALAQA_ACTIVITIES, PLAN_DIRECTIONS, PLAN_TYPES } from '../config';
 import { createPlanSchema } from '../schemas/plan.schema';
@@ -394,15 +394,17 @@ const LearningPathSummary = ({ title, buttonLabel, onOpen, planType, selectedSta
  * Create Plan Form Component
  * Creates a plan for a specific student in a halaqa
  */
-const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, wizardMode = false, onWizardStepChange }) => {
+const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, wizardMode = false, onWizardStepChange, editStudent = null, initialPlan = null }) => {
     const { t, i18n } = useTranslation();
     const queryClient = useQueryClient();
     const createPlanMutation = useCreatePlan();
+    const updateStudentPlanMutation = useUpdateStudentPlan();
     const { data: halaqaResponse } = useHalaqa(halaqaId);
     const currentLang = i18n.language || 'ar';
     const isArabic = currentLang === 'ar';
     const copy = useCallback((arabicText, englishText) => (isArabic ? arabicText : englishText), [isArabic]);
     const activityValues = useMemo(() => normalizeActivityValues(activities), [activities]);
+    const isEditMode = Boolean(editStudent?.id);
 
     const halaqaData = useMemo(() => {
         const raw = halaqaResponse?.data;
@@ -432,19 +434,20 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     } = useFormWithValidation({
         schema: createPlanSchema,
         defaultValues: {
-            activity: defaultActivity,
+            activity: initialPlan?.activity || defaultActivity,
             auto_tasbit_enabled: activityValues.includes('tasbit'),
-            student_ids: [],
-            plan_type: 'daily_amount',
+            start_date: initialPlan?.start_date || '',
+            student_ids: editStudent?.id ? [Number(editStudent.id)] : [],
+            plan_type: initialPlan?.plan_type || 'daily_amount',
             unit: 'segments',
-            direction: 'incremental',
-            start_segment_verse_key: '',
+            direction: initialPlan?.direction || 'incremental',
+            start_segment_verse_key: initialPlan?.start_verse_key || initialPlan?.start_segment_verse_key || '',
             start_juz_number: undefined,
             start_surah_id: undefined,
-            end_segment_verse_key: '',
+            end_segment_verse_key: initialPlan?.end_verse_key || initialPlan?.end_segment_verse_key || '',
             end_juz_number: undefined,
             end_surah_id: undefined,
-            daily_amount: 1
+            daily_amount: initialPlan?.daily_amount || 1
         }
     });
 
@@ -476,8 +479,41 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     const latestPreviewSignatureRef = useRef(null);
     const latestPreviewRequestIdRef = useRef(0);
     const hasInitializedAutoTasbitRef = useRef(false);
-    const isSubmittingPlan = createPlanMutation.isPending || isSubmittingPlanRequests;
-    const activePlanError = planRequestError ?? createPlanMutation.error ?? null;
+    const isSubmittingPlan = createPlanMutation.isPending || updateStudentPlanMutation.isPending || isSubmittingPlanRequests;
+    const activePlanError = planRequestError ?? createPlanMutation.error ?? updateStudentPlanMutation.error ?? null;
+
+    useEffect(() => {
+        if (!isEditMode) {
+            return;
+        }
+
+        reset({
+            activity: initialPlan?.activity || defaultActivity,
+            auto_tasbit_enabled: Boolean(initialPlan?.auto_tasbit_enabled),
+            start_date: initialPlan?.start_date || halaqaData?.start_date || '',
+            student_ids: [Number(editStudent.id)],
+            plan_type: initialPlan?.plan_type || 'daily_amount',
+            unit: 'segments',
+            direction: initialPlan?.direction || 'incremental',
+            start_segment_verse_key: initialPlan?.start_verse_key || initialPlan?.start_segment_verse_key || '',
+            start_juz_number: undefined,
+            start_surah_id: undefined,
+            end_segment_verse_key: initialPlan?.end_verse_key || initialPlan?.end_segment_verse_key || '',
+            end_juz_number: undefined,
+            end_surah_id: undefined,
+            daily_amount: initialPlan?.daily_amount || 1
+        });
+        const startVerseKey = initialPlan?.start_verse_key || initialPlan?.start_segment_verse_key || '';
+        const endVerseKey = initialPlan?.end_verse_key || initialPlan?.end_segment_verse_key || '';
+        setSelectedStartSegment(startVerseKey ? {
+            first_verse_key: startVerseKey,
+            last_verse_key: startVerseKey
+        } : null);
+        setSelectedEndSegment(endVerseKey ? {
+            first_verse_key: endVerseKey,
+            last_verse_key: endVerseKey
+        } : null);
+    }, [defaultActivity, editStudent?.id, halaqaData?.start_date, initialPlan, isEditMode, reset]);
 
     useEffect(() => {
         if (!wizardMode || !onWizardStepChange) {
@@ -643,6 +679,10 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
     ), [studentsOptions]);
 
     useEffect(() => {
+        if (isEditMode) {
+            return;
+        }
+
         const allowedStudentIds = new Set(
             studentsOptions.map((student) => Number(student.value ?? student.id)).filter(Boolean)
         );
@@ -656,7 +696,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
                 shouldDirty: true
             });
         }
-    }, [selectedStudentIds, setValue, studentsOptions]);
+    }, [isEditMode, selectedStudentIds, setValue, studentsOptions]);
 
     useEffect(() => {
         if (currentActivity !== 'hifz' || !shouldCloneHifzPlanToTasbit || hasInitializedAutoTasbitRef.current) {
@@ -783,7 +823,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
 
     const buildPlanRequests = useCallback((formData, saveOrNot) => {
         const primaryPayload = buildPayload(formData, saveOrNot, formData.activity, {
-            start_date: halaqaPlanDates.startDate,
+            start_date: isEditMode ? formData.start_date : halaqaPlanDates.startDate,
             end_date: halaqaPlanDates.endDate
         });
 
@@ -797,7 +837,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         }];
 
         return requests.filter((request) => Boolean(request.data));
-    }, [buildPayload, halaqaPlanDates.endDate, halaqaPlanDates.startDate]);
+    }, [buildPayload, halaqaPlanDates.endDate, halaqaPlanDates.startDate, isEditMode]);
 
     const getPlanRequestsSignature = useCallback((requests) => JSON.stringify(
         requests.map((request) => ({
@@ -963,7 +1003,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         showErrorToast = false,
         moveWizardToPreview = false
     } = {}) => {
-        const conflictingStudentLabels = getConflictingStudentLabels(formData);
+        const conflictingStudentLabels = isEditMode ? [] : getConflictingStudentLabels(formData);
         if (conflictingStudentLabels.length > 0) {
             const activityLabel = t(`halaqa.activity.${formData?.activity}`, formData?.activity || '');
             const message = copy(
@@ -989,6 +1029,18 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
             }
 
             return false;
+        }
+
+        if (isEditMode) {
+            setPlanRequestError(null);
+            setPlanPreviewItems(buildLocalPreviewItems(formData));
+            setHasRequestedPreview(true);
+
+            if (showSuccessToast) {
+                toast.info(copy('تم تجهيز معاينة التعديل. راجع الملخص ثم أكّد الحفظ.', 'The update preview is ready. Review it, then confirm saving.'));
+            }
+
+            return true;
         }
 
         const requestId = latestPreviewRequestIdRef.current + 1;
@@ -1068,7 +1120,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
                 setIsSubmittingPlanRequests(false);
             }
         }
-    }, [buildPlanRequests, copy, createPlanMutation, getConflictingStudentLabels, getPlanRequestsSignature, halaqaId, normalizePreviewPlanResponse, shouldShowClonedTasbitPreview, t, wizardMode]);
+    }, [buildLocalPreviewItems, buildPlanRequests, copy, createPlanMutation, getConflictingStudentLabels, getPlanRequestsSignature, halaqaId, isEditMode, normalizePreviewPlanResponse, shouldShowClonedTasbitPreview, t, wizardMode]);
 
     const onSubmit = async (formData) => {
         await requestComputedPreview(formData, {
@@ -1080,7 +1132,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
 
     const handleConfirmSave = async () => {
         const currentFormData = watch();
-        const conflictingStudentLabels = getConflictingStudentLabels(currentFormData);
+        const conflictingStudentLabels = isEditMode ? [] : getConflictingStudentLabels(currentFormData);
         if (conflictingStudentLabels.length > 0) {
             const activityLabel = t(`halaqa.activity.${currentFormData?.activity}`, currentFormData?.activity || '');
             const message = copy(
@@ -1107,6 +1159,37 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
         setIsSubmittingPlanRequests(true);
 
         try {
+            if (isEditMode) {
+                const startDate = currentFormData.start_date || initialPlan?.start_date || halaqaPlanDates.startDate;
+                const startVerseKey = currentFormData.start_segment_verse_key?.trim();
+
+                if (!startDate || !startVerseKey) {
+                    return;
+                }
+
+                const studentPlanPayload = {
+                    start_date: startDate,
+                    activity: currentFormData.activity,
+                    plan_type: currentFormData.plan_type,
+                    unit: 'segments',
+                    direction: currentFormData.direction,
+                    start_verse_key: startVerseKey,
+                    ...(currentFormData.plan_type === 'daily_amount'
+                        ? { daily_amount: Number(currentFormData.daily_amount) }
+                        : { end_verse_key: currentFormData.end_segment_verse_key?.trim() })
+                };
+                await updateStudentPlanMutation.mutateAsync({
+                    halaqaId,
+                    studentId: editStudent.id,
+                    data: studentPlanPayload
+                });
+                toast.success(copy('تم تعديل خطة الطالب بنجاح', 'Student plan updated successfully'));
+                if (onSuccess) {
+                    onSuccess();
+                }
+                return;
+            }
+
             for (const request of requests) {
                 await createPlanMutation.mutateAsync({ halaqaId, data: request.data });
             }
@@ -1371,6 +1454,17 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
                 />
             </SectionCard>
 
+            {isEditMode ? (
+                <SectionCard title={copy('تاريخ بداية الخطة', 'Plan Start Date')} hint={copy('هذا الحقل مطلوب لتعديل خطة الطالب.', 'This date is required to update the student plan.')}>
+                    <input
+                        type="date"
+                        required
+                        {...register('start_date')}
+                        className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-800 shadow-sm outline-none transition focus:border-[#0d7a78] focus:ring-2 focus:ring-[#0d7a78]/10"
+                    />
+                </SectionCard>
+            ) : null}
+
             <LearningPathSummary
                 title={copy('مسار التعلم', 'Learning Path')}
                 buttonLabel={isDailyAmountPlan
@@ -1389,7 +1483,7 @@ const CreatePlanForm = ({ halaqaId, students, activities, onSuccess, onCancel, w
                 showEndSelection={false}
             />
 
-            {!wizardMode ? (
+            {!wizardMode && !isEditMode ? (
                 <SectionCard
                     title={t('plan.students', copy('الطلاب المستهدفون', 'Target Students'))}
                     hint={selectedStudentIds?.length

@@ -12,6 +12,7 @@ import HalaqaActivities from '@/features/entity-manager/halaqas/components/Halaq
 import HalaqaStudents from '@/features/entity-manager/halaqas/components/HalaqaStudents';
 import HalaqaAdditionalInfo from '@/features/entity-manager/halaqas/components/HalaqaAdditionalInfo';
 import HalaqaPlansSection from '@/features/entity-manager/halaqas/components/HalaqaPlansSection';
+import EditStudentPlanModal from '@/features/entity-manager/halaqas/components/EditStudentPlanModal';
 /**
  * Halaqa Detail Page
  * Displays detailed information about a specific halaqa
@@ -26,6 +27,7 @@ const HalaqaDetailPage = () => {
     const [selectedPlanStudents, setSelectedPlanStudents] = useState([]);
     const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
     const [showMissingPlansModal, setShowMissingPlansModal] = useState(false);
+    const [studentPlanToEdit, setStudentPlanToEdit] = useState(null);
     const plansSectionRef = useRef(null);
     // API returns { data: { id, name, ... } }; axios puts body in response.data
     const raw = data;
@@ -118,6 +120,12 @@ const HalaqaDetailPage = () => {
         setTimeout(() => {
             plansSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
+    };
+    const handleEditStudentPlan = (plan, student) => {
+        if (!student?.id) {
+            return;
+        }
+        setStudentPlanToEdit({ plan, student });
     };
     // Prepare badges for header - MUST be before early returns to maintain hook order
     const headerBadges = useMemo(() => {
@@ -243,11 +251,12 @@ const HalaqaDetailPage = () => {
 
         {/* Plans Section */}
         <div id="halaqa-plans-section" ref={plansSectionRef}>
-            <HalaqaPlansSection plans={halaqa.plans || []} halaqaId={id || ''} students={halaqa.students} activities={halaqa.activities} showPlanForm={showPlanForm} onTogglePlanForm={() => setShowPlanForm(!showPlanForm)} onPlanFormSuccess={() => setShowPlanForm(false)} onViewPlanStudents={handleShowPlanStudents} getPlanStudent={getPlanStudent} getLocalizedText={getLocalizedText} />
+            <HalaqaPlansSection plans={halaqa.plans || []} halaqaId={id || ''} students={halaqa.students} activities={halaqa.activities} showPlanForm={showPlanForm} onTogglePlanForm={() => setShowPlanForm(!showPlanForm)} onPlanFormSuccess={() => setShowPlanForm(false)} onViewPlanStudents={handleShowPlanStudents} onEditStudentPlan={handleEditStudentPlan} getPlanStudent={getPlanStudent} getLocalizedText={getLocalizedText} />
         </div>
 
         {/* Students Modal */}
         <PlanStudentsModal isOpen={isStudentsModalOpen} students={selectedPlanStudents} onClose={() => setIsStudentsModalOpen(false)} currentLang={currentLang} />
+        <EditStudentPlanModal halaqaId={id || ''} student={studentPlanToEdit?.student} plan={studentPlanToEdit?.plan} activities={halaqa.activities} onClose={() => setStudentPlanToEdit(null)} />
     </div>);
 };
 export default HalaqaDetailPage;

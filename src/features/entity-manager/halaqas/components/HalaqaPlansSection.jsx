@@ -4,7 +4,7 @@ import { Button } from '@/shared/components';
 import { BookOpenIcon, PlusIcon, XIcon } from '@/shared/icons';
 import CreatePlanForm from './CreatePlanForm';
 import HalaqaPlanCard from './HalaqaPlanCard';
-const HalaqaPlansSection = ({ plans, halaqaId, students, activities, showPlanForm, onTogglePlanForm, onPlanFormSuccess, onViewPlanStudents, getPlanStudent, getLocalizedText }) => {
+const HalaqaPlansSection = ({ plans, halaqaId, students, activities, showPlanForm, onTogglePlanForm, onPlanFormSuccess, onViewPlanStudents, onEditStudentPlan, getPlanStudent, getLocalizedText }) => {
     const { t } = useTranslation();
     return (<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
@@ -39,7 +39,7 @@ const HalaqaPlansSection = ({ plans, halaqaId, students, activities, showPlanFor
             {plans && plans.length > 0 ? (<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {plans.map((plan, index) => {
                 const planStudents = getPlanStudent(plan);
-                return (<HalaqaPlanCard key={plan.id || index} plan={plan} planStudents={planStudents} onViewStudents={() => onViewPlanStudents(plan)} getLocalizedText={getLocalizedText}/>);
+                return (<HalaqaPlanCard key={plan.id || index} plan={plan} planStudents={planStudents} onViewStudents={() => onViewPlanStudents(plan)} onEditStudentPlan={onEditStudentPlan} getLocalizedText={getLocalizedText}/>);
             })}
                 </div>) : (<div className="text-center py-12">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">

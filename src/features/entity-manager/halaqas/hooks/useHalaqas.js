@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { halaqasService } from '../services/halaqas.service';
 /**
  * Create halaqa mutation hook
@@ -79,6 +79,18 @@ export const useDeleteHalaqa = () => {
 export const useCreatePlan = () => {
     return useMutation({
         mutationFn: ({ halaqaId, data }) => halaqasService.createPlan(halaqaId, data)
+    });
+};
+/** Update the selected student's plan and refresh the halaqa details. */
+export const useUpdateStudentPlan = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ halaqaId, studentId, data }) => halaqasService.updateStudentPlan(halaqaId, studentId, data),
+        onSuccess: (_response, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['halaqa', String(variables.halaqaId)] });
+            queryClient.invalidateQueries({ queryKey: ['halaqa', variables.halaqaId] });
+            queryClient.invalidateQueries({ queryKey: ['halaqas'] });
+        }
     });
 };
 /**
