@@ -317,6 +317,7 @@ const DynamicFormRenderer = ({ fields, control, errors, setValue, joinRequestRol
         switch (field.type) {
             case 'text':
             case 'email':
+            case 'tel':
             case 'number':
             case 'date':
                 // Hide latitude and longitude fields - they will be handled by MapPicker

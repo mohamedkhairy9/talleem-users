@@ -1,10 +1,107 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormWithValidation } from '@/shared/utils';
 import * as yup from 'yup';
 import { FormFile, Button } from '@/shared/components';
 import { useSubmitJoinRequestStep } from '../hooks/useRegistration';
 import { toast } from 'react-toastify';
+import DynamicFormRenderer from './DynamicFormRenderer';
+import { buildDynamicSchema } from '../utils/buildDynamicSchema';
+import { buildDefaultValues } from '../utils/buildDefaultValues';
+
+function appendFormValue(formData, key, value) {
+    if (value === null || value === undefined || value === '') return;
+
+    if (value instanceof File) {
+        formData.append(key, value);
+        return;
+    }
+
+    if (typeof FileList !== 'undefined' && value instanceof FileList) {
+        Array.from(value).forEach(file => formData.append(`${key}[]`, file));
+        return;
+    }
+
+    if (Array.isArray(value)) {
+        value.forEach(item => {
+            if (item instanceof File) formData.append(`${key}[]`, item);
+            else if (item !== null && item !== undefined) appendFormValue(formData, `${key}[]`, item);
+        });
+        return;
+    }
+
+    if (typeof value === 'object' && !(value instanceof Date)) {
+        Object.entries(value).forEach(([childKey, childValue]) => {
+            appendFormValue(formData, `${key}[${childKey}]`, childValue);
+        });
+        return;
+    }
+
+    formData.append(key, String(value));
+}
+
+function getLocalizedText(value, language) {
+    if (value == null) return '';
+    if (typeof value === 'string') return value;
+    const lang = language?.startsWith('ar') ? 'ar' : 'en';
+    return value[lang] ?? value.en ?? value.ar ?? '';
+}
+
+function ResubmissionStepForm({ requestId, form, onStepSubmitted }) {
+    const { t, i18n } = useTranslation();
+    const submitStepMutation = useSubmitJoinRequestStep();
+    const fields = form?.data?.fields ?? form?.fields ?? [];
+    const schema = useMemo(() => {
+        let result = buildDynamicSchema(fields);
+        const requiredFileFields = {};
+        fields.filter(field => field.type === 'file' && field.required).forEach(field => {
+            requiredFileFields[field.key] = yup.mixed().test(
+                'required-file',
+                t('common.required', 'This field is required'),
+                value => Array.isArray(value) ? value.length > 0 : Boolean(value)
+            );
+        });
+        if (Object.keys(requiredFileFields).length > 0) result = result.shape(requiredFileFields);
+        return result;
+    }, [fields, t]);
+    const defaultValues = useMemo(() => buildDefaultValues(fields), [fields]);
+    const { control, handleSubmit, formState: { errors }, setValue, reset } = useFormWithValidation({
+        schema,
+        defaultValues
+    });
+
+    useEffect(() => reset(defaultValues), [defaultValues, reset]);
+
+    const onSubmit = values => {
+        const formData = new FormData();
+        Object.entries(values).forEach(([key, value]) => appendFormValue(formData, key, value));
+
+        submitStepMutation.mutate({ joinRequestId: requestId, formData }, {
+            onSuccess: () => {
+                toast.success(t('auth.step_submitted', 'تم إرسال البيانات المطلوبة بنجاح'));
+                reset(defaultValues);
+                onStepSubmitted?.();
+            },
+            onError: error => toast.error(error?.message || t('auth.step_submit_error', 'تعذر إرسال البيانات المطلوبة'))
+        });
+    };
+
+    return (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 rounded-lg border border-amber-200 bg-amber-50/40 p-6">
+            <div>
+                <h3 className="text-lg font-semibold text-gray-800">{getLocalizedText(form?.name, i18n.language) || t('auth.complete_request', 'استكمال الطلب')}</h3>
+                {getLocalizedText(form?.description, i18n.language) && <p className="mt-1 text-sm text-gray-600">{getLocalizedText(form.description, i18n.language)}</p>}
+            </div>
+            <DynamicFormRenderer fields={fields} control={control} errors={errors} setValue={setValue} />
+            {submitStepMutation.error && <p className="text-sm text-red-600">{submitStepMutation.error.message || t('auth.step_submit_error', 'تعذر إرسال البيانات المطلوبة')}</p>}
+            <div className="flex justify-end">
+                <Button type="submit" variant="primary" loading={submitStepMutation.isPending} disabled={submitStepMutation.isPending}>
+                    {submitStepMutation.isPending ? t('common.loading', 'جارٍ الإرسال...') : t('auth.submit_documents', 'إرسال البيانات')}
+                </Button>
+            </div>
+        </form>
+    );
+}
 /**
  * Join Request Status Display Component
  * Displays the join request status information.
@@ -16,6 +113,12 @@ const JoinRequestStatusDisplay = ({ data, onStepSubmitted }) => {
     const submitStepMutation = useSubmitJoinRequestStep();
     const isUploadStep = data.current_step?.step_type === 'upload' && (data.current_step?.form_inputs?.length ?? 0) > 0;
     const formInputs = data.current_step?.form_inputs ?? [];
+    const resubmissionForm = data.resubmission_form ??
+        data.current_step?.resubmission_form ??
+        data.current_step?.form ??
+        null;
+    const hasResubmissionForm = Array.isArray(resubmissionForm?.data?.fields ?? resubmissionForm?.fields) &&
+        (resubmissionForm?.data?.fields ?? resubmissionForm?.fields).length > 0;
     const uploadSchema = useMemo(() => {
         const shape = {};
         formInputs.forEach((input) => {
@@ -77,6 +180,10 @@ const JoinRequestStatusDisplay = ({ data, onStepSubmitted }) => {
                 return <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">{t('status.approved', 'Approved')}</span>;
             case 2:
                 return <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">{t('status.rejected', 'Rejected')}</span>;
+            case 3:
+                return <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">{t('status.need_review', 'Need review')}</span>;
+            case 4:
+                return <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">{t('status.need_upload', 'Need upload')}</span>;
             default:
                 return <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">{t('status.unknown', 'Unknown')}</span>;
         }
@@ -131,7 +238,7 @@ const JoinRequestStatusDisplay = ({ data, onStepSubmitted }) => {
                     </div>
 
                     {/* Upload step form: when step_type is "upload", render form from form_inputs */}
-                    {isUploadStep && (<form onSubmit={handleSubmit(onSubmitUploadStep)} className="mt-6 pt-6 border-t border-gray-200 space-y-4">
+                    {isUploadStep && !hasResubmissionForm && (<form onSubmit={handleSubmit(onSubmitUploadStep)} className="mt-6 pt-6 border-t border-gray-200 space-y-4">
                             <h4 className="text-md font-medium text-gray-800 mb-3">
                                 {t('auth.upload_documents', 'Upload Documents')}
                             </h4>
@@ -148,6 +255,14 @@ const JoinRequestStatusDisplay = ({ data, onStepSubmitted }) => {
                             </div>
                         </form>)}
                 </div>)}
+
+            {hasResubmissionForm && (
+                <ResubmissionStepForm
+                    requestId={data.id}
+                    form={resubmissionForm}
+                    onStepSubmitted={onStepSubmitted}
+                />
+            )}
 
             {/* Request History (submitted_logs) */}
             {data.submitted_logs && data.submitted_logs.length > 0 && (<div className="bg-white border border-gray-200 rounded-lg p-6">

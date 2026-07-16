@@ -11,6 +11,7 @@ import {
     getLocalizedText,
     localizeJoinRequestStatusText
 } from '../config/join-requests.config';
+import ResubmissionFormBuilder, { createDefaultResubmissionForm } from './ResubmissionFormBuilder';
 
 const SECTION_KEYS = {
     entity_info: ['name', 'registration_date', 'license_number', 'phone', 'email', 'address', 'area', 'status', 'activities'],
@@ -577,11 +578,15 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
         control,
         handleSubmit,
         formState: { errors },
-        reset
+        reset,
+        watch
     } = useFormWithValidation({
         schema: processStepSchema,
         defaultValues: { status: '', notes: '', files: null }
     });
+    const selectedStatus = Number(watch('status'));
+    const [resubmissionForm, setResubmissionForm] = useState(createDefaultResubmissionForm);
+    const [resubmissionFormError, setResubmissionFormError] = useState('');
 
     const statusOptions = PROCESS_STEP_STATUS_OPTIONS.map((option) => ({
         value: option.value,
@@ -613,13 +618,34 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
             return;
         }
 
+        if (Number(data.status) === 4) {
+            const fields = resubmissionForm?.data?.fields || [];
+            const hasInvalidField = fields.some(field =>
+                !field.key?.trim() || !field.label?.ar?.trim() || !field.label?.en?.trim()
+            );
+            if (
+                !resubmissionForm?.name?.ar?.trim() ||
+                !resubmissionForm?.name?.en?.trim() ||
+                !resubmissionForm?.description?.ar?.trim() ||
+                !resubmissionForm?.description?.en?.trim() ||
+                fields.length === 0 ||
+                hasInvalidField
+            ) {
+                setResubmissionFormError('يرجى استكمال اسم ووصف النموذج وبيانات كل الحقول بالعربية والإنجليزية.');
+                return;
+            }
+        }
+
+        setResubmissionFormError('');
+
         processStepMutation.mutate(
             {
                 id: request.id,
                 data: {
                     status: data.status,
                     notes: data.notes || null,
-                    files: data.files
+                    files: data.files,
+                    ...(Number(data.status) === 4 ? { resubmission_form: resubmissionForm } : {})
                 }
             },
             {
@@ -894,6 +920,13 @@ const ViewJoinRequestModal = ({ isOpen, request, isReadOnly = false, onClose }) 
                                             control={control}
                                             error={errors.notes?.message}
                                         />
+                                        {selectedStatus === 4 ? (
+                                            <ResubmissionFormBuilder
+                                                value={resubmissionForm}
+                                                onChange={setResubmissionForm}
+                                                error={resubmissionFormError}
+                                            />
+                                        ) : null}
                                     </div>
                                 </AccordionSection>
                             )}

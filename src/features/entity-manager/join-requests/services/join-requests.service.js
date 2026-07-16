@@ -48,6 +48,16 @@ export const joinRequestsService = {
      * Process a join request step (approve / reject / need review / need upload)
      */
     processStep: (id, data) => {
+        // Status 4 creates a resubmission form. Send JSON to preserve the
+        // nested form definition exactly as the API contract expects.
+        if (Number(data?.status) === 4 && data?.resubmission_form) {
+            return axiosInstance.post(API_ENDPOINTS.JOIN_REQUESTS.PROCESS_STEP(id), {
+                status: 4,
+                notes: data.notes || null,
+                resubmission_form: data.resubmission_form
+            });
+        }
+
         const formData = buildProcessStepFormData(data);
         return axiosInstance.post(API_ENDPOINTS.JOIN_REQUESTS.PROCESS_STEP(id), formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
